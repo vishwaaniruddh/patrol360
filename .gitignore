@@ -1,0 +1,13 @@
+# Patrol360 .gitignore
+
+# Caches & Test Results
+.phpunit.result.cache
+.phpunit.cache/
+*.log
+
+# OS & Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.tmp

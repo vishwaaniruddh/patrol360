@@ -1,0 +1,171 @@
+<?php
+// backend/src/Controllers/CameraController.php
+
+namespace App\Controllers;
+
+use App\Database;
+use App\Helpers\Response;
+use App\Helpers\Validator;
+use PDO;
+
+class CameraController
+{
+    private PDO $db;
+
+    public function __construct()
+    {
+        $this->db = Database::getConnection();
+    }
+
+    public function index(array $args): void
+    {
+        $query = $args['query'];
+        $vehicleId = $query['vehicle_id'] ?? null;
+
+        if ($vehicleId) {
+            $stmt = $this->db->prepare("SELECT * FROM `vehicle_cameras` WHERE vehicle_id = ? ORDER BY mount_position ASC");
+            $stmt->execute([$vehicleId]);
+        } else {
+            $stmt = $this->db->query("SELECT * FROM `vehicle_cameras` ORDER BY vehicle_id ASC, mount_position ASC");
+        }
+
+        $cameras = $stmt->fetchAll();
+        Response::success('Cameras retrieved successfully', $cameras);
+    }
+
+    public function show(array $args): void
+    {
+        $id = $args['params'][0];
+        $stmt = $this->db->prepare("SELECT * FROM `vehicle_cameras` WHERE id = ? OR camera_id = ?");
+        $stmt->execute([$id, $id]);
+        $camera = $stmt->fetch();
+
+        if (!$camera) {
+            Response::error('Camera not found.', 404);
+        }
+
+        Response::success('Camera details retrieved', $camera);
+    }
+
+    public function store(array $args): void
+    {
+        $body = $args['body'];
+
+        $validator = Validator::make($body)
+            ->required(['camera_id', 'vehicle_id', 'camera_name', 'mount_position', 'rtsp_url'])
+            ->in('mount_position', ['FRONT', 'REAR', 'LEFT', 'RIGHT']);
+
+        if ($validator->fails()) {
+            Response::error('Validation failed', 422, $validator->errors());
+        }
+
+        // Check if vehicle exists
+        $vehCheck = $this->db->prepare("SELECT id FROM `police_vehicles` WHERE vehicle_id = ?");
+        $vehCheck->execute([$body['vehicle_id']]);
+        if (!$vehCheck->fetch()) {
+            Response::error("Police Vehicle '{$body['vehicle_id']}' does not exist.", 404);
+        }
+
+        // Check unique camera_id
+        $camCheck = $this->db->prepare("SELECT id FROM `vehicle_cameras` WHERE camera_id = ?");
+        $camCheck->execute([$body['camera_id']]);
+        if ($camCheck->fetch()) {
+            Response::error("Camera ID '{$body['camera_id']}' already exists.", 409);
+        }
+
+        $res = $body['resolution'] ?? '1920x1080';
+        $fps = (int)($body['fps'] ?? 25);
+        $streaming = isset($body['is_streaming']) ? (int)(bool)$body['is_streaming'] : 1;
+
+        $insert = $this->db->prepare("
+            INSERT INTO `vehicle_cameras` (`camera_id`, `vehicle_id`, `camera_name`, `mount_position`, `rtsp_url`, `resolution`, `fps`, `is_streaming`)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ");
+        $insert->execute([$body['camera_id'], $body['vehicle_id'], $body['camera_name'], $body['mount_position'], $body['rtsp_url'], $res, $fps, $streaming]);
+
+        $newId = (int)$this->db->lastInsertId();
+        $stmt = $this->db->prepare("SELECT * FROM `vehicle_cameras` WHERE id = ?");
+        $stmt->execute([$newId]);
+        $newCam = $stmt->fetch();
+
+        Response::success('Camera added to vehicle successfully', $newCam, 201);
+    }
+
+    public function update(array $args): void
+    {
+        $id = $args['params'][0];
+        $body = $args['body'];
+
+        $stmt = $this->db->prepare("SELECT * FROM `vehicle_cameras` WHERE id = ? OR camera_id = ?");
+        $stmt->execute([$id, $id]);
+        $camera = $stmt->fetch();
+
+        if (!$camera) {
+            Response::error('Camera not found.', 404);
+        }
+
+        $fields = [];
+        $values = [];
+
+        if (isset($body['camera_name'])) {
+            $fields[] = "`camera_name` = ?";
+            $values[] = $body['camera_name'];
+        }
+
+        if (isset($body['mount_position']) && in_array($body['mount_position'], ['FRONT', 'REAR', 'LEFT', 'RIGHT'], true)) {
+            $fields[] = "`mount_position` = ?";
+            $values[] = $body['mount_position'];
+        }
+
+        if (isset($body['rtsp_url'])) {
+            $fields[] = "`rtsp_url` = ?";
+            $values[] = $body['rtsp_url'];
+        }
+
+        if (isset($body['resolution'])) {
+            $fields[] = "`resolution` = ?";
+            $values[] = $body['resolution'];
+        }
+
+        if (isset($body['fps'])) {
+            $fields[] = "`fps` = ?";
+            $values[] = (int)$body['fps'];
+        }
+
+        if (isset($body['is_streaming'])) {
+            $fields[] = "`is_streaming` = ?";
+            $values[] = (int)(bool)$body['is_streaming'];
+        }
+
+        if (empty($fields)) {
+            Response::error('No fields provided for update.', 400);
+        }
+
+        $values[] = $camera['id'];
+        $sql = "UPDATE `vehicle_cameras` SET " . implode(', ', $fields) . " WHERE id = ?";
+        $this->db->prepare($sql)->execute($values);
+
+        $stmt = $this->db->prepare("SELECT * FROM `vehicle_cameras` WHERE id = ?");
+        $stmt->execute([$camera['id']]);
+        $updated = $stmt->fetch();
+
+        Response::success('Camera updated successfully', $updated);
+    }
+
+    public function delete(array $args): void
+    {
+        $id = $args['params'][0];
+        $stmt = $this->db->prepare("SELECT id, camera_id FROM `vehicle_cameras` WHERE id = ? OR camera_id = ?");
+        $stmt->execute([$id, $id]);
+        $camera = $stmt->fetch();
+
+        if (!$camera) {
+            Response::error('Camera not found.', 404);
+        }
+
+        $del = $this->db->prepare("DELETE FROM `vehicle_cameras` WHERE id = ?");
+        $del->execute([$camera['id']]);
+
+        Response::success("Camera '{$camera['camera_id']}' removed successfully");
+    }
+}

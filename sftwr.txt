@@ -1,0 +1,6 @@
+Software :  
+ANPR / ALPR: High-accuracy number plate detection & OCR, stolen/blacklisted vehicle alerts. All events push to the API provided by the customer with image ,video foot print,camera detail real time 
+Facial Recognition System (FRS): Watchlist matching (missing persons/wanted criminals), 1:1 verification, multi-face tracking per frame, anti-spoofing/liveness verification, and complete audit logging with human-in-the-loop validation. All events related to facial push to the API provided by the customer with image ,video foot print,camera detail real time 
+Weapon Detection: Real-time AI identification of firearms and weapons with immediate field and command alerts. All events related to weapons push to the API provided by the customer with image ,video foot print,camera detail real time 
+Fire & Smoke Detection: Live video AI analytics for rapid detection of fire hazards and smoke. 
+Crowd & Object Analytics: People counting, crowd density/heat maps, junction overcrowding management, and multi-class object/vehicle/person detection.

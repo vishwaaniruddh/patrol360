@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Patrol360 | POC Milestones, Tasks & QA Acceptance Matrix</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --background: #f8fafc;
+      --foreground: #09090b;
+      --card: #ffffff;
+      --primary: #09090b;
+      --secondary: #f4f4f5;
+      --muted: #f4f4f5;
+      --muted-foreground: #71717a;
+      --border: #e4e4e7;
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-full: 9999px;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background-color: var(--background); color: var(--foreground); font-family: var(--font-sans); line-height: 1.5; font-size: 13px; padding-bottom: 60px; }
+    
+    header.nav-header {
+      position: sticky; top: 0; z-index: 50; background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(8px); border-bottom: 1px solid var(--border); padding: 0.6rem 1.5rem;
+    }
+    .nav-inner { max-width: 1240px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+    .brand { display: flex; align-items: center; gap: 8px; text-decoration: none; color: inherit; font-weight: 700; font-size: 14px; }
+    .nav-links { display: flex; align-items: center; gap: 6px; }
+    .nav-link {
+      padding: 6px 12px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 500;
+      color: var(--muted-foreground); text-decoration: none; transition: all 0.15s ease;
+    }
+    .nav-link:hover { color: var(--foreground); background: var(--secondary); }
+    .nav-link.active { background: #09090b; color: #fff; font-weight: 600; }
+
+    .container { max-width: 1240px; margin: 1.5rem auto 0; padding: 0 1.5rem; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); padding: 1.5rem; margin-bottom: 1.25rem; }
+    .card-title { font-size: 15px; font-weight: 700; color: #09090b; margin-bottom: 0.5rem; display: flex; align-items: center; justify-content: space-between; }
+    
+    .badge { display: inline-flex; align-items: center; border-radius: var(--radius-full); padding: 2px 8px; font-size: 11px; font-weight: 600; border: 1px solid transparent; }
+    .badge-success { background: #ecfdf5; border-color: #a7f3d0; color: #047857; }
+    .badge-warning { background: #fffbeb; border-color: #fde68a; color: #d97706; }
+    .badge-info { background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; }
+    .badge-danger { background: #fef2f2; border-color: #fecaca; color: #dc2626; }
+    .badge-secondary { background: #f4f4f5; border-color: #e4e4e7; color: #52525b; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; }
+    th { background: #fafafa; padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--muted-foreground); font-weight: 600; }
+    td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #fafafa; }
+  </style>
+</head>
+<body>
+
+  <!-- SHARED NAVIGATION BAR -->
+  <header class="nav-header">
+    <div class="nav-inner">
+      <a href="index.html" class="brand">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          <path d="M12 8v4"/>
+          <path d="M12 16h.01"/>
+        </svg>
+        Patrol360 Documentation
+      </a>
+      <nav class="nav-links">
+        <a href="index.html" class="nav-link">🖥️ Live Dashboard</a>
+        <a href="analysis.html" class="nav-link">📊 System Analysis</a>
+        <a href="apis.html" class="nav-link">🔌 APIs & Webhooks</a>
+        <a href="database.html" class="nav-link">🗄️ Database (DB)</a>
+        <a href="setup.html" class="nav-link">🛠️ Setup Guide</a>
+        <a href="milestones.html" class="nav-link active">📋 Milestones & QA</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <div style="margin-bottom: 1.5rem;">
+      <span class="badge badge-info" style="margin-bottom: 6px;">PROJECT GOVERNANCE & DELIVERY</span>
+      <h1 style="font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em;">POC Milestones, Tasks & QA Acceptance Matrix</h1>
+      <p style="color: var(--muted-foreground); font-size: 13px;">
+        Tracking milestones M1 to M8, detailed workstream tasks, and risk mitigations for the 7-day field POC evaluated by the Commissioner of Police (CP Sir).
+      </p>
+    </div>
+
+    <!-- M1 TO M8 MILESTONES -->
+    <div class="card">
+      <div class="card-title">
+        <span>POC Milestones Roadmap (M1 - M8)</span>
+        <span class="badge badge-success">Target Timeline</span>
+      </div>
+      <div style="overflow-x: auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Milestone Deliverable</th>
+              <th>Target Timing</th>
+              <th>Proposed Owner</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>M1</strong></td>
+              <td>Scope and acceptance criteria approved</td>
+              <td>Before build / demo</td>
+              <td>Project Manager + Customer SPOC</td>
+              <td><span class="badge badge-success">Approved</span></td>
+            </tr>
+            <tr>
+              <td><strong>M2</strong></td>
+              <td>Jetson hardware received and compatibility verified</td>
+              <td>Expected Wed / Thu</td>
+              <td>Hardware / Edge Engineer (Vijaybhai)</td>
+              <td><span class="badge badge-warning">Awaiting Hardware</span></td>
+            </tr>
+            <tr>
+              <td><strong>M3</strong></td>
+              <td>Camera streams & core AI pipelines working locally</td>
+              <td>Pre-Demonstration</td>
+              <td>AI / Edge Engineers (Mitulbhai)</td>
+              <td><span class="badge badge-info">In Progress</span></td>
+            </tr>
+            <tr>
+              <td><strong>M4</strong></td>
+              <td>Customer API and event schema tested</td>
+              <td>Pre-Demonstration</td>
+              <td>Backend / API Engineer + Customer SPOC</td>
+              <td><span class="badge badge-info">Schema Ready</span></td>
+            </tr>
+            <tr>
+              <td><strong>M5</strong></td>
+              <td>Ahmedabad live vehicle demonstration</td>
+              <td>Date to be confirmed</td>
+              <td>Project Manager + Demo Team</td>
+              <td><span class="badge badge-secondary">Scheduled</span></td>
+            </tr>
+            <tr>
+              <td><strong>M6</strong></td>
+              <td>Bhubaneswar, Odisha demonstration</td>
+              <td>Date to be confirmed</td>
+              <td>Project Manager + Field / Integration Team</td>
+              <td><span class="badge badge-secondary">Scheduled</span></td>
+            </tr>
+            <tr>
+              <td><strong>M7</strong></td>
+              <td>7-day ground POC on test vehicle</td>
+              <td>After demo and joint approval</td>
+              <td>POC Lead + QA Lead</td>
+              <td><span class="badge badge-secondary">Planned</span></td>
+            </tr>
+            <tr>
+              <td><strong>M8</strong></td>
+              <td>Final evidence-backed report for CP Sir</td>
+              <td>After 7-day POC</td>
+              <td>Project Manager + QA Lead</td>
+              <td><span class="badge badge-secondary">Template Ready</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- RISK MITIGATION MATRIX (R1 - R9) -->
+    <div class="card">
+      <div class="card-title">
+        <span>Risk Register & Engineering Mitigations (R1 - R9)</span>
+        <span class="badge badge-danger">Risk Matrix</span>
+      </div>
+      <div style="overflow-x: auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Risk ID</th>
+              <th>Risk Description</th>
+              <th>Severity</th>
+              <th>Technical Mitigation</th>
+              <th>Owner</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>R1</strong></td>
+              <td>Jetson Orin Nano / Ubuntu 24.04 / JetPack compatibility</td>
+              <td><span class="badge badge-danger">HIGH</span></td>
+              <td>Pre-benchmark containerized JetPack image and lock CUDA 12.2 libraries before field deployment.</td>
+              <td>Edge AI Engineer</td>
+            </tr>
+            <tr>
+              <td><strong>R2</strong></td>
+              <td>Running all 6 use cases simultaneously on 1 edge device</td>
+              <td><span class="badge badge-danger">HIGH</span></td>
+              <td>Use FP16 TensorRT engine quantization and dynamic frame skipping (5 FPS for FRS/Crowd, 25 FPS for ANPR).</td>
+              <td>Solution Architect</td>
+            </tr>
+            <tr>
+              <td><strong>R3</strong></td>
+              <td>Customer ICCC API interfaces not yet finalized</td>
+              <td><span class="badge badge-danger">HIGH</span></td>
+              <td>Provide standard REST webhook contracts with configurable field mapping & local mock sandbox.</td>
+              <td>Backend Engineer</td>
+            </tr>
+            <tr>
+              <td><strong>R4</strong></td>
+              <td>FRS watchlists and personal data regulations</td>
+              <td><span class="badge badge-danger">HIGH</span></td>
+              <td>Use only authorized police test identities; enforce strict role-based access and tamper-evident audit logs.</td>
+              <td>Customer SPOC</td>
+            </tr>
+            <tr>
+              <td><strong>R5</strong></td>
+              <td>4G/5G mobile bandwidth and dead zones</td>
+              <td><span class="badge badge-warning">MEDIUM</span></td>
+              <td>Local SQLite store-and-forward outbox; automatic retry upon cellular signal reconnect.</td>
+              <td>Network Engineer</td>
+            </tr>
+            <tr>
+              <td><strong>R6</strong></td>
+              <td>Vehicle power, heat, and vibration on road</td>
+              <td><span class="badge badge-warning">MEDIUM</span></td>
+              <td>IP66 fanless enclosure, vibration dampening mounts, and isolated DC-DC regulator with UPS.</td>
+              <td>Field Engineer</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- CP SIR SIGN-OFF CHECKLIST -->
+    <div class="card" style="background: #fafafa; border-left: 4px solid #16a34a;">
+      <h3 style="font-size: 14px; color: #14532d; margin-bottom: 6px;">✅ Official POC Success & Sign-Off Criteria for CP Sir</h3>
+      <p style="color: #52525b; font-size: 12px; line-height: 1.6;">
+        The POC will be considered 100% successful when the system satisfies all of the following conditions during the live vehicle demonstration and 7-day field run:<br>
+        1. <strong>Simultaneous 4-Camera Ingestion:</strong> Processes Front, Rear, Left, and Right 1080p camera feeds without dropping below 20 FPS.<br>
+        2. <strong>Accurate Alert Generation:</strong> Successfully detects number plates, faces, weapons, smoke, and crowd densities with confidence scores.<br>
+        3. <strong>Immediate Evidence Storage:</strong> Saves a high-resolution snapshot and 10-second video footprint for every detected incident.<br>
+        4. <strong>Sub-Second ICCC Push:</strong> Delivers alerts to the police control room API in under 850ms over 4G/5G.<br>
+        5. <strong>Offline Zero Data Loss:</strong> Caches all alerts safely during network drops and syncs seamlessly when connection returns.
+      </p>
+    </div>
+  </main>
+</body>
+</html>

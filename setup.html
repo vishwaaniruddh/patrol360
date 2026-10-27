@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Patrol360 | Step-by-Step Setup & Deployment Guide</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --background: #f8fafc;
+      --foreground: #09090b;
+      --card: #ffffff;
+      --primary: #09090b;
+      --secondary: #f4f4f5;
+      --muted: #f4f4f5;
+      --muted-foreground: #71717a;
+      --border: #e4e4e7;
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-full: 9999px;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background-color: var(--background); color: var(--foreground); font-family: var(--font-sans); line-height: 1.5; font-size: 13px; padding-bottom: 60px; }
+    
+    header.nav-header {
+      position: sticky; top: 0; z-index: 50; background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(8px); border-bottom: 1px solid var(--border); padding: 0.6rem 1.5rem;
+    }
+    .nav-inner { max-width: 1240px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+    .brand { display: flex; align-items: center; gap: 8px; text-decoration: none; color: inherit; font-weight: 700; font-size: 14px; }
+    .nav-links { display: flex; align-items: center; gap: 6px; }
+    .nav-link {
+      padding: 6px 12px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 500;
+      color: var(--muted-foreground); text-decoration: none; transition: all 0.15s ease;
+    }
+    .nav-link:hover { color: var(--foreground); background: var(--secondary); }
+    .nav-link.active { background: #09090b; color: #fff; font-weight: 600; }
+
+    .container { max-width: 1240px; margin: 1.5rem auto 0; padding: 0 1.5rem; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); padding: 1.5rem; margin-bottom: 1.25rem; }
+    .card-title { font-size: 15px; font-weight: 700; color: #09090b; margin-bottom: 0.5rem; display: flex; align-items: center; justify-content: space-between; }
+    
+    .badge { display: inline-flex; align-items: center; border-radius: var(--radius-full); padding: 2px 8px; font-size: 11px; font-weight: 600; border: 1px solid transparent; }
+    .badge-setup { background: #fffbeb; border-color: #fde68a; color: #d97706; }
+
+    .code-container {
+      background: #09090b; color: #fafafa; border-radius: var(--radius-md); overflow: hidden; margin: 0.75rem 0; border: 1px solid #27272a;
+    }
+    .code-header {
+      background: #18181b; padding: 6px 12px; display: flex; justify-content: space-between; align-items: center;
+      font-size: 11px; font-family: var(--font-mono); color: #a1a1aa; border-bottom: 1px solid #27272a;
+    }
+    .code-body { padding: 12px 14px; font-family: var(--font-mono); font-size: 12px; line-height: 1.6; overflow-x: auto; }
+    
+    .btn-sm {
+      background: #27272a; color: #fff; border: 1px solid #3f3f46; border-radius: 4px;
+      padding: 3px 8px; font-size: 11px; cursor: pointer; font-family: var(--font-sans);
+    }
+    .btn-sm:hover { background: #3f3f46; }
+
+    .step-number {
+      width: 24px; height: 24px; border-radius: 50%; background: #09090b; color: #fff;
+      display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; margin-right: 6px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- SHARED NAVIGATION BAR -->
+  <header class="nav-header">
+    <div class="nav-inner">
+      <a href="index.html" class="brand">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          <path d="M12 8v4"/>
+          <path d="M12 16h.01"/>
+        </svg>
+        Patrol360 Documentation
+      </a>
+      <nav class="nav-links">
+        <a href="index.html" class="nav-link">🖥️ Live Dashboard</a>
+        <a href="analysis.html" class="nav-link">📊 System Analysis</a>
+        <a href="apis.html" class="nav-link">🔌 APIs & Webhooks</a>
+        <a href="database.html" class="nav-link">🗄️ Database (DB)</a>
+        <a href="setup.html" class="nav-link active">🛠️ Setup Guide</a>
+        <a href="milestones.html" class="nav-link">📋 Milestones & QA</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <div style="margin-bottom: 1.5rem;">
+      <span class="badge badge-setup" style="margin-bottom: 6px;">INSTALLATION & HARDWARE MANUAL</span>
+      <h1 style="font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em;">How to Setup This Project (Step-by-Step)</h1>
+      <p style="color: var(--muted-foreground); font-size: 13px;">
+        Complete instructions for vehicle wiring, Jetson Orin Nano OS flashing, software installation, and auto-start daemon configuration.
+      </p>
+    </div>
+
+    <!-- STEP 1 -->
+    <div class="card">
+      <div class="card-title">
+        <span><span class="step-number">1</span> Vehicle Hardware & Power Wiring</span>
+        <span class="badge" style="background: #f4f4f5; color: #52525b; border: 1px solid #e4e4e7;">Hardware Phase</span>
+      </div>
+      <p style="color: #52525b; font-size: 13px; line-height: 1.6;">
+        1. <strong>Power Supply:</strong> Connect vehicle battery (12V/24V) to an automotive isolated DC-DC step-down/regulator (19V 4.74A). Connect an ignition-sense wire to allow graceful Jetson shutdown.<br>
+        2. <strong>PoE Network Switch:</strong> Mount an industrial 4-Port Gigabit 802.3af PoE switch inside the car. Plug in all 4 camera CAT6 cables.<br>
+        3. <strong>Camera Positioning:</strong>
+      </p>
+      <ul style="margin-left: 1.5rem; margin-top: 6px; font-size: 12px; color: #52525b; line-height: 1.6;">
+        <li><strong>CAM 01 (Front):</strong> Roof center / windshield bracket, 15° downward angle, focused on 5m–30m vehicle plate zone.</li>
+        <li><strong>CAM 02 (Rear):</strong> Above rear windshield/trunk, wide 90° for trailing traffic.</li>
+        <li><strong>CAM 03 (Left):</strong> Left roof rack facing 45° left for sidewalk pedestrians and FRS face capture.</li>
+        <li><strong>CAM 04 (Right):</strong> Right roof rack facing 45° right for junction crowd observation.</li>
+      </ul>
+    </div>
+
+    <!-- STEP 2 -->
+    <div class="card">
+      <div class="card-title">
+        <span><span class="step-number">2</span> Jetson Orin Nano Flashing & System Dependencies</span>
+        <span class="badge" style="background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;">Ubuntu 24.04</span>
+      </div>
+      <p style="color: #52525b; font-size: 13px;">
+        Flash the Jetson Orin Nano M.2 NVMe 512GB SSD with Ubuntu 24.04 / 22.04 LTS and run these terminal setup commands:
+      </p>
+      <div class="code-container">
+        <div class="code-header">
+          <span>TERMINAL COMMANDS</span>
+          <button class="btn-sm" onclick="copySnippet(this)">Copy</button>
+        </div>
+        <pre class="code-body"># 1. Update system packages
+sudo apt update && sudo apt upgrade -y
+
+# 2. Install Python, OpenCV, and video streaming tools
+sudo apt install -y build-essential python3-pip python3-dev ffmpeg libopencv-dev \
+  gstreamer1.0-tools gstreamer1.0-plugins-good gstreamer1.0-plugins-bad sqlite3
+
+# 3. Lock Jetson in Max-N High Performance Mode
+sudo nvpmodel -m 0
+sudo jetson_clocks</pre>
+      </div>
+    </div>
+
+    <!-- STEP 3 -->
+    <div class="card">
+      <div class="card-title">
+        <span><span class="step-number">3</span> Install Software Stack & Python Virtual Environment</span>
+        <span class="badge" style="background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0;">Software Phase</span>
+      </div>
+      <div class="code-container">
+        <div class="code-header">
+          <span>INSTALL DEPENDENCIES</span>
+          <button class="btn-sm" onclick="copySnippet(this)">Copy</button>
+        </div>
+        <pre class="code-body"># 1. Create project directories
+mkdir -p /opt/patrol360/{config,models,storage/captures,storage/videos,logs}
+cd /opt/patrol360
+
+# 2. Create python virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# 3. Install PyTorch with CUDA & Server packages
+pip install --upgrade pip
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+pip install fastapi uvicorn httpx opencv-python sqlalchemy aiosqlite pydantic</pre>
+      </div>
+    </div>
+
+    <!-- STEP 4 -->
+    <div class="card">
+      <div class="card-title">
+        <span><span class="step-number">4</span> Configure 4 Camera RTSP Feeds</span>
+        <span class="badge" style="background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;">config/cameras.json</span>
+      </div>
+      <p style="color: #52525b; font-size: 13px;">Save this configuration to <code>/opt/patrol360/config/cameras.json</code>:</p>
+      <div class="code-container">
+        <div class="code-header">
+          <span>CONFIG FILE</span>
+          <button class="btn-sm" onclick="copySnippet(this)">Copy</button>
+        </div>
+        <pre class="code-body">{
+  "cameras": [
+    { "id": "CAM_01", "name": "Front", "rtsp": "rtsp://admin:12345@192.168.1.101:554/stream1", "models": ["ANPR", "WEAPON"] },
+    { "id": "CAM_02", "name": "Rear",  "rtsp": "rtsp://admin:12345@192.168.1.102:554/stream1", "models": ["CLASSIFIER"] },
+    { "id": "CAM_03", "name": "Left",  "rtsp": "rtsp://admin:12345@192.168.1.103:554/stream1", "models": ["FRS"] },
+    { "id": "CAM_04", "name": "Right", "rtsp": "rtsp://admin:12345@192.168.1.104:554/stream1", "models": ["CROWD"] }
+  ],
+  "police_hq_endpoint": "https://iccc.police.gov.in/api/v1/incoming-events"
+}</pre>
+      </div>
+    </div>
+
+    <!-- STEP 5 -->
+    <div class="card">
+      <div class="card-title">
+        <span><span class="step-number">5</span> Auto-Start Service on Vehicle Ignition (Systemd)</span>
+        <span class="badge" style="background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0;">Auto Recovery</span>
+      </div>
+      <p style="color: #52525b; font-size: 13px;">Create <code>/etc/systemd/system/patrol360.service</code>:</p>
+      <div class="code-container">
+        <div class="code-header">
+          <span>SYSTEMD SERVICE FILE</span>
+          <button class="btn-sm" onclick="copySnippet(this)">Copy</button>
+        </div>
+        <pre class="code-body">[Unit]
+Description=Patrol360 Edge AI Daemon
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/patrol360
+ExecStart=/opt/patrol360/venv/bin/python3 main.py --config /opt/patrol360/config/cameras.json
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target</pre>
+      </div>
+      <p style="color: #52525b; font-size: 12px; margin-top: 6px;">
+        Enable with: <code>sudo systemctl daemon-reload && sudo systemctl enable --now patrol360.service</code>
+      </p>
+    </div>
+  </main>
+
+  <script>
+    function copySnippet(btn) {
+      const text = btn.closest('.code-container').querySelector('.code-body').innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = 'Copied!';
+        setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+      });
+    }
+  </script>
+</body>
+</html>

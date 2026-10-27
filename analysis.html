@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Patrol360 | System Architecture & Detailed Analysis</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --background: #f8fafc;
+      --foreground: #09090b;
+      --card: #ffffff;
+      --card-foreground: #09090b;
+      --primary: #09090b;
+      --primary-foreground: #fafafa;
+      --secondary: #f4f4f5;
+      --secondary-foreground: #18181b;
+      --muted: #f4f4f5;
+      --muted-foreground: #71717a;
+      --border: #e4e4e7;
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-full: 9999px;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.07);
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background-color: var(--background); color: var(--foreground); font-family: var(--font-sans); line-height: 1.5; font-size: 13px; padding-bottom: 60px; }
+    
+    /* NAV BAR */
+    header.nav-header {
+      position: sticky; top: 0; z-index: 50; background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(8px); border-bottom: 1px solid var(--border); padding: 0.6rem 1.5rem;
+    }
+    .nav-inner { max-width: 1240px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+    .brand { display: flex; align-items: center; gap: 8px; text-decoration: none; color: inherit; font-weight: 700; font-size: 14px; }
+    .nav-links { display: flex; align-items: center; gap: 6px; }
+    .nav-link {
+      padding: 6px 12px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 500;
+      color: var(--muted-foreground); text-decoration: none; transition: all 0.15s ease;
+    }
+    .nav-link:hover { color: var(--foreground); background: var(--secondary); }
+    .nav-link.active { background: #09090b; color: #fff; font-weight: 600; }
+
+    .container { max-width: 1240px; margin: 1.5rem auto 0; padding: 0 1.5rem; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); padding: 1.5rem; margin-bottom: 1.25rem; }
+    .card-title { font-size: 15px; font-weight: 700; color: #09090b; margin-bottom: 0.5rem; display: flex; align-items: center; justify-content: space-between; }
+    .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.25rem; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+    @media(max-width: 900px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+
+    .badge { display: inline-flex; align-items: center; border-radius: var(--radius-full); padding: 2px 8px; font-size: 11px; font-weight: 600; border: 1px solid transparent; }
+    .badge-info { background: #eff6ff; border-color: #bfdbfe; color: #2563eb; }
+    .badge-success { background: #ecfdf5; border-color: #a7f3d0; color: #059669; }
+    .badge-warning { background: #fffbeb; border-color: #fde68a; color: #d97706; }
+    .badge-danger { background: #fef2f2; border-color: #fecaca; color: #dc2626; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; }
+    th { background: #fafafa; padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--muted-foreground); font-weight: 600; }
+    td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+    tr:last-child td { border-bottom: none; }
+  </style>
+</head>
+<body>
+
+  <!-- SHARED NAVIGATION BAR -->
+  <header class="nav-header">
+    <div class="nav-inner">
+      <a href="index.html" class="brand">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          <path d="M12 8v4"/>
+          <path d="M12 16h.01"/>
+        </svg>
+        Patrol360 Documentation
+      </a>
+      <nav class="nav-links">
+        <a href="index.html" class="nav-link">🖥️ Live Dashboard</a>
+        <a href="analysis.html" class="nav-link active">📊 System Analysis</a>
+        <a href="apis.html" class="nav-link">🔌 APIs & Webhooks</a>
+        <a href="database.html" class="nav-link">🗄️ Database (DB)</a>
+        <a href="setup.html" class="nav-link">🛠️ Setup Guide</a>
+        <a href="milestones.html" class="nav-link">📋 Milestones & QA</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- HERO HEADER -->
+    <div style="margin-bottom: 1.5rem;">
+      <span class="badge badge-info" style="margin-bottom: 6px;">EXECUTIVE SOLUTION ANALYSIS</span>
+      <h1 style="font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em;">Patrol360 Intelligence System Analysis</h1>
+      <p style="color: var(--muted-foreground); font-size: 13px;">
+        Detailed technical breakdown of the 3-Layer Police Vehicle Architecture, AI capabilities, and Scope of Work for the Commissioner of Police (CP Sir) POC evaluation.
+      </p>
+    </div>
+
+    <!-- 3 INTEGRATED LAYERS -->
+    <div class="card">
+      <div class="card-title">
+        <span>The Three Core Architectural Layers</span>
+        <span class="badge badge-success">Fully Integrated</span>
+      </div>
+      <div class="grid-3">
+        <div style="background: #fafafa; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px;">
+          <strong style="color: #1e3a8a; font-size: 13px;">1. Vehicle Level (Edge AI)</strong>
+          <p style="color: #52525b; font-size: 12px; margin-top: 6px; line-height: 1.5;">
+            • <strong>4 IP Cameras:</strong> Mounted Front, Rear, Left, and Right on patrol vehicle.<br>
+            • <strong>NVIDIA Jetson Orin Nano (16GB):</strong> Runs Ubuntu 24.04 and TensorRT engines.<br>
+            • <strong>Industrial Power / UPS:</strong> Connected to car battery with isolated DC-DC regulator.
+          </p>
+        </div>
+        <div style="background: #fafafa; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px;">
+          <strong style="color: #059669; font-size: 13px;">2. Connectivity Level (Rugged 4G/5G)</strong>
+          <p style="color: #52525b; font-size: 12px; margin-top: 6px; line-height: 1.5;">
+            • <strong>Dual-SIM Router:</strong> Low-latency real-time event transmission.<br>
+            • <strong>GPS Telemetry:</strong> Live tracking of vehicle speed, road location, and heading.<br>
+            • <strong>Offline Store-and-Forward:</strong> If signal drops, alerts buffer on local SSD and auto-sync on reconnect.
+          </p>
+        </div>
+        <div style="background: #fafafa; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px;">
+          <strong style="color: #7c3aed; font-size: 13px;">3. Central Level (Police ICCC Platform)</strong>
+          <p style="color: #52525b; font-size: 12px; margin-top: 6px; line-height: 1.5;">
+            • <strong>Unified Command Console:</strong> City-wide map of all active patrol vehicles.<br>
+            • <strong>Tactical Alert Triage:</strong> Real-time alerts with photo footprints and 10s video clips.<br>
+            • <strong>Human-In-The-Loop Validation:</strong> Verification before dispatching PCR backup vans.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- THE 5 AI CAPABILITIES ANALYZED -->
+    <div class="card">
+      <div class="card-title">
+        <span>Deep-Dive: The 5 AI Analytics Capabilities</span>
+        <span class="badge badge-info">Simultaneous Edge Processing</span>
+      </div>
+      <div class="grid-2">
+        <div style="border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px; background: #fafafa;">
+          <strong style="font-size: 13px; color: #1e3a8a;">🚗 1. ANPR / ALPR (Number Plates & Stolen Cars)</strong>
+          <p style="font-size: 12px; color: #52525b; margin-top: 4px; line-height: 1.5;">
+            • <strong>Function:</strong> Reads high-speed number plates from front & rear cameras.<br>
+            • <strong>Classification:</strong> Categorizes Car, Motorcycle, Bus, and Truck.<br>
+            • <strong>Blacklist Matching:</strong> Normalized regex matching against police stolen vehicle registry.<br>
+            • <strong>Payload Sent:</strong> Plate number, OCR confidence, vehicle class, snapshot, video clip, GPS.
+          </p>
+        </div>
+        <div style="border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px; background: #fafafa;">
+          <strong style="font-size: 13px; color: #047857;">👤 2. Facial Recognition System (FRS)</strong>
+          <p style="font-size: 12px; color: #52525b; margin-top: 4px; line-height: 1.5;">
+            • <strong>Function:</strong> Multi-face tracking per frame from sidewalk flank cameras.<br>
+            • <strong>Watchlist Matching:</strong> 512-dimension vector embedding cosine match against criminal & missing persons database.<br>
+            • <strong>Anti-Spoofing:</strong> Liveness detection to reject printed photos or phone screens.<br>
+            • <strong>Review Process:</strong> Operator verification audit before initiating police pursuit.
+          </p>
+        </div>
+        <div style="border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px; background: #fafafa;">
+          <strong style="font-size: 13px; color: #b91c1c;">🔫 3. Weapon Threat Detection</strong>
+          <p style="font-size: 12px; color: #52525b; margin-top: 4px; line-height: 1.5;">
+            • <strong>Function:</strong> Real-time identification of visible firearms (handguns, rifles) and bladed weapons in public spaces.<br>
+            • <strong>Field Alert:</strong> Immediate loud in-car audio chime and flashing screen overlay.<br>
+            • <strong>Command Dispatch:</strong> Top-priority event push to ICCC with bounding box coordinates.
+          </p>
+        </div>
+        <div style="border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px; background: #fafafa;">
+          <strong style="font-size: 13px; color: #b45309;">🔥 4. Fire & Smoke Hazard Detection</strong>
+          <p style="font-size: 12px; color: #52525b; margin-top: 4px; line-height: 1.5;">
+            • <strong>Function:</strong> Detects rising smoke plumes and flame hazards from all 4 cameras.<br>
+            • <strong>Rapid Response:</strong> Automatically alerts the fire department with exact street GPS coordinates.<br>
+            • <strong>Cooldown Logic:</strong> Prevents repeated duplicate alerts for the same continuous incident.
+          </p>
+        </div>
+      </div>
+      <div style="border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px; background: #fafafa; margin-top: 1rem;">
+        <strong style="font-size: 13px; color: #6b21a8;">👥 5. Crowd & Object Analytics</strong>
+        <p style="font-size: 12px; color: #52525b; margin-top: 4px; line-height: 1.5;">
+          • <strong>Head Counting:</strong> Tracks number of individuals moving across junctions and plazas.<br>
+          • <strong>Overcrowding Management:</strong> Triggers warning if pedestrian count exceeds threshold (&gt;40 persons).<br>
+          • <strong>Density Heatmaps:</strong> Generates color-coded density maps for city traffic & crowd controllers.
+        </p>
+      </div>
+    </div>
+
+    <!-- RESPONSIBILITY ALLOCATION TABLE -->
+    <div class="card">
+      <div class="card-title">
+        <span>Team Scope & Responsibilities (Mitulbhai vs Vijaybhai)</span>
+        <span class="badge badge-success">Approved Scope</span>
+      </div>
+      <div style="overflow-x: auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Scope Item</th>
+              <th>Owner</th>
+              <th>Key Deliverables</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>AI Video Analytics Models</strong></td>
+              <td><span class="badge badge-info">Mitulbhai</span></td>
+              <td>TensorRT engines for ANPR, FRS, Weapon, Fire, and Crowd counting</td>
+              <td><span class="badge badge-success">Ready</span></td>
+            </tr>
+            <tr>
+              <td><strong>Live Dashboard & UI</strong></td>
+              <td><span class="badge badge-info">Mitulbhai</span></td>
+              <td>In-vehicle HUD screen & ICCC Command Center Web Console</td>
+              <td><span class="badge badge-success">Ready</span></td>
+            </tr>
+            <tr>
+              <td><strong>API & Cloud Sync Outbox</strong></td>
+              <td><span class="badge badge-info">Mitulbhai</span></td>
+              <td>REST Webhooks with photo snapshots, 10s MP4 clips, and offline retry queue</td>
+              <td><span class="badge badge-success">Ready</span></td>
+            </tr>
+            <tr>
+              <td><strong>NVIDIA Jetson Hardware</strong></td>
+              <td><span class="badge badge-warning">Vijaybhai</span></td>
+              <td>Jetson Orin Nano 16GB, Ubuntu Server, industrial metal case, power supply</td>
+              <td><span class="badge badge-warning">Arriving Wed/Thu</span></td>
+            </tr>
+            <tr>
+              <td><strong>4 IP Cameras & Vehicle Rigging</strong></td>
+              <td><span class="badge badge-warning">Vijaybhai</span></td>
+              <td>Supply & install 4 IP cameras, roof mounting brackets, cabling, vehicle UPS</td>
+              <td><span class="badge badge-warning">In Progress</span></td>
+            </tr>
+            <tr>
+              <td><strong>Live Vehicle Demos</strong></td>
+              <td><span class="badge badge-info">Joint Team</span></td>
+              <td>Field demonstrations in Ahmedabad and Bhubaneswar, Odisha for CP Sir</td>
+              <td><span class="badge badge-warning">Scheduled</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

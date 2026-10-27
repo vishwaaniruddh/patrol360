@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Patrol360 | Database Schema & Data Model</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --background: #f8fafc;
+      --foreground: #09090b;
+      --card: #ffffff;
+      --primary: #09090b;
+      --secondary: #f4f4f5;
+      --muted: #f4f4f5;
+      --muted-foreground: #71717a;
+      --border: #e4e4e7;
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-full: 9999px;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background-color: var(--background); color: var(--foreground); font-family: var(--font-sans); line-height: 1.5; font-size: 13px; padding-bottom: 60px; }
+    
+    header.nav-header {
+      position: sticky; top: 0; z-index: 50; background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(8px); border-bottom: 1px solid var(--border); padding: 0.6rem 1.5rem;
+    }
+    .nav-inner { max-width: 1240px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+    .brand { display: flex; align-items: center; gap: 8px; text-decoration: none; color: inherit; font-weight: 700; font-size: 14px; }
+    .nav-links { display: flex; align-items: center; gap: 6px; }
+    .nav-link {
+      padding: 6px 12px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 500;
+      color: var(--muted-foreground); text-decoration: none; transition: all 0.15s ease;
+    }
+    .nav-link:hover { color: var(--foreground); background: var(--secondary); }
+    .nav-link.active { background: #09090b; color: #fff; font-weight: 600; }
+
+    .container { max-width: 1240px; margin: 1.5rem auto 0; padding: 0 1.5rem; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); padding: 1.25rem 1.5rem; margin-bottom: 1.25rem; }
+    .card-title { font-size: 15px; font-weight: 700; color: #09090b; margin-bottom: 0.5rem; display: flex; align-items: center; justify-content: space-between; }
+    
+    .badge { display: inline-flex; align-items: center; border-radius: var(--radius-full); padding: 2px 8px; font-size: 11px; font-weight: 600; border: 1px solid transparent; }
+    .badge-db { background: #ecfdf5; border-color: #a7f3d0; color: #047857; }
+
+    .code-container {
+      background: #09090b; color: #fafafa; border-radius: var(--radius-md); overflow: hidden; margin: 0.75rem 0; border: 1px solid #27272a;
+    }
+    .code-header {
+      background: #18181b; padding: 6px 12px; display: flex; justify-content: space-between; align-items: center;
+      font-size: 11px; font-family: var(--font-mono); color: #a1a1aa; border-bottom: 1px solid #27272a;
+    }
+    .code-body { padding: 12px 14px; font-family: var(--font-mono); font-size: 12px; line-height: 1.6; overflow-x: auto; }
+    
+    .btn-sm {
+      background: #27272a; color: #fff; border: 1px solid #3f3f46; border-radius: 4px;
+      padding: 3px 8px; font-size: 11px; cursor: pointer; font-family: var(--font-sans);
+    }
+    .btn-sm:hover { background: #3f3f46; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+    @media(max-width: 900px) { .grid-3 { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+
+  <!-- SHARED NAVIGATION BAR -->
+  <header class="nav-header">
+    <div class="nav-inner">
+      <a href="index.html" class="brand">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          <path d="M12 8v4"/>
+          <path d="M12 16h.01"/>
+        </svg>
+        Patrol360 Documentation
+      </a>
+      <nav class="nav-links">
+        <a href="index.html" class="nav-link">🖥️ Live Dashboard</a>
+        <a href="analysis.html" class="nav-link">📊 System Analysis</a>
+        <a href="apis.html" class="nav-link">🔌 APIs & Webhooks</a>
+        <a href="database.html" class="nav-link active">🗄️ Database (DB)</a>
+        <a href="setup.html" class="nav-link">🛠️ Setup Guide</a>
+        <a href="milestones.html" class="nav-link">📋 Milestones & QA</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <div style="margin-bottom: 1.5rem;">
+      <span class="badge badge-db" style="margin-bottom: 6px;">POSTGRESQL & SQLITE DDL</span>
+      <h1 style="font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em;">Patrol360 Database Architecture</h1>
+      <p style="color: var(--muted-foreground); font-size: 13px;">
+        Complete relational data model for Police Vehicles, Camera Mapping, ANPR, Weapons, Fire, Crowd, and Offline Queue.
+      </p>
+    </div>
+
+    <!-- ENTITY SUMMARY CARDS -->
+    <div class="grid-3" style="margin-bottom: 1rem;">
+      <div class="card" style="padding: 12px; margin-bottom: 0;">
+        <strong style="color: #1e3a8a;">🚓 1. Police Fleet & Hardware</strong>
+        <p style="font-size: 12px; color: var(--muted-foreground); margin-top: 2px;">
+          <code>police_vehicles</code>, <code>vehicle_cameras</code>, and <code>vehicle_telemetry</code>.
+        </p>
+      </div>
+      <div class="card" style="padding: 12px; margin-bottom: 0;">
+        <strong style="color: #047857;">🚗 2. ANPR & Stolen Vehicles</strong>
+        <p style="font-size: 12px; color: var(--muted-foreground); margin-top: 2px;">
+          <code>stolen_vehicles_watchlist</code> and <code>anpr_detection_events</code>.
+        </p>
+      </div>
+      <div class="card" style="padding: 12px; margin-bottom: 0;">
+        <strong style="color: #b91c1c;">🔫 3. Weapons & Threats</strong>
+        <p style="font-size: 12px; color: var(--muted-foreground); margin-top: 2px;">
+          <code>weapon_threat_detections</code> with bounding boxes & threat levels.
+        </p>
+      </div>
+      <div class="card" style="padding: 12px; margin-bottom: 0;">
+        <strong style="color: #b45309;">🔥 4. Fire & Smoke Hazards</strong>
+        <p style="font-size: 12px; color: var(--muted-foreground); margin-top: 2px;">
+          <code>fire_smoke_detections</code> with plume density & GPS coords.
+        </p>
+      </div>
+      <div class="card" style="padding: 12px; margin-bottom: 0;">
+        <strong style="color: #6b21a8;">👥 5. Crowd & Overcrowding</strong>
+        <p style="font-size: 12px; color: var(--muted-foreground); margin-top: 2px;">
+          <code>crowd_analytics_events</code> with counts, threshold alerts & heatmaps.
+        </p>
+      </div>
+      <div class="card" style="padding: 12px; margin-bottom: 0;">
+        <strong style="color: #0f172a;">⚡ 6. Offline Queue (Sync)</strong>
+        <p style="font-size: 12px; color: var(--muted-foreground); margin-top: 2px;">
+          <code>central_api_dispatch_queue</code> for guaranteed delivery if 4G drops.
+        </p>
+      </div>
+    </div>
+
+    <!-- FULL SQL SCRIPT -->
+    <div class="card">
+      <div class="card-title">
+        <span>Complete Production SQL Schema (Ready to Execute)</span>
+        <a href="schema.sql" download class="btn-sm" style="text-decoration: none;">Download schema.sql</a>
+      </div>
+      <div class="code-container">
+        <div class="code-header">
+          <span>SQL SCRIPT (DDL)</span>
+          <button class="btn-sm" onclick="copySnippet(this)">Copy SQL</button>
+        </div>
+        <pre class="code-body">-- ========================================================
+-- PATROL360 DATABASE SCHEMA (PostgreSQL / SQLite)
+-- ========================================================
+
+-- 1. POLICE PATROL VEHICLES REGISTRY
+CREATE TABLE IF NOT EXISTS police_vehicles (
+    vehicle_id VARCHAR(32) PRIMARY KEY, -- e.g. 'PATROL_VAN_01'
+    registration_number VARCHAR(20) NOT NULL, -- e.g. 'GJ-01-G-9999'
+    vehicle_model VARCHAR(64) DEFAULT 'Mahindra Scorpio',
+    police_station VARCHAR(64) NOT NULL, -- e.g. 'Navrangpura Police Station'
+    assigned_driver_officer VARCHAR(64),
+    jetson_device_serial VARCHAR(64),
+    sim_card_phone VARCHAR(20),
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 2. LIVE VEHICLE GPS TELEMETRY (BREADCRUMBS)
+CREATE TABLE IF NOT EXISTS vehicle_telemetry (
+    telemetry_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    vehicle_id VARCHAR(32) REFERENCES police_vehicles(vehicle_id),
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    latitude NUMERIC(10, 6) NOT NULL,
+    longitude NUMERIC(10, 6) NOT NULL,
+    speed_kmph NUMERIC(5, 2) DEFAULT 0.0,
+    heading_degrees INTEGER DEFAULT 0,
+    battery_voltage NUMERIC(4, 2), -- 12.8V
+    jetson_temperature_c NUMERIC(4, 1), -- 46.5 C
+    network_signal_dbm INTEGER, -- -68 dBm
+    is_engine_running BOOLEAN DEFAULT TRUE
+);
+CREATE INDEX idx_telemetry_veh_time ON vehicle_telemetry(vehicle_id, timestamp DESC);
+
+-- 3. VEHICLE MOUNTED CAMERAS (4 CAMERAS PER PATROL VAN)
+CREATE TABLE IF NOT EXISTS vehicle_cameras (
+    camera_id VARCHAR(32) PRIMARY KEY, -- 'CAM_01_FRONT', 'CAM_02_REAR', etc.
+    vehicle_id VARCHAR(32) REFERENCES police_vehicles(vehicle_id),
+    mount_position VARCHAR(16) NOT NULL, -- 'FRONT', 'REAR', 'LEFT', 'RIGHT'
+    rtsp_url TEXT NOT NULL,
+    resolution VARCHAR(16) DEFAULT '1920x1080',
+    fps INTEGER DEFAULT 25,
+    is_streaming BOOLEAN DEFAULT TRUE
+);
+
+-- 4. STOLEN / BLACKLISTED VEHICLES DATABASE
+CREATE TABLE IF NOT EXISTS stolen_vehicles_watchlist (
+    plate_number VARCHAR(20) PRIMARY KEY, -- e.g. 'GJ01AB1234'
+    vehicle_type VARCHAR(32), -- 'CAR', 'MOTORCYCLE', 'BUS', 'TRUCK'
+    fir_number VARCHAR(64) NOT NULL,
+    police_station VARCHAR(64),
+    theft_date DATE,
+    owner_name VARCHAR(128),
+    alert_level VARCHAR(16) DEFAULT 'CRITICAL',
+    is_active BOOLEAN DEFAULT TRUE
+);
+CREATE INDEX idx_stolen_plate ON stolen_vehicles_watchlist(plate_number);
+
+-- 5. ANPR DETECTION EVENTS LOG
+CREATE TABLE IF NOT EXISTS anpr_detection_events (
+    event_id VARCHAR(64) PRIMARY KEY,
+    vehicle_id VARCHAR(32) REFERENCES police_vehicles(vehicle_id),
+    camera_id VARCHAR(32) REFERENCES vehicle_cameras(camera_id),
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    detected_plate_number VARCHAR(20) NOT NULL,
+    vehicle_classification VARCHAR(32),
+    ocr_confidence NUMERIC(5, 2) NOT NULL,
+    is_stolen_match BOOLEAN DEFAULT FALSE,
+    latitude NUMERIC(10, 6),
+    longitude NUMERIC(10, 6),
+    plate_crop_image_url TEXT,
+    scene_snapshot_url TEXT,
+    video_clip_url TEXT,
+    hq_sync_status VARCHAR(16) DEFAULT 'DELIVERED'
+);
+CREATE INDEX idx_anpr_plate_time ON anpr_detection_events(detected_plate_number, timestamp DESC);
+
+-- 6. WEAPON THREAT DETECTIONS LOG
+CREATE TABLE IF NOT EXISTS weapon_threat_detections (
+    threat_id VARCHAR(64) PRIMARY KEY,
+    vehicle_id VARCHAR(32) REFERENCES police_vehicles(vehicle_id),
+    camera_id VARCHAR(32) REFERENCES vehicle_cameras(camera_id),
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    weapon_class VARCHAR(32) NOT NULL, -- 'HANDGUN', 'RIFLE', 'KNIFE'
+    confidence NUMERIC(5, 2) NOT NULL,
+    bounding_box_json TEXT,
+    severity_level VARCHAR(16) DEFAULT 'CRITICAL_RED',
+    latitude NUMERIC(10, 6),
+    longitude NUMERIC(10, 6),
+    snapshot_url TEXT,
+    video_clip_url TEXT,
+    operator_ack_by VARCHAR(64),
+    hq_sync_status VARCHAR(16) DEFAULT 'DELIVERED'
+);
+
+-- 7. FIRE & SMOKE HAZARD DETECTIONS LOG
+CREATE TABLE IF NOT EXISTS fire_smoke_detections (
+    hazard_id VARCHAR(64) PRIMARY KEY,
+    vehicle_id VARCHAR(32) REFERENCES police_vehicles(vehicle_id),
+    camera_id VARCHAR(32) REFERENCES vehicle_cameras(camera_id),
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    hazard_type VARCHAR(32) NOT NULL, -- 'SMOKE_PLUME', 'ACTIVE_FLAME'
+    confidence NUMERIC(5, 2) NOT NULL,
+    smoke_density_level VARCHAR(16),
+    latitude NUMERIC(10, 6),
+    longitude NUMERIC(10, 6),
+    snapshot_url TEXT,
+    video_clip_url TEXT,
+    fire_brigade_notified BOOLEAN DEFAULT FALSE,
+    hq_sync_status VARCHAR(16) DEFAULT 'DELIVERED'
+);
+
+-- 8. CROWD & OBJECT ANALYTICS LOG
+CREATE TABLE IF NOT EXISTS crowd_analytics_events (
+    crowd_event_id VARCHAR(64) PRIMARY KEY,
+    vehicle_id VARCHAR(32) REFERENCES police_vehicles(vehicle_id),
+    camera_id VARCHAR(32) REFERENCES vehicle_cameras(camera_id),
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    head_count INTEGER NOT NULL,
+    density_category VARCHAR(16),
+    threshold_limit INTEGER DEFAULT 40,
+    is_threshold_exceeded BOOLEAN DEFAULT FALSE,
+    heatmap_image_url TEXT,
+    latitude NUMERIC(10, 6),
+    longitude NUMERIC(10, 6),
+    hq_sync_status VARCHAR(16) DEFAULT 'DELIVERED'
+);
+
+-- 9. STORE-AND-FORWARD OFFLINE OUTBOX QUEUE
+CREATE TABLE IF NOT EXISTS central_api_dispatch_queue (
+    queue_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    event_id VARCHAR(64) UNIQUE NOT NULL,
+    event_type VARCHAR(32) NOT NULL, -- 'ANPR', 'FRS', 'WEAPON', 'FIRE', 'CROWD'
+    destination_url VARCHAR(255) NOT NULL,
+    payload_json TEXT NOT NULL,
+    retry_count INTEGER DEFAULT 0,
+    last_retry_at TIMESTAMP,
+    delivery_status VARCHAR(16) DEFAULT 'QUEUED'
+);
+CREATE INDEX idx_queue_status ON central_api_dispatch_queue(delivery_status, retry_count);</pre>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    function copySnippet(btn) {
+      const text = btn.closest('.code-container').querySelector('.code-body').innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = 'Copied!';
+        setTimeout(() => { btn.textContent = 'Copy SQL'; }, 2000);
+      });
+    }
+  </script>
+</body>
+</html>

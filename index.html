@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Patrol360 | Live Police In-Vehicle Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* ShadCN Light Theme Design Tokens */
+    :root {
+      --background: #f8fafc;
+      --foreground: #09090b;
+      --card: #ffffff;
+      --card-foreground: #09090b;
+      --primary: #09090b;
+      --primary-foreground: #fafafa;
+      --secondary: #f4f4f5;
+      --secondary-foreground: #18181b;
+      --muted: #f4f4f5;
+      --muted-foreground: #71717a;
+      --border: #e4e4e7;
+      --input: #e4e4e7;
+      
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-full: 9999px;
+      
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.07);
+      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.08);
+
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--background);
+      color: var(--foreground);
+      font-family: var(--font-sans);
+      font-size: 13px;
+      line-height: 1.4;
+      -webkit-font-smoothing: antialiased;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* TOP POLICE PATROL HEADER */
+    header.dashboard-header {
+      background: #ffffff;
+      border-bottom: 1px solid var(--border);
+      padding: 0.6rem 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      flex-shrink: 0;
+      z-index: 30;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .brand-badge {
+      width: 34px;
+      height: 34px;
+      background: #09090b;
+      color: #fff;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .brand-title h1 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: #09090b;
+    }
+
+    .brand-title p {
+      font-size: 0.75rem;
+      color: var(--muted-foreground);
+    }
+
+    .telemetry-pills {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 9px;
+      border-radius: var(--radius-full);
+      font-size: 11px;
+      font-weight: 500;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--foreground);
+    }
+
+    .pill-live {
+      background: #ecfdf5;
+      border-color: #a7f3d0;
+      color: #047857;
+      font-weight: 600;
+    }
+    .pill-live::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 6px #10b981;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.3); }
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: var(--radius-full);
+      padding: 2px 7px;
+      font-size: 11px;
+      font-weight: 600;
+      border: 1px solid transparent;
+      line-height: 1;
+    }
+
+    .badge-danger { background: #fef2f2; border-color: #fecaca; color: #dc2626; }
+    .badge-warning { background: #fffbeb; border-color: #fde68a; color: #d97706; }
+    .badge-success { background: #ecfdf5; border-color: #a7f3d0; color: #059669; }
+    .badge-info { background: #eff6ff; border-color: #bfdbfe; color: #2563eb; }
+    .badge-secondary { background: #f4f4f5; border-color: #e4e4e7; color: #52525b; }
+
+    /* ACTION BUTTONS */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 500;
+      height: 32px;
+      padding: 0 12px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      border: 1px solid transparent;
+      gap: 5px;
+      font-family: var(--font-sans);
+    }
+
+    .btn-primary { background: #09090b; color: #ffffff; }
+    .btn-primary:hover { background: #27272a; }
+
+    .btn-outline { background: #ffffff; border-color: var(--border); color: var(--foreground); }
+    .btn-outline:hover { background: var(--secondary); }
+
+    .btn-secondary { background: var(--secondary); color: var(--secondary-foreground); border-color: var(--border); }
+    .btn-secondary:hover { background: #e4e4e7; }
+
+    .btn-danger { background: #ef4444; color: #fff; }
+    .btn-danger:hover { background: #dc2626; }
+
+    .btn-sm { height: 26px; padding: 0 8px; font-size: 11px; }
+
+    /* DEMO SIMULATION BAR */
+    .sim-bar {
+      background: #fafafa;
+      border-bottom: 1px solid var(--border);
+      padding: 0.4rem 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      flex-shrink: 0;
+    }
+
+    .sim-triggers {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    /* MAIN DASHBOARD LAYOUT */
+    .dashboard-layout {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      height: calc(100vh - 95px);
+      overflow: hidden;
+    }
+
+    @media (max-width: 1100px) {
+      .dashboard-layout {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr;
+        overflow-y: auto;
+      }
+    }
+
+    /* LEFT: VIDEO MATRIX & TELEMETRY */
+    .video-viewport-panel {
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--border);
+      background: #f1f5f9;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .view-toolbar {
+      padding: 0.5rem 1rem;
+      background: #ffffff;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .view-segmented {
+      display: inline-flex;
+      background: var(--muted);
+      padding: 3px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      gap: 3px;
+    }
+
+    .view-tab {
+      padding: 3px 9px;
+      font-size: 11px;
+      font-weight: 500;
+      border-radius: 4px;
+      border: none;
+      background: transparent;
+      color: var(--muted-foreground);
+      cursor: pointer;
+    }
+    .view-tab.active {
+      background: #ffffff;
+      color: #09090b;
+      box-shadow: var(--shadow-sm);
+      font-weight: 600;
+    }
+
+    .camera-matrix {
+      flex: 1;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      grid-template-rows: repeat(2, 1fr);
+      gap: 6px;
+      padding: 6px;
+      overflow: hidden;
+      background: #0f172a;
+    }
+
+    /* FOCUS VIEW MODES */
+    .camera-matrix.focus-cam1 { grid-template-columns: 1fr; grid-template-rows: 1fr; }
+    .camera-matrix.focus-cam1 .camera-tile:not(#tile-cam1) { display: none; }
+
+    .camera-matrix.focus-cam3 { grid-template-columns: 1fr; grid-template-rows: 1fr; }
+    .camera-matrix.focus-cam3 .camera-tile:not(#tile-cam3) { display: none; }
+
+    .camera-tile {
+      background: #020617;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 6px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .cam-header-overlay {
+      position: absolute;
+      top: 6px;
+      left: 8px;
+      right: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      color: #f8fafc;
+      background: rgba(0, 0, 0, 0.65);
+      padding: 3px 8px;
+      border-radius: 4px;
+      backdrop-filter: blur(4px);
+      z-index: 10;
+    }
+
+    .cam-footer-overlay {
+      position: absolute;
+      bottom: 6px;
+      left: 8px;
+      right: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 10px;
+      font-family: var(--font-mono);
+      color: #94a3b8;
+      background: rgba(0, 0, 0, 0.65);
+      padding: 2px 8px;
+      border-radius: 4px;
+      z-index: 10;
+    }
+
+    /* AI BOUNDING BOXES OVERLAYS */
+    .ai-box {
+      position: absolute;
+      border: 2px solid;
+      background: rgba(255, 255, 255, 0.05);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 5px;
+      border-radius: 2px;
+      pointer-events: none;
+    }
+
+    .ai-box-anpr {
+      top: 42%; left: 34%; width: 32%; height: 32%;
+      border-color: #38bdf8;
+      color: #38bdf8;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+      animation: pulseBox 2s infinite alternate;
+    }
+
+    .ai-box-frs {
+      top: 24%; left: 38%; width: 24%; height: 42%;
+      border-color: #22c55e;
+      color: #22c55e;
+      box-shadow: 0 0 10px rgba(34, 197, 94, 0.4);
+      animation: pulseBox 2s infinite alternate;
+    }
+
+    .ai-box-threat {
+      top: 28%; left: 30%; width: 40%; height: 45%;
+      border-color: #ef4444;
+      color: #ef4444;
+      background: rgba(239, 68, 68, 0.1);
+      box-shadow: 0 0 15px rgba(239, 68, 68, 0.6);
+      display: none;
+    }
+
+    .ai-box-crowd {
+      top: 18%; left: 20%; width: 60%; height: 65%;
+      border-color: #f59e0b;
+      color: #f59e0b;
+      background: rgba(245, 158, 11, 0.1);
+    }
+
+    @keyframes pulseBox {
+      0% { opacity: 0.8; }
+      100% { opacity: 1; transform: scale(1.01); }
+    }
+
+    /* TELEMETRY STRIP */
+    .telemetry-strip {
+      background: #ffffff;
+      border-top: 1px solid var(--border);
+      padding: 0.4rem 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: var(--muted-foreground);
+      flex-shrink: 0;
+    }
+
+    .telemetry-group {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    /* RIGHT: ALERTS FEED PANEL */
+    .alerts-panel {
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .alerts-panel-header {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      flex-shrink: 0;
+    }
+
+    .alerts-search-input {
+      width: 100%;
+      height: 32px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      padding: 0 10px;
+      font-size: 12px;
+      outline: none;
+      font-family: var(--font-sans);
+    }
+    .alerts-search-input:focus {
+      border-color: #09090b;
+    }
+
+    .alert-filter-chips {
+      display: flex;
+      gap: 4px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+    }
+
+    .filter-chip {
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+      font-size: 11px;
+      border: 1px solid var(--border);
+      background: var(--secondary);
+      color: var(--muted-foreground);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .filter-chip.active {
+      background: #09090b;
+      color: #fff;
+      border-color: #09090b;
+    }
+
+    .alerts-scroll-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+    }
+
+    /* ALERT CARDS */
+    .alert-card {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 0.75rem;
+      box-shadow: var(--shadow-sm);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      position: relative;
+    }
+    .alert-card:hover {
+      border-color: #a1a1aa;
+      box-shadow: var(--shadow-md);
+    }
+
+    .alert-card.critical {
+      border-left: 4px solid #ef4444;
+      background: #fffafa;
+    }
+    .alert-card.warning {
+      border-left: 4px solid #f59e0b;
+      background: #fffdfa;
+    }
+    .alert-card.crowd {
+      border-left: 4px solid #8b5cf6;
+      background: #fafafa;
+    }
+
+    .alert-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .alert-card-title {
+      font-weight: 600;
+      font-size: 12px;
+      color: #09090b;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .alert-card-body {
+      font-size: 11px;
+      color: #52525b;
+      line-height: 1.4;
+    }
+
+    .alert-card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 10px;
+      color: var(--muted-foreground);
+      margin-top: 4px;
+      padding-top: 4px;
+      border-top: 1px dashed var(--border);
+    }
+
+    /* DRAWER SHEET FOR DOCS & TECH SPECS */
+    .slide-drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 600px;
+      max-width: 90vw;
+      background: #ffffff;
+      border-left: 1px solid var(--border);
+      box-shadow: var(--shadow-lg);
+      z-index: 100;
+      transform: translateX(100%);
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .slide-drawer.open {
+      transform: translateX(0);
+    }
+
+    .drawer-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(2px);
+      z-index: 99;
+      display: none;
+    }
+    .drawer-overlay.open {
+      display: block;
+    }
+
+    .drawer-header {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .drawer-body {
+      flex: 1;
+      padding: 1.25rem;
+      overflow-y: auto;
+      font-size: 13px;
+    }
+
+    /* DIALOG MODAL */
+    dialog#eventModal {
+      margin: auto;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 0;
+      color: var(--foreground);
+      box-shadow: var(--shadow-lg);
+      max-width: 580px;
+      width: 90%;
+    }
+
+    dialog#eventModal::backdrop {
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(4px);
+    }
+
+    .modal-head {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-body {
+      padding: 1.25rem;
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+
+    .modal-foot {
+      padding: 0.75rem 1.25rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+      background: #fafafa;
+    }
+
+    /* TOAST ALERT */
+    #liveToast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-lg);
+      padding: 10px 14px;
+      border-radius: var(--radius-md);
+      display: none;
+      align-items: center;
+      gap: 10px;
+      z-index: 1000;
+      animation: slideIn 0.2s ease-out;
+    }
+
+    @keyframes slideIn {
+      from { transform: translateY(10px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .text-mono { font-family: var(--font-mono); font-size: 11px; }
+  </style>
+</head>
+<body>
+
+  <!-- TOP POLICE PATROL HEADER -->
+  <header class="dashboard-header">
+    <div class="brand-group">
+      <div class="brand-badge">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          <path d="M12 8v4"/>
+          <path d="M12 16h.01"/>
+        </svg>
+      </div>
+      <div class="brand-title">
+        <h1>Patrol360 <span class="badge badge-secondary">VAN-01 • AHMEDABAD</span></h1>
+        <p>Driver: Insp. R. Sharma • 4 Cameras Online</p>
+      </div>
+    </div>
+
+    <div class="telemetry-pills">
+      <span class="pill pill-live">● ICCC PUSH ACTIVE</span>
+      <span class="pill">📍 SG Highway (23.0225° N, 72.5714° E)</span>
+      <span class="pill text-mono">⚡ 41 KM/H</span>
+      <span class="pill">📶 5G (-68 dBm)</span>
+      <a href="analysis.html" class="btn btn-outline btn-sm" style="text-decoration: none;">📊 Analysis</a>
+      <a href="apis.html" class="btn btn-outline btn-sm" style="text-decoration: none;">🔌 APIs</a>
+      <a href="database.html" class="btn btn-outline btn-sm" style="text-decoration: none;">🗄️ Database</a>
+      <a href="setup.html" class="btn btn-outline btn-sm" style="text-decoration: none;">🛠️ Setup</a>
+      <a href="milestones.html" class="btn btn-outline btn-sm" style="text-decoration: none;">📋 Milestones</a>
+      <button class="btn btn-secondary btn-sm" onclick="openTechDrawer()">
+        ⚙️ Specs Drawer
+      </button>
+    </div>
+  </header>
+
+  <!-- QUICK DEMO SIMULATION BAR (For CP Sir Demonstration) -->
+  <div class="sim-bar">
+    <div style="font-size: 11px; font-weight: 600; color: var(--muted-foreground); display: flex; align-items: center; gap: 4px;">
+      <span>🚨 DEMO TRIGGER:</span>
+    </div>
+    <div class="sim-triggers">
+      <button class="btn btn-secondary btn-sm" onclick="triggerSimAlert('ANPR')">
+        🚗 Stolen Car (GJ01AB1234)
+      </button>
+      <button class="btn btn-secondary btn-sm" onclick="triggerSimAlert('FRS')">
+        👤 Wanted Suspect (Vikram S.)
+      </button>
+      <button class="btn btn-secondary btn-sm" onclick="triggerSimAlert('WEAPON')">
+        🔫 Weapon Detected
+      </button>
+      <button class="btn btn-secondary btn-sm" onclick="triggerSimAlert('FIRE')">
+        🔥 Fire/Smoke Hazard
+      </button>
+      <button class="btn btn-secondary btn-sm" onclick="triggerSimAlert('CROWD')">
+        👥 Overcrowd (>45 P)
+      </button>
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <label style="font-size: 11px; color: var(--muted-foreground); display: flex; align-items: center; gap: 4px; cursor: pointer;">
+        <input type="checkbox" id="audioToggle" checked> Alert Sound
+      </label>
+    </div>
+  </div>
+
+  <!-- MAIN DASHBOARD SPLIT VIEW -->
+  <main class="dashboard-layout">
+
+    <!-- LEFT: 4-CAMERA LIVE VIDEO MATRIX -->
+    <section class="video-viewport-panel">
+      <!-- VIEW MODE SWITCHER -->
+      <div class="view-toolbar">
+        <div class="view-segmented">
+          <button class="view-tab active" onclick="setCamLayout('quad')">Quad 2x2</button>
+          <button class="view-tab" onclick="setCamLayout('cam1')">Front (Plates/Road)</button>
+          <button class="view-tab" onclick="setCamLayout('cam3')">Left (Sidewalk/Face)</button>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 11px;">
+          <span style="color: #ef4444; font-weight: 600;">● REC [00:48:12]</span>
+          <span class="badge badge-outline">NVIDIA Jetson 25 FPS</span>
+        </div>
+      </div>
+
+      <!-- CAMERA GRID TILES -->
+      <div class="camera-matrix" id="cameraMatrix">
+
+        <!-- CAM 1: FRONT -->
+        <div class="camera-tile" id="tile-cam1">
+          <div class="cam-header-overlay">
+            <span style="font-weight: 600; color: #38bdf8;">CAM 01: FRONT PATROL</span>
+            <span>1080p @ 25 FPS</span>
+          </div>
+
+          <!-- ANIMATED SVG ROAD CANVAS -->
+          <svg width="100%" height="100%" viewBox="0 0 480 270" style="background: #090e1a;">
+            <rect width="480" height="270" fill="#0b1120"/>
+            <polygon points="190,120 290,120 460,270 20,270" fill="#1e293b"/>
+            <line x1="240" y1="120" x2="240" y2="270" stroke="#f8fafc" stroke-dasharray="12,12" stroke-width="2" opacity="0.8"/>
+            <!-- Target Vehicle Ahead -->
+            <rect x="180" y="140" width="120" height="65" rx="6" fill="#334155" stroke="#38bdf8" stroke-width="1.5"/>
+            <rect x="205" y="180" width="70" height="18" rx="2" fill="#000" stroke="#facc15" stroke-width="1"/>
+            <text x="240" y="193" fill="#facc15" font-size="10" font-family="monospace" text-anchor="middle" font-weight="bold">GJ 01 AB 1234</text>
+          </svg>
+
+          <!-- BOUNDING BOX FOR ANPR -->
+          <div class="ai-box ai-box-anpr" id="boxAnpr">
+            PLATE: GJ01AB1234 [STOLEN 96.8%]
+          </div>
+          <!-- WEAPON WARNING BOX (HIDDEN BY DEFAULT, SHOWN ON TRIGGER) -->
+          <div class="ai-box ai-box-threat" id="boxWeapon">
+            🔫 FIREARM DETECTED [94.5%]
+          </div>
+
+          <div class="cam-footer-overlay">
+            <span>AI: ANPR OCR + WEAPON DETECTOR</span>
+            <span style="color: #22c55e;">● RTSP OK (4.2 Mbps)</span>
+          </div>
+        </div>
+
+        <!-- CAM 2: REAR -->
+        <div class="camera-tile" id="tile-cam2">
+          <div class="cam-header-overlay">
+            <span style="font-weight: 600; color: #10b981;">CAM 02: REAR COVERAGE</span>
+            <span>1080p @ 25 FPS</span>
+          </div>
+
+          <svg width="100%" height="100%" viewBox="0 0 480 270" style="background: #090e1a;">
+            <rect width="480" height="270" fill="#0b1120"/>
+            <polygon points="200,110 280,110 440,270 40,270" fill="#1e293b"/>
+            <circle cx="240" cy="165" r="28" fill="#334155" stroke="#10b981" stroke-width="1.5"/>
+            <text x="240" y="210" fill="#94a3b8" font-size="9" font-family="monospace" text-anchor="middle">TRAILING VEHICLE (SUV)</text>
+          </svg>
+
+          <div class="cam-footer-overlay">
+            <span>AI: VEHICLE CLASSIFIER (CAR/BIKE/TRUCK)</span>
+            <span style="color: #22c55e;">● RTSP OK (3.8 Mbps)</span>
+          </div>
+        </div>
+
+        <!-- CAM 3: LEFT SIDEWALK (FACE RECOGNITION) -->
+        <div class="camera-tile" id="tile-cam3">
+          <div class="cam-header-overlay">
+            <span style="font-weight: 600; color: #22c55e;">CAM 03: LEFT FLANK (SIDEWALK)</span>
+            <span>1080p @ 25 FPS</span>
+          </div>
+
+          <svg width="100%" height="100%" viewBox="0 0 480 270" style="background: #090e1a;">
+            <rect width="480" height="270" fill="#0b1120"/>
+            <rect x="60" y="90" width="36" height="85" fill="#1e293b" rx="4"/>
+            <circle cx="78" cy="78" r="14" fill="#334155"/>
+            <!-- Target Face -->
+            <rect x="180" y="80" width="40" height="95" fill="#334155" rx="4"/>
+            <circle cx="200" cy="68" r="16" fill="#475569" stroke="#22c55e" stroke-width="1.5"/>
+            <text x="200" y="195" fill="#94a3b8" font-size="9" font-family="monospace" text-anchor="middle">PEDESTRIAN FLOW</text>
+          </svg>
+
+          <!-- BOUNDING BOX FOR FRS -->
+          <div class="ai-box ai-box-frs" id="boxFrs">
+            FACE: VIKRAM S. [94.2% WANTED]
+          </div>
+
+          <div class="cam-footer-overlay">
+            <span>AI: FRS WATCHLIST + 1:1 MATCH + LIVENESS</span>
+            <span style="color: #22c55e;">● RTSP OK (4.0 Mbps)</span>
+          </div>
+        </div>
+
+        <!-- CAM 4: RIGHT FLANK (CROWDS) -->
+        <div class="camera-tile" id="tile-cam4">
+          <div class="cam-header-overlay">
+            <span style="font-weight: 600; color: #f59e0b;">CAM 04: RIGHT FLANK (JUNCTION)</span>
+            <span>1080p @ 25 FPS</span>
+          </div>
+
+          <svg width="100%" height="100%" viewBox="0 0 480 270" style="background: #090e1a;">
+            <rect width="480" height="270" fill="#0b1120"/>
+            <rect x="220" y="70" width="180" height="120" rx="8" fill="#1e293b" opacity="0.6"/>
+            <circle cx="260" cy="110" r="12" fill="#f59e0b" opacity="0.5"/>
+            <circle cx="300" cy="125" r="14" fill="#f59e0b" opacity="0.6"/>
+            <circle cx="340" cy="105" r="10" fill="#f59e0b" opacity="0.5"/>
+            <circle cx="320" cy="140" r="12" fill="#f59e0b" opacity="0.5"/>
+            <text x="310" y="165" fill="#f59e0b" font-size="11" font-family="monospace" text-anchor="middle">COUNT: 48 PERSONS</text>
+          </svg>
+
+          <div class="ai-box ai-box-crowd">
+            ZONE: OVERCROWD THRESHOLD (>40 P)
+          </div>
+
+          <div class="cam-footer-overlay">
+            <span>AI: CROWD DENSITY HEATMAP & OVERCROWD</span>
+            <span style="color: #22c55e;">● RTSP OK (3.9 Mbps)</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- BOTTOM TELEMETRY STRIP -->
+      <div class="telemetry-strip">
+        <div class="telemetry-group">
+          <span>GPU: <strong>64%</strong> (TensorRT)</span>
+          <span>Temp: <strong>46°C</strong></span>
+          <span>Memory: <strong>8.2 / 16 GB</strong></span>
+          <span>Battery: <strong>13.4V (UPS OK)</strong></span>
+        </div>
+        <div class="telemetry-group">
+          <span>SSD: <strong>382 GB Free</strong></span>
+          <span>Offline Outbox: <strong>0 Pending (Synced)</strong></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT: LIVE TACTICAL ALERTS FEED -->
+    <aside class="alerts-panel">
+      <div class="alerts-panel-header">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h2 style="font-size: 13px; font-weight: 700; color: #09090b; display: flex; align-items: center; gap: 5px;">
+            <span>🚨 Tactical Alerts Stream</span>
+            <span class="badge badge-danger" id="alertCountBadge">4 New</span>
+          </h2>
+          <span style="font-size: 10px; color: var(--muted-foreground);">Live Sync with ICCC</span>
+        </div>
+
+        <input type="text" class="alerts-search-input" placeholder="Search plates, suspects, FIR numbers..." onkeyup="filterAlerts(this.value)">
+
+        <div class="alert-filter-chips">
+          <button class="filter-chip active" onclick="setFilter('ALL', this)">All (4)</button>
+          <button class="filter-chip" onclick="setFilter('ANPR', this)">Plates</button>
+          <button class="filter-chip" onclick="setFilter('FRS', this)">Wanted</button>
+          <button class="filter-chip" onclick="setFilter('WEAPON', this)">Weapons</button>
+          <button class="filter-chip" onclick="setFilter('FIRE', this)">Hazards</button>
+        </div>
+      </div>
+
+      <!-- SCROLLABLE LIST OF RECENT ALERTS -->
+      <div class="alerts-scroll-list" id="alertsList">
+
+        <!-- ALERT 1: STOLEN CAR -->
+        <div class="alert-card critical" data-type="ANPR" onclick="openInspectionModal('EVT-101', 'STOLEN CAR DETECTED', 'CAM 01 (Front)', 'GJ01AB1234', '96.8%', 'SG Highway, Ahmedabad', 'FIR 883/2024 - Stolen Swift Dzire')">
+          <div class="alert-card-top">
+            <span class="alert-card-title" style="color: #dc2626;">
+              🚗 Stolen Vehicle Match
+            </span>
+            <span class="badge badge-danger">CRITICAL</span>
+          </div>
+          <div class="alert-card-body">
+            <strong>GJ 01 AB 1234</strong> • Maruti Swift (White)<br>
+            Case: Navrangpura PS - FIR 883/2024
+          </div>
+          <div class="alert-card-footer">
+            <span>15:34:12 • CAM 01 (Front)</span>
+            <span style="color: #059669; font-weight: 600;">Pushed to ICCC 200 OK</span>
+          </div>
+        </div>
+
+        <!-- ALERT 2: WANTED PERSON (FRS) -->
+        <div class="alert-card warning" data-type="FRS" onclick="openInspectionModal('EVT-102', 'WANTED SUSPECT MATCH', 'CAM 03 (Left Sidewalk)', 'Vikram Solanki (W-4091)', '94.2%', 'Navrangpura Cross Roads', 'FIR 442/2024 - Robbery & Assault')">
+          <div class="alert-card-top">
+            <span class="alert-card-title" style="color: #d97706;">
+              👤 Wanted Criminal Match
+            </span>
+            <span class="badge badge-warning">HIGH</span>
+          </div>
+          <div class="alert-card-body">
+            <strong>Vikram Solanki</strong> (ID: W-4091)<br>
+            Crime Branch FIR 442/2024 • Confidence: 94.2%
+          </div>
+          <div class="alert-card-footer">
+            <span>15:33:48 • CAM 03 (Left)</span>
+            <span style="color: #059669; font-weight: 600;">HITL Review Pending</span>
+          </div>
+        </div>
+
+        <!-- ALERT 3: WEAPON THREAT -->
+        <div class="alert-card critical" data-type="WEAPON" onclick="openInspectionModal('EVT-103', 'FIREARM THREAT DETECTED', 'CAM 01 (Front)', 'Handgun / Pistol', '94.5%', 'Relief Road', 'Visible Firearm in Public Space')">
+          <div class="alert-card-top">
+            <span class="alert-card-title" style="color: #dc2626;">
+              🔫 Visible Firearm Alert
+            </span>
+            <span class="badge badge-danger">CRITICAL</span>
+          </div>
+          <div class="alert-card-body">
+            <strong>Firearm (Handgun)</strong> detected on pedestrian.<br>
+            Urgent Tactical Alert sent to PCR Fleet.
+          </div>
+          <div class="alert-card-footer">
+            <span>15:31:02 • CAM 01 (Front)</span>
+            <span style="color: #059669; font-weight: 600;">Dispatched (200 OK)</span>
+          </div>
+        </div>
+
+        <!-- ALERT 4: OVERCROWDING -->
+        <div class="alert-card crowd" data-type="CROWD" onclick="openInspectionModal('EVT-104', 'JUNCTION OVERCROWD ALERT', 'CAM 04 (Right Flank)', 'Count: 48 Persons', '89.5%', 'Kalupur Circle', 'Threshold limit 40 exceeded')">
+          <div class="alert-card-top">
+            <span class="alert-card-title" style="color: #7c3aed;">
+              👥 Junction Overcrowding
+            </span>
+            <span class="badge badge-secondary">INFO</span>
+          </div>
+          <div class="alert-card-body">
+            <strong>48 Persons</strong> gathered at junction.<br>
+            Safety threshold (>40) exceeded. Heatmap generated.
+          </div>
+          <div class="alert-card-footer">
+            <span>15:28:15 • CAM 04 (Right)</span>
+            <span style="color: #059669; font-weight: 600;">Logged</span>
+          </div>
+        </div>
+
+      </div>
+    </aside>
+
+  </main>
+
+  <!-- FORENSIC INSPECTION MODAL (ShadCN style) -->
+  <dialog id="eventModal">
+    <div class="modal-head">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span class="badge badge-danger" id="modalBadge">CRITICAL ALERT</span>
+        <strong id="modalTitle" style="font-size: 13px;">Incident Inspection</strong>
+      </div>
+      <button onclick="document.getElementById('eventModal').close()" style="background: none; border: none; font-size: 18px; cursor: pointer; color: var(--muted-foreground);">&times;</button>
+    </div>
+    <div class="modal-body">
+      <!-- MOCK PHOTO EVIDENCE -->
+      <div style="background: #09090b; border-radius: var(--radius-md); padding: 1.5rem; text-align: center; margin-bottom: 1rem; border: 1px solid var(--border);">
+        <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="1.5">
+          <rect x="2" y="3" width="20" height="14" rx="2"/>
+          <line x1="8" y1="21" x2="16" y2="21"/>
+          <line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+        <p style="color: #94a3b8; font-size: 11px; margin-top: 6px;">Captured Camera Snapshot & 10s MP4 Video Footprint</p>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 12px; margin-bottom: 0.75rem;">
+        <div>
+          <span style="color: var(--muted-foreground);">Alert ID:</span>
+          <div class="text-mono" id="modalId">EVT-101</div>
+        </div>
+        <div>
+          <span style="color: var(--muted-foreground);">Camera Source:</span>
+          <div class="text-mono" id="modalCam">CAM 01 (Front)</div>
+        </div>
+        <div>
+          <span style="color: var(--muted-foreground);">Target Detected:</span>
+          <div class="text-mono" style="font-weight: 700; color: #2563eb;" id="modalTarget">GJ01AB1234</div>
+        </div>
+        <div>
+          <span style="color: var(--muted-foreground);">AI Confidence:</span>
+          <div class="text-mono" style="color: #059669; font-weight: 700;" id="modalConf">96.8%</div>
+        </div>
+        <div>
+          <span style="color: var(--muted-foreground);">GPS Location:</span>
+          <div class="text-mono" id="modalLoc">SG Highway, Ahmedabad</div>
+        </div>
+        <div>
+          <span style="color: var(--muted-foreground);">Police Case Ref:</span>
+          <div class="text-mono" id="modalNote">FIR 883/2024 - Stolen Swift</div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline btn-sm" onclick="document.getElementById('eventModal').close()">Dismiss</button>
+      <button class="btn btn-primary btn-sm" onclick="alert('Confirmed! Immediate Dispatch Alert sent to nearby PCR Vans.'); document.getElementById('eventModal').close();">
+        Confirm & Dispatch Unit
+      </button>
+    </div>
+  </dialog>
+
+  <!-- SLIDE-OVER DRAWER: TECHNICAL SPECS, APIS & DATABASE -->
+  <div class="drawer-overlay" id="drawerOverlay" onclick="closeTechDrawer()"></div>
+  <aside class="slide-drawer" id="techDrawer">
+    <div class="drawer-header">
+      <div>
+        <strong style="font-size: 14px;">Patrol360 Technical & Setup Specs</strong>
+        <p style="font-size: 11px; color: var(--muted-foreground);">Database Tables, API Contracts & Hardware</p>
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="closeTechDrawer()">&times;</button>
+    </div>
+    <div class="drawer-body">
+      <div style="background: #fafafa; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 12px; margin-bottom: 1rem;">
+        <strong style="font-size: 12px; color: #1e3a8a;">🚗 How Police Vehicles & Modules are Organized</strong>
+        <p style="font-size: 12px; color: #52525b; margin-top: 4px;">
+          • Every car is tracked in <code>police_vehicles</code> & <code>vehicle_telemetry</code>.<br>
+          • The 4 cameras are mapped in <code>vehicle_cameras</code>.<br>
+          • <strong>Plates:</strong> <code>anpr_detection_events</code> & <code>stolen_vehicles_watchlist</code>.<br>
+          • <strong>Weapons:</strong> <code>weapon_threat_detections</code>.<br>
+          • <strong>Fire:</strong> <code>fire_smoke_detections</code>.<br>
+          • <strong>Crowds:</strong> <code>crowd_analytics_events</code>.<br>
+          • <strong>Offline Sync:</strong> <code>central_api_dispatch_queue</code>.
+        </p>
+      </div>
+
+      <strong style="font-size: 12px;">Quick Setup Commands on Jetson:</strong>
+      <pre style="background: #09090b; color: #f8fafc; padding: 10px; border-radius: 6px; font-family: var(--font-mono); font-size: 11px; margin: 6px 0 1rem; overflow-x: auto;">sudo apt update && sudo apt install -y python3-pip ffmpeg
+sudo nvpmodel -m 0 && sudo jetson_clocks
+sudo systemctl enable --now patrol360.service</pre>
+
+      <strong style="font-size: 12px;">API Webhook Format (ICCC Push):</strong>
+      <pre style="background: #09090b; color: #f8fafc; padding: 10px; border-radius: 6px; font-family: var(--font-mono); font-size: 11px; margin: 6px 0; overflow-x: auto;">POST /api/v1/events/anpr
+{
+  "event_type": "BLACKLIST_VEHICLE",
+  "vehicle_id": "PATROL_VAN_01",
+  "vehicle_number": "GJ01AB1234",
+  "confidence": 96.8,
+  "gps": { "lat": 23.0225, "lng": 72.5714 }
+}</pre>
+    </div>
+  </aside>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="liveToast">
+    <div style="width: 8px; height: 8px; border-radius: 50%; background: #ef4444;"></div>
+    <div>
+      <strong id="toastTitle" style="font-size: 12px; color: #09090b;">New Alert</strong>
+      <div id="toastDesc" style="font-size: 11px; color: var(--muted-foreground);">Alert description</div>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    // Audio synthesizer
+    function playBeep(freq = 880) {
+      if (!document.getElementById('audioToggle').checked) return;
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.frequency.setValueAtTime(freq, ctx.currentTime);
+        gain.gain.setValueAtTime(0.08, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.15);
+      } catch (e) {}
+    }
+
+    // Camera layout switcher
+    function setCamLayout(mode) {
+      const matrix = document.getElementById('cameraMatrix');
+      document.querySelectorAll('.view-tab').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+
+      matrix.className = 'camera-matrix';
+      if (mode === 'cam1') matrix.classList.add('focus-cam1');
+      if (mode === 'cam3') matrix.classList.add('focus-cam3');
+    }
+
+    // Toast alert
+    function showToast(title, desc) {
+      const toast = document.getElementById('liveToast');
+      document.getElementById('toastTitle').textContent = title;
+      document.getElementById('toastDesc').textContent = desc;
+      toast.style.display = 'flex';
+      setTimeout(() => { toast.style.display = 'none'; }, 3000);
+    }
+
+    // Simulation trigger
+    function triggerSimAlert(type) {
+      const timeStr = new Date().toTimeString().split(' ')[0];
+      const id = 'EVT-' + Math.floor(100 + Math.random() * 900);
+      let title, badgeClass, cam, target, conf, loc, note, cardClass;
+
+      if (type === 'ANPR') {
+        title = '🚗 Stolen Vehicle Match';
+        cardClass = 'critical';
+        badgeClass = 'badge-danger';
+        cam = 'CAM 01 (Front)';
+        target = 'GJ01AB' + Math.floor(1000 + Math.random() * 9000);
+        conf = (95 + Math.random() * 4).toFixed(1) + '%';
+        loc = 'SG Highway, Ahmedabad';
+        note = 'FIR 883/2024 - Stolen Vehicle Alert';
+        playBeep(980);
+        showToast('Stolen Vehicle Alert', target + ' detected on Front Camera');
+      } else if (type === 'FRS') {
+        title = '👤 Wanted Criminal Match';
+        cardClass = 'warning';
+        badgeClass = 'badge-warning';
+        cam = 'CAM 03 (Left)';
+        target = 'Vikram Solanki (W-4091)';
+        conf = (93 + Math.random() * 5).toFixed(1) + '%';
+        loc = 'Navrangpura Cross Roads';
+        note = 'FIR 442/2024 - Robbery & Assault';
+        playBeep(780);
+        showToast('Wanted Person Alert', 'Suspect spotted on Sidewalk Camera');
+      } else if (type === 'WEAPON') {
+        title = '🔫 Visible Firearm Alert';
+        cardClass = 'critical';
+        badgeClass = 'badge-danger';
+        cam = 'CAM 01 (Front)';
+        target = 'Handgun (Pistol)';
+        conf = (94 + Math.random() * 5).toFixed(1) + '%';
+        loc = 'Relief Road';
+        note = 'Visible Firearm in Public Space';
+        playBeep(1150);
+        showToast('WEAPON ALERT', 'Firearm detected on Front Camera');
+        document.getElementById('boxWeapon').style.display = 'block';
+        setTimeout(() => { document.getElementById('boxWeapon').style.display = 'none'; }, 4000);
+      } else if (type === 'FIRE') {
+        title = '🔥 Fire / Smoke Hazard';
+        cardClass = 'warning';
+        badgeClass = 'badge-warning';
+        cam = 'CAM 02 (Rear)';
+        target = 'Smoke / Flame Column';
+        conf = (89 + Math.random() * 7).toFixed(1) + '%';
+        loc = 'Ashram Road';
+        note = 'Rapid Smoke Plume Detected';
+        playBeep(620);
+        showToast('Fire Hazard Alert', 'Smoke detected on Rear Camera');
+      } else {
+        title = '👥 Junction Overcrowding';
+        cardClass = 'crowd';
+        badgeClass = 'badge-secondary';
+        cam = 'CAM 04 (Right)';
+        target = 'Count: ' + Math.floor(45 + Math.random() * 25) + ' Persons';
+        conf = (90 + Math.random() * 5).toFixed(1) + '%';
+        loc = 'Kalupur Circle';
+        note = 'Crowd exceeded threshold (>40 P)';
+        playBeep(520);
+        showToast('Overcrowd Alert', 'Junction threshold exceeded');
+      }
+
+      // Prepend to alerts list
+      const list = document.getElementById('alertsList');
+      const div = document.createElement('div');
+      div.className = `alert-card ${cardClass}`;
+      div.setAttribute('data-type', type);
+      div.onclick = () => openInspectionModal(id, title, cam, target, conf, loc, note);
+      div.innerHTML = `
+        <div class="alert-card-top">
+          <span class="alert-card-title">${title}</span>
+          <span class="badge ${badgeClass}">ALERT</span>
+        </div>
+        <div class="alert-card-body">
+          <strong>${target}</strong><br>
+          ${note}
+        </div>
+        <div class="alert-card-footer">
+          <span>${timeStr} • ${cam}</span>
+          <span style="color: #059669; font-weight: 600;">Pushed to ICCC</span>
+        </div>
+      `;
+      list.insertBefore(div, list.firstChild);
+    }
+
+    // Filter alerts
+    function filterAlerts(query) {
+      const q = query.toLowerCase();
+      document.querySelectorAll('.alert-card').forEach(card => {
+        const text = card.innerText.toLowerCase();
+        card.style.display = text.includes(q) ? 'flex' : 'none';
+      });
+    }
+
+    function setFilter(type, btn) {
+      document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+
+      document.querySelectorAll('.alert-card').forEach(card => {
+        if (type === 'ALL' || card.getAttribute('data-type') === type) {
+          card.style.display = 'flex';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    }
+
+    // Modal dialog
+    function openInspectionModal(id, title, cam, target, conf, loc, note) {
+      const modal = document.getElementById('eventModal');
+      document.getElementById('modalId').textContent = id;
+      document.getElementById('modalCam').textContent = cam;
+      document.getElementById('modalTarget').textContent = target;
+      document.getElementById('modalConf').textContent = conf;
+      document.getElementById('modalLoc').textContent = loc;
+      document.getElementById('modalNote').textContent = note;
+      document.getElementById('modalTitle').textContent = title;
+      modal.showModal();
+    }
+
+    // Tech Drawer Sheet
+    function openTechDrawer() {
+      document.getElementById('techDrawer').classList.add('open');
+      document.getElementById('drawerOverlay').classList.add('open');
+    }
+    function closeTechDrawer() {
+      document.getElementById('techDrawer').classList.remove('open');
+      document.getElementById('drawerOverlay').classList.remove('open');
+    }
+
+    // Light dismiss for dialog
+    const modal = document.getElementById('eventModal');
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) modal.close();
+    });
+  </script>
+</body>
+</html>

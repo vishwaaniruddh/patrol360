@@ -1,0 +1,41 @@
+Dear Mr. Mithun,
+
+1. Scope of Proposed Solution & POC Capabilities
+Our Patrol360 Intelligence system operates across three seamlessly integrated layers:
+
+Vehicle Level: Vehicle-mounted cameras paired with robust Edge AI processing units server.
+Connectivity: Secure 4G/5G real-time data transmission.
+Central Level: Integration with the existing ICCC Platform for unified monitoring and analytics on both live streams and recorded footage.  
+Software :  
+ANPR / ALPR: High-accuracy number plate detection & OCR, stolen/blacklisted vehicle alerts. All events push to the API provided by the customer with image ,video foot print,camera detail real time 
+Facial Recognition System (FRS): Watchlist matching (missing persons/wanted criminals), 1:1 verification, multi-face tracking per frame, anti-spoofing/liveness verification, and complete audit logging with human-in-the-loop validation. All events related to facial push to the API provided by the customer with image ,video foot print,camera detail real time 
+Weapon Detection: Real-time AI identification of firearms and weapons with immediate field and command alerts. All events related to weapons push to the API provided by the customer with image ,video foot print,camera detail real time 
+Fire & Smoke Detection: Live video AI analytics for rapid detection of fire hazards and smoke. 
+Crowd & Object Analytics: People counting, crowd density/heat maps, junction overcrowding management, and multi-class object/vehicle/person detection.
+Edge PC/Server : We will provide jetson server with Linux OS (Ubuntu 20). All use cases need to run on this with processing of the camera stream.
+Customisation : Any custimoisation requirement to be consider during POC as per request of related to above use case only
+Installation and integration of hardware which we previously discuss
+2. Proposal for Live Demonstration & Site Visit
+
+To facilitate the evaluation process before final submission to the Commissioner of Police (CP Sir), we invite your team to our facility for a live vehicle demonstration:
+
+Live Patrol Vehicle Setup: Demonstration of the onboard Edge AI unit and camera setup operating under real-world vehicle conditions.
+Accuracy & Performance Validation: Real-time verification of latency, detection accuracy, and alert generation for all proposed AI modules.
+Command Platform Demonstration: Live data sync and alert dashboard viewing from our central management console. 
+3. Proposed Next Steps
+
+Schedule Site Demonstration: We request you to kindly confirm a convenient date and time within the next few days for the live demonstration on our test vehicle ahmedabad and bhubaneswar odisha
+POC Planning & Finalization: Post-demonstration, we will align with your team on the final deployment timeline and parameters for the 7-day ground POC to present to CP Sir. 
+We look forward to demonstrating the solution's field accuracy and robust performance to build complete confidence for this project.
+
+Attached the detail scope as we previously send
+
+Note : 
+
+ a. Hardware i will provide - NVIDIA Jetson Orin Nano,16GB LPDDR4, Gigabit Ethernet, M.2/SSD storage via suitable carrier, Linux/JetPack; industrial enclosure and power supply. (ubuntu server 24.04)
+
+ b. Installation, implementation, fabrication, configuration of hardware your cope 
+
+c. Software of video analytics in your scope
+
+Kindly confirm the date and time for demonstration of POC as per scope. All hardware you will get around wednesday and thursday. Also POC successful criterial your responsibility.  All NDA criteria need to maintain client secrecy. All representation through our company name only

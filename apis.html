@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Patrol360 | REST APIs & Webhook Specifications</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --background: #f8fafc;
+      --foreground: #09090b;
+      --card: #ffffff;
+      --primary: #09090b;
+      --secondary: #f4f4f5;
+      --muted: #f4f4f5;
+      --muted-foreground: #71717a;
+      --border: #e4e4e7;
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-full: 9999px;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background-color: var(--background); color: var(--foreground); font-family: var(--font-sans); line-height: 1.5; font-size: 13px; padding-bottom: 60px; }
+    
+    header.nav-header {
+      position: sticky; top: 0; z-index: 50; background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(8px); border-bottom: 1px solid var(--border); padding: 0.6rem 1.5rem;
+    }
+    .nav-inner { max-width: 1240px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+    .brand { display: flex; align-items: center; gap: 8px; text-decoration: none; color: inherit; font-weight: 700; font-size: 14px; }
+    .nav-links { display: flex; align-items: center; gap: 6px; }
+    .nav-link {
+      padding: 6px 12px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 500;
+      color: var(--muted-foreground); text-decoration: none; transition: all 0.15s ease;
+    }
+    .nav-link:hover { color: var(--foreground); background: var(--secondary); }
+    .nav-link.active { background: #09090b; color: #fff; font-weight: 600; }
+
+    .container { max-width: 1240px; margin: 1.5rem auto 0; padding: 0 1.5rem; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); padding: 1.25rem 1.5rem; margin-bottom: 1.25rem; }
+    .card-title { font-size: 15px; font-weight: 700; color: #09090b; margin-bottom: 0.5rem; display: flex; align-items: center; justify-content: space-between; }
+    
+    .badge { display: inline-flex; align-items: center; border-radius: var(--radius-full); padding: 2px 8px; font-size: 11px; font-weight: 600; border: 1px solid transparent; }
+    .badge-post { background: #ecfdf5; border-color: #a7f3d0; color: #047857; font-family: var(--font-mono); font-size: 11px; }
+    .badge-get { background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; font-family: var(--font-mono); font-size: 11px; }
+
+    .code-container {
+      background: #09090b; color: #fafafa; border-radius: var(--radius-md); overflow: hidden; margin: 0.75rem 0; border: 1px solid #27272a;
+    }
+    .code-header {
+      background: #18181b; padding: 6px 12px; display: flex; justify-content: space-between; align-items: center;
+      font-size: 11px; font-family: var(--font-mono); color: #a1a1aa; border-bottom: 1px solid #27272a;
+    }
+    .code-body { padding: 12px 14px; font-family: var(--font-mono); font-size: 12px; line-height: 1.6; overflow-x: auto; }
+    
+    .btn-sm {
+      background: #27272a; color: #fff; border: 1px solid #3f3f46; border-radius: 4px;
+      padding: 3px 8px; font-size: 11px; cursor: pointer; font-family: var(--font-sans);
+    }
+    .btn-sm:hover { background: #3f3f46; }
+  </style>
+</head>
+<body>
+
+  <!-- SHARED NAVIGATION BAR -->
+  <header class="nav-header">
+    <div class="nav-inner">
+      <a href="index.html" class="brand">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          <path d="M12 8v4"/>
+          <path d="M12 16h.01"/>
+        </svg>
+        Patrol360 Documentation
+      </a>
+      <nav class="nav-links">
+        <a href="index.html" class="nav-link">🖥️ Live Dashboard</a>
+        <a href="analysis.html" class="nav-link">📊 System Analysis</a>
+        <a href="apis.html" class="nav-link active">🔌 APIs & Webhooks</a>
+        <a href="database.html" class="nav-link">🗄️ Database (DB)</a>
+        <a href="setup.html" class="nav-link">🛠️ Setup Guide</a>
+        <a href="milestones.html" class="nav-link">📋 Milestones & QA</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <div style="margin-bottom: 1.5rem;">
+      <span class="badge" style="background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; margin-bottom: 6px;">ICCC EVENT SPECIFICATION</span>
+      <h1 style="font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em;">Patrol360 REST APIs & Event Push Contracts</h1>
+      <p style="color: var(--muted-foreground); font-size: 13px;">
+        Standardized JSON payloads sent in real-time from the patrol car edge computer to the Police Command & Control Centre (ICCC).
+      </p>
+    </div>
+
+    <!-- 1. ANPR API -->
+    <div class="card">
+      <div class="card-title">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span class="badge badge-post">POST</span>
+          <span style="font-family: var(--font-mono); font-size: 14px;">/api/v1/events/anpr</span>
+        </div>
+        <span style="font-size: 12px; color: var(--muted-foreground);">Number Plate & Stolen Car Alert</span>
+      </div>
+      <p style="color: #52525b; font-size: 12px; margin-bottom: 0.5rem;">
+        Triggered when a vehicle license plate is recognized. If the plate matches the stolen vehicle registry, <code>is_blacklisted</code> is set to <code>true</code>.
+      </p>
+      <div class="code-container">
+        <div class="code-header">
+          <span>SAMPLE JSON PAYLOAD</span>
+          <button class="btn-sm" onclick="copySnippet(this)">Copy JSON</button>
+        </div>
+        <pre class="code-body">{
+  "event_id": "EVT_ANPR_20261026_153412_01",
+  "event_type": "BLACKLIST_VEHICLE",
+  "vehicle_unit_id": "PATROL_VAN_01_AHMEDABAD",
+  "camera_id": "CAM_01_FRONT",
+  "timestamp": "2026-10-26T15:34:12+05:30",
+  "location": {
+    "latitude": 23.022505,
+    "longitude": 72.571362,
+    "speed_kmph": 41.2,
+    "road_name": "SG Highway, Near Iscon Circle"
+  },
+  "anpr_data": {
+    "vehicle_number": "GJ01AB1234",
+    "vehicle_type": "CAR",
+    "ocr_confidence": 96.8,
+    "is_blacklisted": true,
+    "blacklist_category": "STOLEN_VEHICLE",
+    "warrant_fir_number": "FIR 883/2024 - Navrangpura PS"
+  },
+  "media_evidence": {
+    "snapshot_url": "https://storage.patrol.gov.in/captures/GJ01AB1234_snap.jpg",
+    "plate_crop_url": "https://storage.patrol.gov.in/captures/GJ01AB1234_crop.jpg",
+    "video_clip_url": "https://storage.patrol.gov.in/videos/GJ01AB1234_10sec.mp4"
+  }
+}</pre>
+      </div>
+    </div>
+
+    <!-- 2. FRS API -->
+    <div class="card">
+      <div class="card-title">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span class="badge badge-post">POST</span>
+          <span style="font-family: var(--font-mono); font-size: 14px;">/api/v1/events/frs</span>
+        </div>
+        <span style="font-size: 12px; color: var(--muted-foreground);">Wanted Person & Missing Person Alert</span>
+      </div>
+      <p style="color: #52525b; font-size: 12px; margin-bottom: 0.5rem;">
+        Triggered when a pedestrian on the sidewalk matches a face in the police watchlist.
+      </p>
+      <div class="code-container">
+        <div class="code-header">
+          <span>SAMPLE JSON PAYLOAD</span>
+          <button class="btn-sm" onclick="copySnippet(this)">Copy JSON</button>
+        </div>
+        <pre class="code-body">{
+  "event_id": "EVT_FRS_20261026_153348_02",
+  "event_type": "WATCHLIST_FACE_MATCH",
+  "vehicle_unit_id": "PATROL_VAN_01_AHMEDABAD",
+  "camera_id": "CAM_03_LEFT",
+  "timestamp": "2026-10-26T15:33:48+05:30",
+  "location": {
+    "latitude": 23.022140,
+    "longitude": 72.571120
+  },
+  "frs_data": {
+    "person_id": "CRIM_IND_4091",
+    "person_name": "Vikram Solanki",
+    "watchlist_category": "WANTED_CRIMINAL",
+    "case_reference": "CRIME_BRANCH_FIR_442_2024",
+    "match_confidence": 94.2,
+    "liveness_anti_spoof_score": 0.98,
+    "requires_hitl_confirmation": true
+  },
+  "media_evidence": {
+    "face_crop_url": "https://storage.patrol.gov.in/faces/CRIM4091_crop.jpg",
+    "video_clip_url": "https://storage.patrol.gov.in/videos/CRIM4091_10sec.mp4"
+  }
+}</pre>
+      </div>
+    </div>
+
+    <!-- 3. WEAPON API -->
+    <div class="card">
+      <div class="card-title">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span class="badge badge-post">POST</span>
+          <span style="font-family: var(--font-mono); font-size: 14px;">/api/v1/events/weapon</span>
+        </div>
+        <span style="font-size: 12px; color: var(--muted-foreground);">Real-Time Weapon Detection Alert</span>
+      </div>
+      <div class="code-container">
+        <div class="code-header">
+          <span>SAMPLE JSON PAYLOAD</span>
+          <button class="btn-sm" onclick="copySnippet(this)">Copy JSON</button>
+        </div>
+        <pre class="code-body">{
+  "event_id": "EVT_WEAPON_20261026_153102_03",
+  "threat_type": "FIREARM_DETECTED",
+  "severity": "CRITICAL_RED",
+  "vehicle_unit_id": "PATROL_VAN_01_AHMEDABAD",
+  "camera_id": "CAM_01_FRONT",
+  "timestamp": "2026-10-26T15:31:02+05:30",
+  "location": { "latitude": 23.023010, "longitude": 72.572100 },
+  "detection_details": {
+    "detected_class": "HANDGUN",
+    "confidence": 94.5,
+    "bounding_box": { "x_min": 140, "y_min": 85, "width": 65, "height": 70 }
+  },
+  "media_evidence": {
+    "snapshot_url": "https://storage.patrol.gov.in/threats/GUN_20261026_01.jpg",
+    "video_clip_url": "https://storage.patrol.gov.in/threats/GUN_20261026_01.mp4"
+  }
+}</pre>
+      </div>
+    </div>
+
+    <!-- 4. TELEMETRY HEARTBEAT API -->
+    <div class="card">
+      <div class="card-title">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span class="badge badge-post">POST</span>
+          <span style="font-family: var(--font-mono); font-size: 14px;">/api/v1/telemetry/heartbeat</span>
+        </div>
+        <span style="font-size: 12px; color: var(--muted-foreground);">Live Police Car GPS & Hardware Health</span>
+      </div>
+      <div class="code-container">
+        <div class="code-header">
+          <span>SAMPLE JSON PAYLOAD (SENT EVERY 5 SECONDS)</span>
+          <button class="btn-sm" onclick="copySnippet(this)">Copy JSON</button>
+        </div>
+        <pre class="code-body">{
+  "vehicle_unit_id": "PATROL_VAN_01_AHMEDABAD",
+  "timestamp": "2026-10-26T15:35:00+05:30",
+  "gps": {
+    "latitude": 23.022500,
+    "longitude": 72.571400,
+    "speed_kmph": 41.5,
+    "heading": 182
+  },
+  "hardware_health": {
+    "battery_voltage": 13.4,
+    "jetson_temp_c": 46.2,
+    "gpu_usage_pct": 64.0,
+    "ram_used_mb": 8200,
+    "lte_signal_dbm": -68,
+    "network_type": "5G_STANDALONE",
+    "offline_outbox_pending": 0
+  }
+}</pre>
+      </div>
+    </div>
+
+    <!-- OFFLINE BUFFER RULES -->
+    <div class="card" style="background: #fafafa; border-left: 4px solid #2563eb;">
+      <h3 style="font-size: 14px; color: #1e3a8a; margin-bottom: 4px;">📡 Store-and-Forward Offline Queue Policy</h3>
+      <p style="color: #52525b; font-size: 12px; line-height: 1.6;">
+        1. <strong>When Online:</strong> Events push directly via HTTP POST with a 2000ms timeout.<br>
+        2. <strong>When Offline:</strong> If 4G/5G disconnects or HTTP returns non-200, the payload is inserted into SQLite <code>central_api_dispatch_queue</code>.<br>
+        3. <strong>Automatic Recovery:</strong> A background daemon retries pending events using exponential backoff (1s, 2s, 5s, 15s, 60s) once cellular connectivity resumes.
+      </p>
+    </div>
+  </main>
+
+  <script>
+    function copySnippet(btn) {
+      const text = btn.closest('.code-container').querySelector('.code-body').innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = 'Copied!';
+        setTimeout(() => { btn.textContent = 'Copy JSON'; }, 2000);
+      });
+    }
+  </script>
+</body>
+</html>

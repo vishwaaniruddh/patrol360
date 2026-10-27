@@ -1,0 +1,15 @@
+# backend/.htaccess
+# Routes root backend requests to public folder automatically
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # If the request is already pointing to public, leave it alone
+    RewriteCond %{REQUEST_URI} !^/patrol360/backend/public/
+    RewriteCond %{REQUEST_URI} !^/vehicle_gov/backend/public/
+    RewriteCond %{REQUEST_URI} !public/
+
+    # Forward all requests to public/
+    RewriteRule ^$ public/ [L]
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
