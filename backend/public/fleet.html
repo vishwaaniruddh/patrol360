@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Patrol360 | Fleet & 360° Camera Rig Manager</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --background: #f8fafc;
+      --foreground: #0f172a;
+      --card: #ffffff;
+      --border: #e2e8f0;
+      --muted: #f1f5f9;
+      --muted-foreground: #64748b;
+      --primary: #0f172a;
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--background);
+      color: var(--foreground);
+      font-family: var(--font-sans);
+      line-height: 1.5;
+      font-size: 13px;
+      padding-bottom: 80px;
+    }
+
+    header.top-header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+      padding: 0.75rem 1.5rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    }
+    .header-inner {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+      font-size: 15px;
+      color: #0f172a;
+      text-decoration: none;
+    }
+    .brand-badge {
+      background: #0f172a;
+      color: #fff;
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .nav-buttons {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .nav-btn {
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--muted-foreground);
+      text-decoration: none;
+      border: 1px solid var(--border);
+      background: #fff;
+      transition: all 0.15s ease;
+      cursor: pointer;
+    }
+    .nav-btn:hover { background: var(--muted); color: var(--foreground); }
+    .nav-btn.primary { background: #0f172a; color: #fff; border-color: #0f172a; }
+
+    .container {
+      max-width: 1400px;
+      margin: 1.5rem auto 0;
+      padding: 0 1.5rem;
+    }
+
+    /* Hero Banner */
+    .hero-banner {
+      background: #0f172a;
+      color: #ffffff;
+      border-radius: var(--radius-lg);
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1.5rem;
+    }
+    .hero-left h1 { font-size: 18px; font-weight: 800; margin-bottom: 4px; }
+    .hero-left p { font-size: 12px; color: #94a3b8; max-width: 800px; }
+
+    /* Action Toolbar */
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .btn {
+      padding: 8px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid transparent;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .btn-primary { background: #0f172a; color: #ffffff; }
+    .btn-primary:hover { background: #1e293b; }
+    .btn-secondary { background: #ffffff; color: #0f172a; border-color: #cbd5e1; }
+    .btn-secondary:hover { background: #f1f5f9; }
+    .btn-danger { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
+    .btn-danger:hover { background: #fee2e2; }
+
+    /* Fleet Cards Grid */
+    .fleet-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .fleet-card {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem 1.5rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+      transition: border 0.15s ease;
+    }
+    .fleet-card:hover { border-color: #cbd5e1; }
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 10px;
+    }
+    .veh-id { font-family: var(--font-mono); font-size: 15px; font-weight: 800; color: #0f172a; }
+    .veh-plate { font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: #1d4ed8; background: #eff6ff; padding: 2px 7px; border-radius: 4px; border: 1px solid #bfdbfe; }
+    
+    .veh-details {
+      font-size: 12px;
+      color: #475569;
+      margin-bottom: 14px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+    .veh-details strong { color: #0f172a; }
+
+    /* 360 Camera Rig Visualizer */
+    .rig-section-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #64748b;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .rig-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .cam-box {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 8px 10px;
+      background: #f8fafc;
+      font-size: 11px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .cam-box.active {
+      background: #f0fdf4;
+      border-color: #bbf7d0;
+    }
+    .cam-box.empty {
+      background: #fafafa;
+      border-style: dashed;
+      color: #94a3b8;
+    }
+    .cam-pos { font-family: var(--font-mono); font-weight: 700; color: #0f172a; }
+    .cam-status { font-size: 10px; font-weight: 600; }
+    .status-online { color: #15803d; }
+    .status-empty { color: #94a3b8; }
+
+    /* Telemetry Bar */
+    .telemetry-row {
+      background: #f1f5f9;
+      padding: 6px 10px;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: #334155;
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .card-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Modal Styling */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+      padding: 1rem;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-card {
+      background: #ffffff;
+      border-radius: var(--radius-lg);
+      max-width: 520px;
+      width: 100%;
+      padding: 1.5rem;
+      box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+      position: relative;
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.75rem;
+    }
+    .modal-title { font-size: 15px; font-weight: 800; color: #0f172a; }
+    .close-btn { background: transparent; border: none; font-size: 18px; cursor: pointer; color: #64748b; }
+
+    .form-group { margin-bottom: 12px; }
+    .form-group label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      color: #475569;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .input-field, .select-field {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-family: var(--font-sans);
+      background: #f8fafc;
+      color: #0f172a;
+      outline: none;
+    }
+    .input-field:focus, .select-field:focus { border-color: #0f172a; background: #fff; }
+
+    /* Tables */
+    .all-cams-card {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem 1.5rem;
+    }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      margin-top: 10px;
+    }
+    .data-table th {
+      background: #f1f5f9;
+      padding: 8px 12px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 700;
+      color: #475569;
+      border-bottom: 1px solid var(--border);
+    }
+    .data-table td {
+      padding: 8px 12px;
+      border-top: 1px solid var(--border);
+    }
+    .data-table tr:hover { background: #f8fafc; }
+  </style>
+</head>
+<body>
+
+  <!-- Top Sticky Navigation Bar -->
+  <header class="top-header">
+    <div class="header-inner">
+      <div class="brand">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <rect x="3" y="11" width="18" height="9" rx="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+        <span>Patrol360 Fleet & 360° Camera Rig Manager</span>
+        <span class="brand-badge">MANAGEMENT CONSOLE</span>
+      </div>
+      <div class="nav-buttons">
+        <div id="authBadge" style="display:inline-flex; align-items:center; gap:6px; font-size:11px; padding:4px 9px; border-radius:4px; background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0; font-weight:600;">
+          <span style="width:7px; height:7px; border-radius:50%; background:#10b981;"></span>
+          <span id="authBadgeText">Connecting session...</span>
+        </div>
+        <button class="nav-btn" onclick="quickReauth()" title="Refresh / Re-authenticate Admin token">🔑 Re-Auth Admin</button>
+        <a href="api_documentation.html" class="nav-btn">API Documentation & Swagger</a>
+        <a href="db_sync.html" class="nav-btn">DB Sync Center</a>
+        <a href="../database.html" class="nav-btn">Database DDL</a>
+        <a href="../index.html" class="nav-btn primary">Live Police Console</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <!-- Hero Title -->
+    <div class="hero-banner">
+      <div class="hero-left">
+        <h1>Patrol Vehicle Fleet & 360° Multi-Camera Configuration</h1>
+        <p>Register new mobile police surveillance vehicles, assign on-board NVIDIA Jetson edge computers, and mount high-definition 360° IP cameras (Front, Rear, Left, Right) with RTSP live stream endpoints.</p>
+      </div>
+      <div>
+        <button class="btn btn-primary" style="background:#ffffff; color:#0f172a; margin-right: 6px;" onclick="openVehicleModal()">
+          + Register Vehicle
+        </button>
+        <button class="btn btn-primary" style="background:#10b981; color:#ffffff;" onclick="openCameraModal()">
+          + Mount Camera
+        </button>
+      </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <div>
+        <strong style="font-size: 14px; color: #0f172a;">Active Patrol Fleet & Attached Camera Rigs</strong>
+        <p style="font-size: 12px; color: var(--muted-foreground);" id="fleetSummary">Loading vehicles...</p>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <button class="btn btn-secondary" onclick="loadFleetData()">↻ Refresh Fleet</button>
+      </div>
+    </div>
+
+    <!-- Fleet Cards Grid -->
+    <div class="fleet-grid" id="fleetGrid">
+      <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #64748b;">
+        Loading police fleet vehicles and 360° camera mounts...
+      </div>
+    </div>
+
+    <!-- All Cameras Inventory Table -->
+    <div class="all-cams-card">
+      <strong style="font-size: 14px; color: #0f172a;">All Mounted Camera Feeds & RTSP Endpoints</strong>
+      <p style="font-size: 12px; color: var(--muted-foreground);">Live RTSP streaming configurations across all patrol units</p>
+
+      <div style="overflow-x: auto;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Camera ID</th>
+              <th>Vehicle ID</th>
+              <th>Mount Position</th>
+              <th>Camera Name</th>
+              <th>Resolution / FPS</th>
+              <th>RTSP Stream URL</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="allCamerasBody">
+            <tr><td colspan="8" style="text-align: center; color:#64748b; padding:15px;">Loading camera inventory...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Modal 1: Register New Vehicle -->
+  <div class="modal-overlay" id="vehicleModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">+ Register New Patrol Vehicle</div>
+        <button class="close-btn" onclick="closeVehicleModal()">&times;</button>
+      </div>
+      <form onsubmit="handleCreateVehicle(event)">
+        <div class="form-group">
+          <label>Vehicle ID (Unique Code)</label>
+          <input type="text" id="v_vehicle_id" class="input-field" placeholder="e.g. PATROL_VAN_03" required>
+        </div>
+        <div class="form-group">
+          <label>Registration Number (License Plate)</label>
+          <input type="text" id="v_reg_no" class="input-field" placeholder="e.g. MH01PA2028" required>
+        </div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="form-group">
+            <label>Vehicle Model</label>
+            <input type="text" id="v_model" class="input-field" value="Mahindra Scorpio Classic">
+          </div>
+          <div class="form-group">
+            <label>Police Station / Division</label>
+            <input type="text" id="v_station" class="input-field" placeholder="e.g. Worli Police Station" required>
+          </div>
+        </div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="form-group">
+            <label>Assigned Driver Officer</label>
+            <input type="text" id="v_driver" class="input-field" placeholder="e.g. HC Ramesh Shinde">
+          </div>
+          <div class="form-group">
+            <label>Jetson Hardware Serial</label>
+            <input type="text" id="v_serial" class="input-field" placeholder="e.g. JETSON-ORIN-88902">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Cellular Modem / SIM Number</label>
+          <input type="text" id="v_sim" class="input-field" placeholder="+91 98200 12345">
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 15px;">
+          <button type="button" class="btn btn-secondary" onclick="closeVehicleModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btnSubmitVeh">Register Vehicle</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 2: Mount Camera & Assign to Vehicle -->
+  <div class="modal-overlay" id="cameraModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">+ Mount Camera & Assign to Vehicle</div>
+        <button class="close-btn" onclick="closeCameraModal()">&times;</button>
+      </div>
+      <form onsubmit="handleCreateCamera(event)">
+        <div class="form-group">
+          <label>Assign to Police Vehicle</label>
+          <select id="c_vehicle_id" class="select-field" required>
+            <option value="">-- Select Vehicle --</option>
+          </select>
+        </div>
+        <div style="display:grid; grid-template-columns: 1.2fr 1fr; gap: 10px;">
+          <div class="form-group">
+            <label>Camera ID (Unique)</label>
+            <input type="text" id="c_camera_id" class="input-field" placeholder="e.g. CAM-09-ROOF-FRONT" required>
+          </div>
+          <div class="form-group">
+            <label>Mount Position</label>
+            <select id="c_mount" class="select-field" required>
+              <option value="FRONT">FRONT (Forward ANPR)</option>
+              <option value="REAR">REAR (Behind Chase)</option>
+              <option value="LEFT">LEFT (Pavement FRS)</option>
+              <option value="RIGHT">RIGHT (Traffic Lane)</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Camera Friendly Name</label>
+          <input type="text" id="c_name" class="input-field" placeholder="e.g. Roof Front 4K ANPR Telephoto" required>
+        </div>
+        <div class="form-group">
+          <label>RTSP Video Stream URL</label>
+          <input type="text" id="c_rtsp" class="input-field" placeholder="rtsp://192.168.1.101:554/live/front_ch1" required>
+        </div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="form-group">
+            <label>Stream Resolution</label>
+            <select id="c_res" class="select-field">
+              <option value="1920x1080">1080p Full HD (1920x1080)</option>
+              <option value="2560x1440">2K QHD (2560x1440)</option>
+              <option value="3840x2160">4K Ultra HD (3840x2160)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Frames Per Second (FPS)</label>
+            <input type="number" id="c_fps" class="input-field" value="25" min="10" max="60">
+          </div>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 15px;">
+          <button type="button" class="btn btn-secondary" onclick="closeCameraModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btnSubmitCam">Mount & Save Camera</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let vehiclesList = [];
+    let camerasList = [];
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      await ensureAuthSession();
+      loadFleetData();
+    });
+
+    async function ensureAuthSession(force = false) {
+      let token = localStorage.getItem('patrol360_jwt_token');
+      if (token && !force) {
+        updateAuthBadge(true, localStorage.getItem('patrol360_user_name') || 'Super Admin');
+        return token;
+      }
+
+      const badge = document.getElementById('authBadgeText');
+      if (badge) badge.textContent = 'Auto-authenticating Admin...';
+
+      try {
+        const res = await fetch('api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({ email: 'admin@police.gov.in', password: 'Admin@12345' })
+        });
+        const json = await res.json();
+        if (res.ok && json.data && json.data.token) {
+          localStorage.setItem('patrol360_jwt_token', json.data.token);
+          const name = json.data.user?.full_name || 'Super Admin';
+          localStorage.setItem('patrol360_user_name', name);
+          localStorage.setItem('patrol360_user_role', 'admin');
+          updateAuthBadge(true, name);
+          return json.data.token;
+        } else {
+          updateAuthBadge(false, 'Login failed');
+        }
+      } catch (e) {
+        console.warn('Auto-auth error:', e);
+        updateAuthBadge(false, 'Auth error');
+      }
+      return null;
+    }
+
+    function updateAuthBadge(isAuthed, name) {
+      const badge = document.getElementById('authBadge');
+      const text = document.getElementById('authBadgeText');
+      if (!badge || !text) return;
+
+      if (isAuthed) {
+        badge.style.background = '#ecfdf5';
+        badge.style.color = '#065f46';
+        badge.style.borderColor = '#a7f3d0';
+        text.innerHTML = `Admin: <strong>${name}</strong>`;
+      } else {
+        badge.style.background = '#fef2f2';
+        badge.style.color = '#991b1b';
+        badge.style.borderColor = '#fecaca';
+        text.innerHTML = `Not Logged In (${name})`;
+      }
+    }
+
+    async function quickReauth() {
+      await ensureAuthSession(true);
+      await loadFleetData();
+      alert('Admin token refreshed and fleet synchronized.');
+    }
+
+    async function fetchWithAuth(url, options = {}, isRetry = false) {
+      let token = localStorage.getItem('patrol360_jwt_token') || await ensureAuthSession();
+      options.headers = options.headers || {};
+      options.headers['Accept'] = 'application/json';
+      if (token) options.headers['Authorization'] = 'Bearer ' + token;
+
+      let res = await fetch(url, options);
+      if (res.status === 401 && !isRetry) {
+        console.warn('Token expired or 401 received. Attempting re-auth...');
+        token = await ensureAuthSession(true);
+        if (token) {
+          options.headers['Authorization'] = 'Bearer ' + token;
+          return await fetch(url, options);
+        }
+      }
+      return res;
+    }
+
+    async function loadFleetData() {
+      try {
+        // 1. Fetch Vehicles
+        const vRes = await fetchWithAuth('api/vehicles');
+        const vJson = await vRes.json();
+        vehiclesList = (vJson.data && Array.isArray(vJson.data)) ? vJson.data : [];
+
+        // 2. Fetch Cameras
+        const cRes = await fetchWithAuth('api/cameras');
+        const cJson = await cRes.json();
+        camerasList = (cJson.data && Array.isArray(cJson.data)) ? cJson.data : [];
+
+        document.getElementById('fleetSummary').textContent = `${vehiclesList.length} Patrol Vehicles • ${camerasList.length} 360° Cameras Configured`;
+
+        renderFleetCards();
+        renderCamerasTable();
+        populateVehicleDropdown();
+
+      } catch (err) {
+        console.error('Error loading fleet:', err);
+        document.getElementById('fleetGrid').innerHTML = `<div style="grid-column:1/-1; color:#dc2626; text-align:center; padding:30px;">Failed to load fleet: ${err.message}</div>`;
+      }
+    }
+
+    function renderFleetCards() {
+      const grid = document.getElementById('fleetGrid');
+      if (vehiclesList.length === 0) {
+        grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:30px; color:#64748b;">No patrol vehicles registered yet. Click "+ Register Vehicle" to create one.</div>';
+        return;
+      }
+
+      let html = '';
+      vehiclesList.forEach(v => {
+        const cams = v.cameras || camerasList.filter(c => c.vehicle_id === v.vehicle_id);
+
+        const getCamBox = (pos) => {
+          const match = cams.find(c => c.mount_position === pos);
+          if (match) {
+            return `
+              <div class="cam-box active">
+                <span class="cam-pos">${pos}</span>
+                <span class="cam-status status-online">🟢 ${match.resolution}</span>
+              </div>
+            `;
+          } else {
+            return `
+              <div class="cam-box empty" onclick="openCameraModalForVeh('${v.vehicle_id}', '${pos}')" style="cursor:pointer;" title="Click to mount ${pos} camera">
+                <span class="cam-pos">${pos}</span>
+                <span class="cam-status status-empty">+ Mount</span>
+              </div>
+            `;
+          }
+        };
+
+        html += `
+          <div class="fleet-card">
+            <div class="card-top">
+              <div>
+                <div class="veh-id">${v.vehicle_id}</div>
+                <div style="font-size:11px; color:#64748b;">${v.vehicle_model || 'Patrol Unit'}</div>
+              </div>
+              <span class="veh-plate">${v.registration_number}</span>
+            </div>
+
+            <div class="veh-details">
+              <div>Station: <strong>${v.police_station || 'N/A'}</strong></div>
+              <div>Driver: <strong>${v.assigned_driver_officer || 'Unassigned'}</strong></div>
+              <div>Jetson Serial: <strong>${v.jetson_device_serial || 'N/A'}</strong></div>
+              <div>Modem: <strong>${v.sim_card_phone || 'N/A'}</strong></div>
+            </div>
+
+            <div class="rig-section-title">
+              <span>360° Roof Camera Rig (${cams.length}/4 Configured)</span>
+              <span style="font-size:10px; color:#2563eb; cursor:pointer;" onclick="openCameraModalForVeh('${v.vehicle_id}')">+ Add Cam</span>
+            </div>
+
+            <div class="rig-grid">
+              ${getCamBox('FRONT')}
+              ${getCamBox('REAR')}
+              ${getCamBox('LEFT')}
+              ${getCamBox('RIGHT')}
+            </div>
+
+            <div class="telemetry-row">
+              <span>GPS: ${v.latest_lat ? parseFloat(v.latest_lat).toFixed(4) + ', ' + parseFloat(v.latest_lng).toFixed(4) : 'Stationary (HQ)'}</span>
+              <span>Speed: ${v.speed_kmph ? v.speed_kmph + ' km/h' : '0 km/h'}</span>
+              <span>Temp: ${v.jetson_temperature_c ? v.jetson_temperature_c + '°C' : '45°C'}</span>
+            </div>
+
+            <div class="card-actions">
+              <button class="btn btn-secondary" style="padding:4px 10px; font-size:11px;" onclick="openCameraModalForVeh('${v.vehicle_id}')">+ Mount Camera</button>
+              <button class="btn btn-danger" style="padding:4px 10px; font-size:11px;" onclick="handleDeleteVehicle(${v.id}, '${v.vehicle_id}')">Delete Vehicle</button>
+            </div>
+          </div>
+        `;
+      });
+
+      grid.innerHTML = html;
+    }
+
+    function renderCamerasTable() {
+      const tbody = document.getElementById('allCamerasBody');
+      if (camerasList.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#64748b; padding:15px;">No cameras mounted yet.</td></tr>';
+        return;
+      }
+
+      let html = '';
+      camerasList.forEach(c => {
+        html += `
+          <tr>
+            <td style="font-family:var(--font-mono); font-weight:700;">${c.camera_id}</td>
+            <td style="font-family:var(--font-mono); font-weight:600; color:#1d4ed8;">${c.vehicle_id}</td>
+            <td><span style="padding:2px 6px; border-radius:4px; font-weight:700; font-size:10px; background:#eff6ff; color:#1e40af; border:1px solid #bfdbfe;">${c.mount_position}</span></td>
+            <td>${c.camera_name}</td>
+            <td style="font-family:var(--font-mono);">${c.resolution} @ ${c.fps}fps</td>
+            <td style="font-family:var(--font-mono); font-size:11px; color:#475569;"><code>${c.rtsp_url}</code></td>
+            <td><span style="color:#15803d; font-weight:bold;">${c.is_streaming ? '● Streaming' : '○ Inactive'}</span></td>
+            <td>
+              <button class="btn btn-danger" style="padding:2px 8px; font-size:10px;" onclick="handleDeleteCamera(${c.id}, '${c.camera_id}')">Remove</button>
+            </td>
+          </tr>
+        `;
+      });
+      tbody.innerHTML = html;
+    }
+
+    function populateVehicleDropdown() {
+      const select = document.getElementById('c_vehicle_id');
+      select.innerHTML = '<option value="">-- Select Vehicle --</option>';
+      vehiclesList.forEach(v => {
+        select.innerHTML += `<option value="${v.vehicle_id}">${v.vehicle_id} (${v.registration_number} - ${v.police_station})</option>`;
+      });
+    }
+
+    // Modal controls
+    function openVehicleModal() {
+      document.getElementById('vehicleModal').classList.add('open');
+    }
+    function closeVehicleModal() {
+      document.getElementById('vehicleModal').classList.remove('open');
+    }
+    function openCameraModal() {
+      populateVehicleDropdown();
+      document.getElementById('cameraModal').classList.add('open');
+    }
+    function openCameraModalForVeh(vehicleId, preferredMount = '') {
+      populateVehicleDropdown();
+      document.getElementById('c_vehicle_id').value = vehicleId;
+      if (preferredMount) {
+        document.getElementById('c_mount').value = preferredMount;
+        document.getElementById('c_name').value = `Roof ${preferredMount} 1080p AI Camera`;
+        document.getElementById('c_camera_id').value = `CAM-${vehicleId.replace(/[^A-Za-z0-9]/g, '')}-${preferredMount}`;
+        document.getElementById('c_rtsp').value = `rtsp://192.168.1.10:554/live/${preferredMount.toLowerCase()}`;
+      }
+      document.getElementById('cameraModal').classList.add('open');
+    }
+    function closeCameraModal() {
+      document.getElementById('cameraModal').classList.remove('open');
+    }
+
+    // Create Vehicle Form Handler
+    async function handleCreateVehicle(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btnSubmitVeh');
+      btn.disabled = true;
+      btn.textContent = 'Saving...';
+
+      const payload = {
+        vehicle_id: document.getElementById('v_vehicle_id').value.trim(),
+        registration_number: document.getElementById('v_reg_no').value.trim(),
+        vehicle_model: document.getElementById('v_model').value.trim(),
+        police_station: document.getElementById('v_station').value.trim(),
+        assigned_driver_officer: document.getElementById('v_driver').value.trim(),
+        jetson_device_serial: document.getElementById('v_serial').value.trim(),
+        sim_card_phone: document.getElementById('v_sim').value.trim(),
+        is_active: 1
+      };
+
+      try {
+        const res = await fetchWithAuth('api/vehicles', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const json = await res.json();
+
+        if (res.ok) {
+          alert(`Vehicle ${payload.vehicle_id} registered successfully!`);
+          closeVehicleModal();
+          loadFleetData();
+        } else {
+          alert('Failed to register vehicle: ' + (json.error || json.message || 'Server error'));
+        }
+      } catch (err) {
+        alert('Network error: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Register Vehicle';
+      }
+    }
+
+    // Create Camera Form Handler
+    async function handleCreateCamera(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btnSubmitCam');
+      btn.disabled = true;
+      btn.textContent = 'Mounting...';
+
+      const payload = {
+        camera_id: document.getElementById('c_camera_id').value.trim(),
+        vehicle_id: document.getElementById('c_vehicle_id').value.trim(),
+        camera_name: document.getElementById('c_name').value.trim(),
+        mount_position: document.getElementById('c_mount').value,
+        rtsp_url: document.getElementById('c_rtsp').value.trim(),
+        resolution: document.getElementById('c_res').value,
+        fps: parseInt(document.getElementById('c_fps').value, 10),
+        is_streaming: 1
+      };
+
+      try {
+        const res = await fetchWithAuth('api/cameras', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const json = await res.json();
+
+        if (res.ok) {
+          alert(`Camera ${payload.camera_id} mounted to ${payload.vehicle_id} successfully!`);
+          closeCameraModal();
+          loadFleetData();
+        } else {
+          alert('Failed to mount camera: ' + (json.error || json.message || 'Server error'));
+        }
+      } catch (err) {
+        alert('Network error: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Mount & Save Camera';
+      }
+    }
+
+    async function handleDeleteVehicle(id, vehicleId) {
+      if (!confirm(`Are you sure you want to delete vehicle ${vehicleId}? All attached cameras will be unmounted.`)) return;
+
+      try {
+        const res = await fetchWithAuth(`api/vehicles/${id}`, { method: 'DELETE' });
+        const json = await res.json();
+
+        if (res.ok) {
+          alert(`Vehicle ${vehicleId} deleted.`);
+          loadFleetData();
+        } else {
+          alert('Failed to delete: ' + (json.error || json.message || 'Requires Admin token'));
+        }
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+    }
+
+    async function handleDeleteCamera(id, cameraId) {
+      if (!confirm(`Are you sure you want to unmount camera ${cameraId}?`)) return;
+
+      try {
+        const res = await fetchWithAuth(`api/cameras/${id}`, { method: 'DELETE' });
+        const json = await res.json();
+
+        if (res.ok) {
+          alert(`Camera ${cameraId} unmounted.`);
+          loadFleetData();
+        } else {
+          alert('Failed to remove: ' + (json.error || 'Requires Admin token'));
+        }
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+    }
+  </script>
+</body>
+</html>

@@ -588,6 +588,7 @@
         <span class="brand-badge">POLICE GOV V1.0</span>
       </div>
       <div class="nav-buttons">
+        <a href="fleet.html" class="nav-btn" style="background:#0f172a; color:#fff; font-weight:700;">🚘 Fleet & Cameras</a>
         <a href="../index.html" class="nav-btn">Live Vehicle Dashboard</a>
         <a href="../apis.html" class="nav-btn">Architecture Specs</a>
         <a href="../database.html" class="nav-btn">Database DDL</a>
@@ -875,7 +876,7 @@
           <div class="details-grid">
             <div>
               <div class="detail-section-title">Response Schema Highlights</div>
-              <p style="font-size: 12px; margin-bottom: 8px;">Returns vehicle identifiers along with joined real-time GPS <code>latest_lat</code>, <code>latest_lng</code>, <code>speed_kmph</code>, <code>heading_degrees</code>, and Jetson hardware temperature.</p>
+              <p style="font-size: 12px; margin-bottom: 8px;">Returns vehicle identifiers along with joined real-time GPS coordinates, telemetry, and <strong>mounted 360° cameras</strong> array.</p>
               <div class="code-box"><pre>{
   "success": true,
   "data": [
@@ -887,7 +888,18 @@
       "latest_lat": "18.9220000",
       "latest_lng": "72.8347000",
       "speed_kmph": "42.50",
-      "jetson_temperature_c": "48.20"
+      "camera_count": 4,
+      "cameras": [
+        {
+          "camera_id": "CAM-01-ROOF-FRONT",
+          "camera_name": "Roof Front 4K ANPR Telephoto",
+          "mount_position": "FRONT",
+          "rtsp_url": "rtsp://192.168.1.101:554/live/front_ch1",
+          "resolution": "1920x1080",
+          "fps": 25,
+          "is_streaming": 1
+        }
+      ]
     }
   ]
 }</pre></div>
@@ -902,6 +914,65 @@
                   <div class="response-status-bar">
                     <span>Status: <span class="status-code-badge status-200">200 OK</span></span>
                     <span class="latency-timer">30 ms</span>
+                  </div>
+                  <div class="code-box"><pre class="response-body"></pre></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- POST /api/vehicles -->
+      <div class="endpoint-card" data-category="vehicles" data-method="POST" data-path="/api/vehicles">
+        <div class="endpoint-summary" onclick="toggleEndpoint(this)">
+          <div class="endpoint-left">
+            <span class="method-badge method-post">POST</span>
+            <span class="endpoint-path">/api/vehicles</span>
+            <span class="endpoint-desc">Register a new police patrol vehicle unit</span>
+          </div>
+          <div class="endpoint-right">
+            <span class="role-badge role-admin">Admin Only</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="endpoint-details">
+          <div class="details-grid">
+            <div>
+              <div class="detail-section-title">Request Body Parameters</div>
+              <table class="param-table">
+                <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+                <tbody>
+                  <tr><td class="param-name">vehicle_id</td><td class="param-type">string</td><td class="param-req">YES</td><td>Unique van identifier (e.g. <code>PATROL_VAN_05</code>)</td></tr>
+                  <tr><td class="param-name">registration_number</td><td class="param-type">string</td><td class="param-req">YES</td><td>Official vehicle license plate (e.g. <code>MH01PA2028</code>)</td></tr>
+                  <tr><td class="param-name">police_station</td><td class="param-type">string</td><td class="param-req">YES</td><td>Jurisdictional police station division</td></tr>
+                  <tr><td class="param-name">vehicle_model</td><td class="param-type">string</td><td class="param-req">NO</td><td>Make & model (e.g. <code>Mahindra Scorpio Classic</code>)</td></tr>
+                  <tr><td class="param-name">assigned_driver_officer</td><td class="param-type">string</td><td class="param-req">NO</td><td>Designated driver / head constable</td></tr>
+                  <tr><td class="param-name">jetson_device_serial</td><td class="param-type">string</td><td class="param-req">NO</td><td>On-board Jetson Orin hardware serial</td></tr>
+                  <tr><td class="param-name">sim_card_phone</td><td class="param-type">string</td><td class="param-req">NO</td><td>5G/4G cellular modem number</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div>
+              <div class="try-runner">
+                <div class="try-header">
+                  <span>Interactive Test Runner</span>
+                  <button class="execute-btn" onclick="executeApi(this, 'POST', '/api/vehicles')">Send Request</button>
+                </div>
+                <textarea class="textarea-json">{
+  "vehicle_id": "PATROL_VAN_05",
+  "registration_number": "MH01PA2028",
+  "vehicle_model": "Mahindra Scorpio Classic",
+  "police_station": "Worli Police Station",
+  "assigned_driver_officer": "HC Ramesh Shinde",
+  "jetson_device_serial": "JETSON-ORIN-88902",
+  "sim_card_phone": "+91 98200 12345",
+  "is_active": 1
+}</textarea>
+                <div class="response-container">
+                  <div class="response-status-bar">
+                    <span>Status: <span class="status-code-badge status-200">201 Created</span></span>
+                    <span class="latency-timer">24 ms</span>
                   </div>
                   <div class="code-box"><pre class="response-body"></pre></div>
                 </div>
@@ -959,6 +1030,129 @@
                   <div class="response-status-bar">
                     <span>Status: <span class="status-code-badge status-200">201 Created</span></span>
                     <span class="latency-timer">29 ms</span>
+                  </div>
+                  <div class="code-box"><pre class="response-body"></pre></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================================================================= -->
+      <!-- 3b. 360° MULTI-CAMERA RIGS & RTSP STREAMS -->
+      <!-- ================================================================= -->
+      <div class="section-title" data-category="cameras">
+        <span>3b. 360° Multi-Camera Rigs & RTSP Streams</span>
+        <span class="section-badge">Camera Rig Management</span>
+      </div>
+
+      <!-- GET /api/cameras -->
+      <div class="endpoint-card" data-category="cameras" data-method="GET" data-path="/api/cameras">
+        <div class="endpoint-summary" onclick="toggleEndpoint(this)">
+          <div class="endpoint-left">
+            <span class="method-badge method-get">GET</span>
+            <span class="endpoint-path">/api/cameras</span>
+            <span class="endpoint-desc">List mounted 360° IP cameras (optionally filter by ?vehicle_id=...)</span>
+          </div>
+          <div class="endpoint-right">
+            <span class="role-badge role-protected">User / Admin</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="endpoint-details">
+          <div class="details-grid">
+            <div>
+              <div class="detail-section-title">Query Parameters</div>
+              <p style="font-size: 12px; margin-bottom: 8px;"><code>vehicle_id</code> (optional) - Filter cameras assigned to a specific van (e.g. <code>PATROL_VAN_01</code>).</p>
+              <div class="detail-section-title">Sample Response Highlights</div>
+              <div class="code-box"><pre>{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "camera_id": "CAM-01-ROOF-FRONT",
+      "vehicle_id": "PATROL_VAN_01",
+      "camera_name": "Roof Front 4K ANPR Telephoto",
+      "mount_position": "FRONT",
+      "rtsp_url": "rtsp://192.168.1.101:554/live/front_ch1",
+      "resolution": "1920x1080",
+      "fps": 25,
+      "is_streaming": 1
+    }
+  ]
+}</pre></div>
+            </div>
+            <div>
+              <div class="try-runner">
+                <div class="try-header">
+                  <span>Interactive Test Runner</span>
+                  <button class="execute-btn" onclick="executeApi(this, 'GET', '/api/cameras')">Send Request</button>
+                </div>
+                <div class="response-container">
+                  <div class="response-status-bar">
+                    <span>Status: <span class="status-code-badge status-200">200 OK</span></span>
+                    <span class="latency-timer">22 ms</span>
+                  </div>
+                  <div class="code-box"><pre class="response-body"></pre></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- POST /api/cameras -->
+      <div class="endpoint-card" data-category="cameras" data-method="POST" data-path="/api/cameras">
+        <div class="endpoint-summary" onclick="toggleEndpoint(this)">
+          <div class="endpoint-left">
+            <span class="method-badge method-post">POST</span>
+            <span class="endpoint-path">/api/cameras</span>
+            <span class="endpoint-desc">Mount a 360° IP camera and assign it to a police patrol vehicle</span>
+          </div>
+          <div class="endpoint-right">
+            <span class="role-badge role-admin">Admin Only</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="endpoint-details">
+          <div class="details-grid">
+            <div>
+              <div class="detail-section-title">Request Body Parameters</div>
+              <table class="param-table">
+                <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+                <tbody>
+                  <tr><td class="param-name">camera_id</td><td class="param-type">string</td><td class="param-req">YES</td><td>Unique identifier (e.g. <code>CAM-05-ROOF-FRONT</code>)</td></tr>
+                  <tr><td class="param-name">vehicle_id</td><td class="param-type">string</td><td class="param-req">YES</td><td>Target vehicle code (e.g. <code>PATROL_VAN_01</code>)</td></tr>
+                  <tr><td class="param-name">mount_position</td><td class="param-type">string</td><td class="param-req">YES</td><td>Orientation: <code>FRONT</code>, <code>REAR</code>, <code>LEFT</code>, <code>RIGHT</code></td></tr>
+                  <tr><td class="param-name">camera_name</td><td class="param-type">string</td><td class="param-req">YES</td><td>Friendly label (e.g. <code>Roof Front 4K ANPR Telephoto</code>)</td></tr>
+                  <tr><td class="param-name">rtsp_url</td><td class="param-type">string</td><td class="param-req">YES</td><td>H.264/H.265 RTSP live feed endpoint</td></tr>
+                  <tr><td class="param-name">resolution</td><td class="param-type">string</td><td class="param-req">NO</td><td>Stream resolution (default: <code>1920x1080</code>)</td></tr>
+                  <tr><td class="param-name">fps</td><td class="param-type">integer</td><td class="param-req">NO</td><td>Capture frame rate (default: <code>25</code>)</td></tr>
+                  <tr><td class="param-name">is_streaming</td><td class="param-type">integer</td><td class="param-req">NO</td><td>1 for active feed, 0 for inactive</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div>
+              <div class="try-runner">
+                <div class="try-header">
+                  <span>Interactive Test Runner</span>
+                  <button class="execute-btn" onclick="executeApi(this, 'POST', '/api/cameras')">Send Request</button>
+                </div>
+                <textarea class="textarea-json">{
+  "camera_id": "CAM-01-ROOF-REAR",
+  "vehicle_id": "PATROL_VAN_01",
+  "camera_name": "Roof Rear Wide-Angle Camera",
+  "mount_position": "REAR",
+  "rtsp_url": "rtsp://192.168.1.102:554/live/rear_ch1",
+  "resolution": "1920x1080",
+  "fps": 25,
+  "is_streaming": 1
+}</textarea>
+                <div class="response-container">
+                  <div class="response-status-bar">
+                    <span>Status: <span class="status-code-badge status-200">201 Created</span></span>
+                    <span class="latency-timer">26 ms</span>
                   </div>
                   <div class="code-box"><pre class="response-body"></pre></div>
                 </div>

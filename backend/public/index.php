@@ -49,6 +49,8 @@ $router->get('/docs', [DashboardController::class, 'apiDocumentation'], []);
 $router->get('/api/docs', [DashboardController::class, 'apiDocumentation'], []);
 $router->get('/db_sync.html', [DashboardController::class, 'dbSyncPage'], []);
 $router->get('/sync', [DashboardController::class, 'dbSyncPage'], []);
+$router->get('/fleet.html', [DashboardController::class, 'fleetPage'], []);
+$router->get('/fleet', [DashboardController::class, 'fleetPage'], []);
 
 // ============================================================================
 // 2. AUTHENTICATION & PROFILE (JWT HS256)

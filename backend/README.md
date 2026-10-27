@@ -67,10 +67,23 @@ backend/
 │   ├── DatabaseTest.php
 │   ├── LibraryIntegrationTest.php
 │   └── ValidatorTest.php
+├── fleet.html                        # Fleet & 360° Camera Rig Manager Console
+├── api_documentation.html            # Interactive Swagger-style REST API Console
+├── db_sync.html                      # Local ⟷ Production Database Sync Console
 ├── composer.json
 ├── phpunit.xml
 └── test_api_endpoints.php            # Automated E2E REST API verification
 ```
+
+---
+
+## 2.1 Web Consoles & Interactive Management Interfaces
+
+| Console | URL Path | Purpose |
+|---|---|---|
+| **🚘 Fleet & 360° Camera Rig Manager** | `/fleet.html` or `/fleet` | Create vehicles, assign drivers, mount 360° roof cameras (FRONT, REAR, LEFT, RIGHT), and configure RTSP stream endpoints. |
+| **⚡ Interactive Swagger API Tester** | `/api_documentation.html` or `/docs` | Complete REST API specification with 1-click authentication and live interactive test runners. |
+| **🔄 Database Sync Center** | `/db_sync.html` or `/sync` | 13-table schema drift comparison, row counts, and selective push/pull synchronization between Local XAMPP and Production Hostinger. |
 
 ---
 

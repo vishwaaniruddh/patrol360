@@ -52,8 +52,12 @@ class Router
             '/patrol360/backend',
             '/vehicle_gov/backend/public/index.php',
             '/vehicle_gov/backend/public',
+            '/vehicle_gov/backend/index.php',
+            '/vehicle_gov/backend',
             '/backend/public/index.php',
             '/backend/public',
+            '/backend/index.php',
+            '/backend',
             '/index.php'
         ];
         foreach ($basePrefixes as $prefix) {

@@ -181,4 +181,27 @@ class DashboardController
 
         Response::error('Database sync page file not found on server.', 404);
     }
+
+    /**
+     * GET /fleet.html or /fleet
+     * Serves the Fleet & Camera Management Console HTML directly
+     */
+    public function fleetPage(array $args): void
+    {
+        $candidates = [
+            __DIR__ . '/../../fleet.html',
+            __DIR__ . '/../../public/fleet.html',
+            __DIR__ . '/../../../fleet.html'
+        ];
+
+        foreach ($candidates as $file) {
+            if (file_exists($file)) {
+                header('Content-Type: text/html; charset=utf-8');
+                readfile($file);
+                exit;
+            }
+        }
+
+        Response::error('Fleet management page file not found on server.', 404);
+    }
 }

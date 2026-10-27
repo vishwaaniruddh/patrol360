@@ -72,6 +72,14 @@ class VehicleController
         $stmt->execute($params);
         $vehicles = $stmt->fetchAll();
 
+        // Attach cameras to each vehicle
+        foreach ($vehicles as &$veh) {
+            $camStmt = $this->db->prepare("SELECT camera_id, camera_name, mount_position, rtsp_url, resolution, fps, is_streaming FROM `vehicle_cameras` WHERE vehicle_id = ? ORDER BY mount_position ASC");
+            $camStmt->execute([$veh['vehicle_id']]);
+            $veh['cameras'] = $camStmt->fetchAll();
+            $veh['camera_count'] = count($veh['cameras']);
+        }
+
         Response::paginate($vehicles, $total, $page, $limit, 'Police vehicles list retrieved');
     }
 
