@@ -186,6 +186,14 @@ Base URL (Production): `https://sarsspl.com/patrol360/backend/public`
 - `GET /api/dashboard/stats` - Live metrics for vehicles, cameras, detections, threats, and system health
 - `GET /api/audit-logs` - Police compliance audit trail *(Admin)*
 
+### J. System Health & Dual-DB Sync Engine
+- `GET /api/health` - Live database connection diagnostic, latency, table counts, and environment details
+- `GET /api/sync/overview` - Complete relational tables metadata, row counts, indexes, and schema fingerprint *(Admin/User)*
+- `POST /api/sync/compare` - Deep schema & row count comparison between current instance and remote server *(Admin/User)*
+- `POST /api/sync/export-data` - Export table rows as portable JSON payload *(Admin/User)*
+- `POST /api/sync/import-data` - Ingest rows into tables with atomic UPSERT (`ON DUPLICATE KEY UPDATE`) *(Admin)*
+- Web Console: **`db_sync.html`** - Dedicated visual synchronization console with side-by-side comparison matrix and terminal log stream.
+
 ---
 
 ## 5. Automated Testing

@@ -591,6 +591,7 @@
         <a href="../index.html" class="nav-btn">Live Vehicle Dashboard</a>
         <a href="../apis.html" class="nav-btn">Architecture Specs</a>
         <a href="../database.html" class="nav-btn">Database DDL</a>
+        <a href="db_sync.html" class="nav-btn" style="background:#10b981; color:#fff; font-weight:700; border-color:#059669;">🔄 DB Sync Operations</a>
         <button class="nav-btn primary" onclick="expandAll()">Expand All</button>
         <button class="nav-btn" onclick="collapseAll()">Collapse All</button>
       </div>
@@ -617,9 +618,10 @@
           <span class="status-dot"></span>
           <span>Interactive API Tester & Bearer Token Session</span>
           <span id="activeRoleBadge" class="role-badge role-public" style="margin-left: 8px;">No Token</span>
+          <span id="dbStatusBadge" class="role-badge" style="background:#dcfce7; color:#166534; border:1px solid #bbf7d0; margin-left: 8px;">Checking Database...</span>
         </div>
         <div style="font-size: 11px; color: var(--muted-foreground);" id="serverLatency">
-          Server: <strong style="color: #0f172a;">127.0.0.1:80</strong> | Apache Rewrite: <strong>Active</strong>
+          Server: <strong style="color: #0f172a;">Detecting...</strong>
         </div>
       </div>
       <div class="auth-grid">
@@ -1447,7 +1449,49 @@
           updateRoleBadge('Custom Token');
         }
       });
+
+      baseUrlInput.addEventListener('change', checkDbHealth);
+
+      // Verify Live Database Health immediately
+      checkDbHealth();
     });
+
+    async function checkDbHealth() {
+      const baseUrl = document.getElementById('apiBaseUrl').value.replace(/\/$/, '');
+      const badge = document.getElementById('dbStatusBadge');
+      const serverStatus = document.getElementById('serverLatency');
+
+      badge.innerHTML = 'Checking DB...';
+      badge.style.background = '#fef9c3';
+      badge.style.color = '#854d0e';
+      badge.style.borderColor = '#fde047';
+
+      try {
+        const res = await fetch(`${baseUrl}/api/health`);
+        const json = await res.json();
+
+        if (res.ok && json.database && json.database.connected) {
+          badge.style.background = '#dcfce7';
+          badge.style.color = '#15803d';
+          badge.style.borderColor = '#86efac';
+          badge.innerHTML = `🟢 <strong>DB Connected:</strong> ${json.database.database_name} (${json.database.table_count} tables • ${json.database.latency_ms}ms)`;
+
+          if (serverStatus) {
+            serverStatus.innerHTML = `Env: <strong style="color:#0f172a; text-transform:uppercase;">${json.environment}</strong> | Server: <strong>${json.database.host}</strong> (${json.database.server_version || 'MariaDB'})`;
+          }
+        } else {
+          badge.style.background = '#fee2e2';
+          badge.style.color = '#b91c1c';
+          badge.style.borderColor = '#fca5a5';
+          badge.innerHTML = `🔴 <strong>DB Disconnected:</strong> ${json.database?.error || 'Connection Failed'}`;
+        }
+      } catch (err) {
+        badge.style.background = '#fee2e2';
+        badge.style.color = '#b91c1c';
+        badge.style.borderColor = '#fca5a5';
+        badge.innerHTML = `🔴 <strong>API / DB Offline</strong>`;
+      }
+    }
 
     function updateRoleBadge(role) {
       const badge = document.getElementById('activeRoleBadge');

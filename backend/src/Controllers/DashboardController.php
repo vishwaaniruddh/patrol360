@@ -158,4 +158,27 @@ class DashboardController
 
         Response::error('API documentation file not found on server.', 404);
     }
+
+    /**
+     * GET /db_sync.html or /sync
+     * Serves the Database Synchronization Console HTML directly
+     */
+    public function dbSyncPage(array $args): void
+    {
+        $candidates = [
+            __DIR__ . '/../../db_sync.html',
+            __DIR__ . '/../../public/db_sync.html',
+            __DIR__ . '/../../../db_sync.html'
+        ];
+
+        foreach ($candidates as $file) {
+            if (file_exists($file)) {
+                header('Content-Type: text/html; charset=utf-8');
+                readfile($file);
+                exit;
+            }
+        }
+
+        Response::error('Database sync page file not found on server.', 404);
+    }
 }

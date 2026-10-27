@@ -26,6 +26,8 @@ use App\Controllers\EventCrowdController;
 use App\Controllers\ExportController;
 use App\Controllers\MailerController;
 use App\Controllers\DashboardController;
+use App\Controllers\SystemController;
+use App\Controllers\SyncController;
 
 // Enable CORS and handle OPTIONS preflight
 CorsMiddleware::handle();
@@ -39,11 +41,14 @@ $router = new Router();
 // ============================================================================
 // 1. SYSTEM HEALTH & API SITEMAP
 // ============================================================================
-$router->get('/', [AuthController::class, 'me'], []); // Welcome endpoint fallback
-$router->get('/api/health', [AuthController::class, 'me'], []);
+$router->get('/', [SystemController::class, 'health'], []); // Welcome & health status
+$router->get('/api/health', [SystemController::class, 'health'], []);
+$router->get('/api/system/status', [SystemController::class, 'health'], []);
 $router->get('/api_documentation.html', [DashboardController::class, 'apiDocumentation'], []);
 $router->get('/docs', [DashboardController::class, 'apiDocumentation'], []);
 $router->get('/api/docs', [DashboardController::class, 'apiDocumentation'], []);
+$router->get('/db_sync.html', [DashboardController::class, 'dbSyncPage'], []);
+$router->get('/sync', [DashboardController::class, 'dbSyncPage'], []);
 
 // ============================================================================
 // 2. AUTHENTICATION & PROFILE (JWT HS256)
@@ -177,6 +182,14 @@ $router->post('/api/alerts/email', [MailerController::class, 'sendAlert'], [$aut
 // ============================================================================
 $router->get('/api/dashboard/stats', [DashboardController::class, 'stats'], [$auth]);
 $router->get('/api/audit-logs', [DashboardController::class, 'auditLogs'], [$admin]);
+
+// ============================================================================
+// 17. DATABASE SYNCHRONIZATION ENGINE (LOCAL <-> PRODUCTION)
+// ============================================================================
+$router->get('/api/sync/overview', [SyncController::class, 'overview'], [$auth]);
+$router->post('/api/sync/compare', [SyncController::class, 'compare'], [$auth]);
+$router->post('/api/sync/export-data', [SyncController::class, 'exportData'], [$auth]);
+$router->post('/api/sync/import-data', [SyncController::class, 'importData'], [$admin]);
 
 // Dispatch request through router
 $router->dispatch();

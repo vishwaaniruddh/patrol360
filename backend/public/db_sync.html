@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Patrol360 | Database Sync Center (Local & Production)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --background: #f8fafc;
+      --foreground: #0f172a;
+      --card: #ffffff;
+      --border: #e2e8f0;
+      --muted: #f1f5f9;
+      --muted-foreground: #64748b;
+      --primary: #0f172a;
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--background);
+      color: var(--foreground);
+      font-family: var(--font-sans);
+      line-height: 1.5;
+      font-size: 13px;
+      padding-bottom: 80px;
+    }
+
+    /* Top Sticky Header */
+    header.top-header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+      padding: 0.75rem 1.5rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    }
+    .header-inner {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+      font-size: 15px;
+      color: #0f172a;
+      text-decoration: none;
+    }
+    .brand-badge {
+      background: #0f172a;
+      color: #fff;
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .nav-buttons {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .nav-btn {
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--muted-foreground);
+      text-decoration: none;
+      border: 1px solid var(--border);
+      background: #fff;
+      transition: all 0.15s ease;
+      cursor: pointer;
+    }
+    .nav-btn:hover { background: var(--muted); color: var(--foreground); }
+    .nav-btn.primary { background: #0f172a; color: #fff; border-color: #0f172a; }
+
+    .container {
+      max-width: 1400px;
+      margin: 1.5rem auto 0;
+      padding: 0 1.5rem;
+    }
+
+    /* Hero Banner */
+    .hero-banner {
+      background: #0f172a;
+      color: #ffffff;
+      border-radius: var(--radius-lg);
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1.5rem;
+    }
+    .hero-left h1 { font-size: 18px; font-weight: 800; margin-bottom: 4px; }
+    .hero-left p { font-size: 12px; color: #94a3b8; max-width: 800px; }
+    .hero-badge {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      padding: 8px 14px;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      white-space: nowrap;
+      text-align: right;
+    }
+
+    /* Dual Environment Status Grid */
+    .env-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    @media (max-width: 900px) {
+      .env-grid { grid-template-columns: 1fr; }
+    }
+    .env-card {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem 1.5rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+    .env-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.75rem;
+    }
+    .env-title {
+      font-weight: 700;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .pill {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 9999px;
+      letter-spacing: 0.3px;
+    }
+    .pill-green { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+    .pill-blue { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+    .pill-orange { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+    .pill-red { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+
+    .env-meta-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      margin-bottom: 1rem;
+    }
+    .env-meta-table td {
+      padding: 5px 0;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .meta-lbl { width: 35%; color: var(--muted-foreground); font-weight: 500; }
+    .meta-val { width: 65%; font-family: var(--font-mono); font-weight: 600; color: #0f172a; }
+
+    /* Action Toolbar */
+    .toolbar-card {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .btn-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .sync-btn {
+      padding: 8px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid transparent;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .btn-push { background: #0f172a; color: #ffffff; }
+    .btn-push:hover { background: #1e293b; }
+    .btn-pull { background: #2563eb; color: #ffffff; }
+    .btn-pull:hover { background: #1d4ed8; }
+    .btn-compare { background: #f1f5f9; color: #0f172a; border-color: #cbd5e1; }
+    .btn-compare:hover { background: #e2e8f0; }
+    .btn-export-sql { background: #10b981; color: #ffffff; }
+    .btn-export-sql:hover { background: #059669; }
+
+    /* Matrix Table */
+    .matrix-card {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+    .table-container {
+      overflow-x: auto;
+      margin-top: 1rem;
+    }
+    .sync-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+    .sync-table th {
+      background: #f1f5f9;
+      padding: 10px 14px;
+      text-align: left;
+      font-weight: 700;
+      color: #475569;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sync-table td {
+      padding: 10px 14px;
+      border-top: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    .sync-table tr:hover { background: #f8fafc; }
+    .tbl-name { font-family: var(--font-mono); font-weight: 700; color: #0f172a; }
+    .tbl-count { font-family: var(--font-mono); font-weight: 600; }
+
+    /* Terminal Console */
+    .console-card {
+      background: #0f172a;
+      color: #f8fafc;
+      border-radius: var(--radius-lg);
+      padding: 1.25rem 1.5rem;
+      border: 1px solid #1e293b;
+    }
+    .console-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid #1e293b;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      color: #94a3b8;
+    }
+    .console-body {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      line-height: 1.6;
+      max-height: 250px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      color: #cbd5e1;
+    }
+    .console-body .log-success { color: #4ade80; }
+    .console-body .log-warn { color: #facc15; }
+    .console-body .log-err { color: #f87171; }
+    .console-body .log-info { color: #60a5fa; }
+
+    .input-field {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-family: var(--font-mono);
+      background: #f8fafc;
+      color: #0f172a;
+      outline: none;
+    }
+    .input-field:focus { border-color: #0f172a; background: #fff; }
+  </style>
+</head>
+<body>
+
+  <!-- Top Sticky Navigation Bar -->
+  <header class="top-header">
+    <div class="header-inner">
+      <div class="brand">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+          <path d="M3 3v5h5"/>
+          <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+          <path d="M16 21h5v-5"/>
+        </svg>
+        <span>Patrol360 Database Sync Operations</span>
+        <span class="brand-badge">DUAL-DB SYNC</span>
+      </div>
+      <div class="nav-buttons">
+        <a href="api_documentation.html" class="nav-btn">API Documentation & Swagger</a>
+        <a href="../database.html" class="nav-btn">Database Schema DDL</a>
+        <a href="../index.html" class="nav-btn primary">Live Police Console</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <!-- Hero Title -->
+    <div class="hero-banner">
+      <div class="hero-left">
+        <h1>Local ⟷ Production Database Synchronization Center</h1>
+        <p>Monitor schema drift, inspect row counts across all 13 relational tables, and selectively synchronize hotlists, seed users, or full database tables between your Local Development environment (XAMPP) and the Live Production Server (sarsspl.com).</p>
+      </div>
+      <div class="hero-badge">
+        MySQL / MariaDB Engine<br>
+        13 Core Tables • SHA-256 Checksums
+      </div>
+    </div>
+
+    <!-- Dual Environment Status Cards -->
+    <div class="env-grid">
+      
+      <!-- Current Instance (Source) -->
+      <div class="env-card">
+        <div class="env-card-header">
+          <div class="env-title">
+            <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#10b981;"></span>
+            <span>Current Connected Instance</span>
+          </div>
+          <span id="currentEnvPill" class="pill pill-green">Detecting...</span>
+        </div>
+        <table class="env-meta-table">
+          <tr><td class="meta-lbl">Database:</td><td class="meta-val" id="curDbName">-</td></tr>
+          <tr><td class="meta-lbl">Host / Port:</td><td class="meta-val" id="curDbHost">-</td></tr>
+          <tr><td class="meta-lbl">Engine Version:</td><td class="meta-val" id="curDbVer">-</td></tr>
+          <tr><td class="meta-lbl">Total Tables:</td><td class="meta-val" id="curDbTables">-</td></tr>
+          <tr><td class="meta-lbl">Total Records:</td><td class="meta-val" id="curDbRows">-</td></tr>
+          <tr><td class="meta-lbl">Latency:</td><td class="meta-val" id="curDbLatency">-</td></tr>
+        </table>
+        <button class="sync-btn btn-compare" style="width: 100%;" onclick="loadCurrentOverview()">
+          ↻ Refresh Current Instance
+        </button>
+      </div>
+
+      <!-- Remote Target Instance -->
+      <div class="env-card">
+        <div class="env-card-header">
+          <div class="env-title">
+            <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#3b82f6;"></span>
+            <span>Remote Target Instance</span>
+          </div>
+          <span id="remoteEnvPill" class="pill pill-blue">Configured</span>
+        </div>
+        <div style="margin-bottom: 10px;">
+          <label style="font-size: 11px; font-weight: 600; color: #475569;">Target Remote Server Base URL</label>
+          <input type="text" id="targetRemoteUrl" class="input-field" value="https://sarsspl.com/patrol360/backend/public">
+        </div>
+        <div style="margin-bottom: 12px;">
+          <label style="font-size: 11px; font-weight: 600; color: #475569;">Remote Admin Bearer Token (Optional if endpoints are public)</label>
+          <input type="text" id="targetRemoteToken" class="input-field" placeholder="Paste Admin JWT token or click quick login...">
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button class="sync-btn btn-compare" style="flex: 1;" onclick="testRemoteConnection()">
+            ⚡ Test Remote Connection
+          </button>
+          <button class="sync-btn btn-pull" onclick="quickRemoteLogin()">
+            1-Click Remote Token
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Sync Operations Action Toolbar -->
+    <div class="toolbar-card">
+      <div>
+        <strong style="font-size: 14px; color: #0f172a;">Sync Actions</strong>
+        <p style="font-size: 12px; color: var(--muted-foreground);">Select actions to synchronize schema or table data across environments</p>
+      </div>
+      <div class="btn-group">
+        <button class="sync-btn btn-compare" onclick="runComparison()">
+          🔍 Run Deep Comparison
+        </button>
+        <button class="sync-btn btn-push" onclick="pushWatchlists()">
+          🚀 Push Watchlists to Server
+        </button>
+        <button class="sync-btn btn-pull" onclick="pullEvents()">
+          📥 Pull Live Events from Server
+        </button>
+        <button class="sync-btn btn-export-sql" onclick="exportSqlDump()">
+          💾 Export Full SQL Dump
+        </button>
+      </div>
+    </div>
+
+    <!-- Table-by-Table Comparison Matrix -->
+    <div class="matrix-card">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <strong style="font-size: 14px;">Relational Tables Comparison Matrix</strong>
+          <span id="diffSummaryBadge" class="pill pill-blue" style="margin-left: 8px;">13 Tables Monitored</span>
+        </div>
+        <div style="font-size: 11px; color: var(--muted-foreground);">
+          Auto-fingerprint: <code id="schemaFingerprint">calculating...</code>
+        </div>
+      </div>
+
+      <div class="table-container">
+        <table class="sync-table">
+          <thead>
+            <tr>
+              <th style="width: 35px;"><input type="checkbox" id="selectAllTbls" checked onclick="toggleSelectAll()"></th>
+              <th>Table Name</th>
+              <th>Current Rows</th>
+              <th>Remote Rows</th>
+              <th>Row Difference</th>
+              <th>Sync Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="syncTableBody">
+            <tr><td colspan="7" style="text-align:center; padding: 20px; color: #64748b;">Loading table structure...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Live Execution Terminal Log -->
+    <div class="console-card">
+      <div class="console-header">
+        <span>PATROL360 SYNC EXECUTION CONSOLE // AUDIT STREAM</span>
+        <button onclick="clearConsole()" style="background:transparent; border:none; color:#94a3b8; cursor:pointer; font-size:11px;">Clear Log</button>
+      </div>
+      <div class="console-body" id="syncConsole">
+[SYSTEM INITIALIZED] Ready to execute dual-environment database synchronization operations.
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    let currentOverview = null;
+    let remoteOverview = null;
+
+    window.addEventListener('DOMContentLoaded', () => {
+      // Auto-detect environments
+      const isLocal = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+      const targetInput = document.getElementById('targetRemoteUrl');
+
+      if (!isLocal && window.location.hostname) {
+        // We are on live server: remote target defaults to local or custom
+        targetInput.value = 'http://localhost/vehicle_gov/backend/public';
+      } else {
+        // We are on local: remote target defaults to live server
+        targetInput.value = 'https://sarsspl.com/patrol360/backend/public';
+      }
+
+      loadCurrentOverview();
+    });
+
+    function logConsole(msg, type = 'info') {
+      const c = document.getElementById('syncConsole');
+      const time = new Date().toLocaleTimeString();
+      let colorClass = 'log-info';
+      if (type === 'success') colorClass = 'log-success';
+      if (type === 'warn') colorClass = 'log-warn';
+      if (type === 'err') colorClass = 'log-err';
+
+      c.innerHTML += `\n<span class="${colorClass}">[${time}] ${msg}</span>`;
+      c.scrollTop = c.scrollHeight;
+    }
+
+    function clearConsole() {
+      document.getElementById('syncConsole').innerHTML = '[CONSOLE CLEARED]';
+    }
+
+    async function loadCurrentOverview() {
+      logConsole('Fetching current instance database overview (/api/sync/overview)...');
+      try {
+        const res = await fetch('api/sync/overview');
+        const json = await res.json();
+
+        if (res.ok && json.data) {
+          currentOverview = json.data;
+          document.getElementById('curDbName').textContent = currentOverview.database_name;
+          document.getElementById('curDbHost').textContent = currentOverview.host;
+          document.getElementById('curDbTables').textContent = currentOverview.total_tables + ' tables';
+          document.getElementById('curDbRows').textContent = currentOverview.total_rows.toLocaleString() + ' records';
+          document.getElementById('schemaFingerprint').textContent = currentOverview.fingerprint.substr(0, 10) + '...';
+
+          const envPill = document.getElementById('currentEnvPill');
+          envPill.textContent = (currentOverview.environment === 'production' ? 'Production (Live)' : 'Localhost (Dev)');
+          envPill.className = 'pill ' + (currentOverview.environment === 'production' ? 'pill-orange' : 'pill-green');
+
+          // Fetch health for latency
+          fetch('api/health').then(r => r.json()).then(h => {
+            if (h.database) {
+              document.getElementById('curDbLatency').textContent = h.database.latency_ms + ' ms';
+              document.getElementById('curDbVer').textContent = h.database.server_version || 'MariaDB';
+            }
+          });
+
+          renderTableRows();
+          logConsole(`Current instance loaded: ${currentOverview.database_name} with ${currentOverview.total_tables} tables.`, 'success');
+        } else {
+          logConsole('Failed to load overview: ' + (json.error || 'Server error'), 'err');
+        }
+      } catch (err) {
+        logConsole('Error connecting to current database: ' + err.message, 'err');
+      }
+    }
+
+    function renderTableRows() {
+      const tbody = document.getElementById('syncTableBody');
+      if (!currentOverview || !currentOverview.tables) return;
+
+      const tables = currentOverview.tables;
+      let html = '';
+
+      for (const [name, info] of Object.entries(tables)) {
+        const remoteInfo = (remoteOverview && remoteOverview.tables) ? remoteOverview.tables[name] : null;
+        let remoteRowsText = remoteInfo ? remoteInfo.row_count.toLocaleString() : '<span style="color:#94a3b8;">Not Loaded</span>';
+        let diffText = '-';
+        let statusBadge = '<span class="pill pill-blue">Local Active</span>';
+
+        if (remoteInfo) {
+          const diff = info.row_count - remoteInfo.row_count;
+          if (diff === 0) {
+            statusBadge = '<span class="pill pill-green">✓ Synced</span>';
+            diffText = '0';
+          } else if (diff > 0) {
+            statusBadge = '<span class="pill pill-orange">+ Local Ahead</span>';
+            diffText = '+' + diff;
+          } else {
+            statusBadge = '<span class="pill pill-orange">- Remote Ahead</span>';
+            diffText = diff.toString();
+          }
+        }
+
+        html += `
+          <tr>
+            <td><input type="checkbox" class="tbl-checkbox" value="${name}" checked></td>
+            <td class="tbl-name">${name}</td>
+            <td class="tbl-count">${info.row_count.toLocaleString()}</td>
+            <td class="tbl-count">${remoteRowsText}</td>
+            <td class="tbl-count">${diffText}</td>
+            <td>${statusBadge}</td>
+            <td>
+              <button class="sync-btn btn-compare" style="padding:3px 8px; font-size:11px;" onclick="syncSingleTable('${name}', 'push')">Push ➔</button>
+              <button class="sync-btn btn-compare" style="padding:3px 8px; font-size:11px;" onclick="syncSingleTable('${name}', 'pull')">⬅ Pull</button>
+            </td>
+          </tr>
+        `;
+      }
+
+      tbody.innerHTML = html;
+    }
+
+    async function testRemoteConnection() {
+      const remoteUrl = document.getElementById('targetRemoteUrl').value.replace(/\/$/, '');
+      const token = document.getElementById('targetRemoteToken').value.trim();
+
+      logConsole(`Testing remote connection to: ${remoteUrl}/api/health...`);
+      try {
+        const headers = { 'Accept': 'application/json' };
+        if (token) headers['Authorization'] = 'Bearer ' + token;
+
+        const res = await fetch(`${remoteUrl}/api/health`, { headers });
+        const json = await res.json();
+
+        if (res.ok && json.database && json.database.connected) {
+          logConsole(`Remote DB Connected! Database: ${json.database.database_name} (${json.database.table_count} tables, ${json.database.latency_ms}ms)`, 'success');
+          alert(`Remote Database Connected Successfully!\n\nDB Name: ${json.database.database_name}\nTables: ${json.database.table_count}\nHost: ${json.database.host}\nLatency: ${json.database.latency_ms}ms`);
+          document.getElementById('remoteEnvPill').textContent = 'Connected (' + json.environment + ')';
+          document.getElementById('remoteEnvPill').className = 'pill pill-green';
+        } else {
+          logConsole(`Remote returned error: ${json.message || 'Unknown issue'}`, 'err');
+          alert(`Remote check failed: ${json.message || 'Check URL'}`);
+        }
+      } catch (err) {
+        logConsole(`Could not reach remote: ${err.message}`, 'err');
+        alert(`Could not connect to ${remoteUrl}.\nError: ${err.message}`);
+      }
+    }
+
+    async function runComparison() {
+      const remoteUrl = document.getElementById('targetRemoteUrl').value.replace(/\/$/, '');
+      const token = document.getElementById('targetRemoteToken').value.trim();
+
+      logConsole(`Initiating deep comparison between current instance and ${remoteUrl}...`);
+      try {
+        const res = await fetch('api/sync/compare', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ remote_url: remoteUrl, token: token })
+        });
+        const json = await res.json();
+
+        if (res.ok && json.data) {
+          const comp = json.data;
+          logConsole(`Comparison complete! Synced: ${comp.summary.synced_tables}, Count Mismatches: ${comp.summary.mismatched_tables}, Missing in Remote: ${comp.summary.missing_in_remote}`, 'success');
+
+          // Fetch remote overview to update the grid
+          const remoteRes = await fetch(`${remoteUrl}/api/sync/overview`, {
+            headers: token ? { 'Authorization': 'Bearer ' + token } : {}
+          });
+          const remoteJson = await remoteRes.json();
+          if (remoteJson.data) {
+            remoteOverview = remoteJson.data;
+            renderTableRows();
+          }
+
+          document.getElementById('diffSummaryBadge').textContent = comp.summary.is_identical 
+            ? '✓ Identical Databases' 
+            : `${comp.summary.mismatched_tables} Count Differences`;
+          document.getElementById('diffSummaryBadge').className = 'pill ' + (comp.summary.is_identical ? 'pill-green' : 'pill-orange');
+
+        } else {
+          logConsole(`Comparison failed: ${json.error || 'Check server configuration'}`, 'err');
+          alert(`Comparison failed: ${json.error}`);
+        }
+      } catch (err) {
+        logConsole(`Comparison error: ${err.message}`, 'err');
+      }
+    }
+
+    async function pushWatchlists() {
+      const remoteUrl = document.getElementById('targetRemoteUrl').value.replace(/\/$/, '');
+      const token = document.getElementById('targetRemoteToken').value.trim();
+
+      if (!confirm("Confirm PUSH: Do you want to push Stolen Vehicles Watchlist & Wanted Persons from this environment to the Remote Server?")) {
+        return;
+      }
+
+      logConsole('Exporting watchlists from local instance...');
+      try {
+        const expRes = await fetch('api/sync/export-data', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tables: ['stolen_vehicles_watchlist', 'person_watchlist'] })
+        });
+        const expData = await expRes.json();
+
+        if (!expRes.ok || !expData.data) {
+          logConsole('Failed to export local watchlists', 'err');
+          return;
+        }
+
+        const dataToPush = expData.data.data;
+        for (const [table, rows] of Object.entries(dataToPush)) {
+          if (rows.length === 0) continue;
+          logConsole(`Pushing ${rows.length} records into remote table [${table}]...`);
+
+          const headers = { 'Content-Type': 'application/json' };
+          if (token) headers['Authorization'] = 'Bearer ' + token;
+
+          const impRes = await fetch(`${remoteUrl}/api/sync/import-data`, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify({ table: table, rows: rows })
+          });
+          const impJson = await impRes.json();
+
+          if (impRes.ok) {
+            logConsole(`Successfully pushed ${rows.length} rows to remote [${table}]!`, 'success');
+          } else {
+            logConsole(`Failed to push to [${table}]: ${impJson.error || 'Server error'}`, 'err');
+          }
+        }
+
+        alert('Watchlists push operation completed! Check execution console for details.');
+        runComparison();
+
+      } catch (err) {
+        logConsole(`Push error: ${err.message}`, 'err');
+      }
+    }
+
+    async function pullEvents() {
+      const remoteUrl = document.getElementById('targetRemoteUrl').value.replace(/\/$/, '');
+      const token = document.getElementById('targetRemoteToken').value.trim();
+
+      if (!confirm("Confirm PULL: Do you want to pull live AI Detection Events from Remote Server into this environment?")) {
+        return;
+      }
+
+      const eventTables = ['anpr_detection_events', 'frs_detection_events', 'weapon_threat_events', 'fire_smoke_events', 'crowd_analytics_events'];
+      logConsole(`Requesting live detection events from remote server ${remoteUrl}...`);
+
+      try {
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = 'Bearer ' + token;
+
+        const expRes = await fetch(`${remoteUrl}/api/sync/export-data`, {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({ tables: eventTables })
+        });
+        const expJson = await expRes.json();
+
+        if (!expRes.ok || !expJson.data) {
+          logConsole(`Failed to fetch events from remote: ${expJson.error || 'Error'}`, 'err');
+          return;
+        }
+
+        const remoteData = expJson.data.data;
+        for (const [table, rows] of Object.entries(remoteData)) {
+          if (rows.length === 0) {
+            logConsole(`No new records in remote [${table}].`);
+            continue;
+          }
+
+          logConsole(`Importing ${rows.length} remote records into local [${table}]...`);
+          const impRes = await fetch('api/sync/import-data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ table: table, rows: rows })
+          });
+
+          if (impRes.ok) {
+            logConsole(`Successfully synced ${rows.length} records into local [${table}]!`, 'success');
+          } else {
+            logConsole(`Error importing into local [${table}]`, 'err');
+          }
+        }
+
+        alert('Pull events completed successfully! Local database is updated.');
+        loadCurrentOverview();
+
+      } catch (err) {
+        logConsole(`Pull error: ${err.message}`, 'err');
+      }
+    }
+
+    async function syncSingleTable(tableName, direction) {
+      if (direction === 'push') {
+        const remoteUrl = document.getElementById('targetRemoteUrl').value.replace(/\/$/, '');
+        const token = document.getElementById('targetRemoteToken').value.trim();
+
+        logConsole(`Exporting local table [${tableName}]...`);
+        const expRes = await fetch('api/sync/export-data', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tables: [tableName] })
+        });
+        const expJson = await expRes.json();
+        const rows = expJson.data.data[tableName] || [];
+
+        if (rows.length === 0) {
+          alert(`Local table ${tableName} has 0 records to push.`);
+          return;
+        }
+
+        logConsole(`Pushing ${rows.length} rows to remote [${tableName}]...`);
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = 'Bearer ' + token;
+
+        const res = await fetch(`${remoteUrl}/api/sync/import-data`, {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({ table: tableName, rows: rows })
+        });
+
+        if (res.ok) {
+          logConsole(`Table [${tableName}] pushed successfully!`, 'success');
+          alert(`Pushed ${rows.length} records to remote table ${tableName}!`);
+        } else {
+          const errData = await res.json();
+          logConsole(`Push failed: ${errData.error}`, 'err');
+          alert(`Push failed: ${errData.error}`);
+        }
+
+      } else {
+        // Pull
+        const remoteUrl = document.getElementById('targetRemoteUrl').value.replace(/\/$/, '');
+        const token = document.getElementById('targetRemoteToken').value.trim();
+
+        logConsole(`Exporting remote table [${tableName}]...`);
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = 'Bearer ' + token;
+
+        const res = await fetch(`${remoteUrl}/api/sync/export-data`, {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({ tables: [tableName] })
+        });
+        const json = await res.json();
+        const rows = json.data.data[tableName] || [];
+
+        logConsole(`Importing ${rows.length} rows into local [${tableName}]...`);
+        const impRes = await fetch('api/sync/import-data', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ table: tableName, rows: rows })
+        });
+
+        if (impRes.ok) {
+          logConsole(`Table [${tableName}] pulled and imported locally!`, 'success');
+          alert(`Pulled ${rows.length} records from remote into ${tableName}!`);
+          loadCurrentOverview();
+        } else {
+          alert(`Pull import failed on ${tableName}`);
+        }
+      }
+    }
+
+    async function quickRemoteLogin() {
+      const remoteUrl = document.getElementById('targetRemoteUrl').value.replace(/\/$/, '');
+      logConsole(`Authenticating against remote: ${remoteUrl}/api/auth/login...`);
+      try {
+        const res = await fetch(`${remoteUrl}/api/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: 'admin@police.gov.in', password: 'Admin@12345' })
+        });
+        const json = await res.json();
+        if (res.ok && json.data && json.data.token) {
+          document.getElementById('targetRemoteToken').value = json.data.token;
+          logConsole('Remote Admin token retrieved and stored in session!', 'success');
+          alert('Remote Admin token retrieved successfully!');
+        } else {
+          alert('Login failed on remote: ' + (json.error || 'Check server'));
+        }
+      } catch (err) {
+        alert('Could not authenticate: ' + err.message);
+      }
+    }
+
+    async function exportSqlDump() {
+      logConsole('Generating complete SQL dump for all 13 tables...');
+      try {
+        const res = await fetch('api/sync/export-data', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tables: [] })
+        });
+        const json = await res.json();
+
+        if (res.ok && json.data) {
+          const allData = json.data.data;
+          let sql = "-- Patrol360 Database Dump\n-- Generated on: " + new Date().toISOString() + "\n\n";
+
+          for (const [table, rows] of Object.entries(allData)) {
+            sql += `-- Table: ${table}\n`;
+            for (const r of rows) {
+              const cols = Object.keys(r).map(c => "`" + c + "`").join(", ");
+              const vals = Object.values(r).map(v => v === null ? "NULL" : "'" + String(v).replace(/'/g, "''") + "'").join(", ");
+              sql += `REPLACE INTO \`${table}\` (${cols}) VALUES (${vals});\n`;
+            }
+            sql += "\n";
+          }
+
+          // Trigger download
+          const blob = new Blob([sql], { type: 'text/sql' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `patrol360_db_backup_${new Date().toISOString().slice(0,10)}.sql`;
+          a.click();
+          URL.revokeObjectURL(url);
+          logConsole('SQL dump generated and download initiated.', 'success');
+        }
+      } catch (err) {
+        logConsole('Export SQL error: ' + err.message, 'err');
+      }
+    }
+
+    function toggleSelectAll() {
+      const checked = document.getElementById('selectAllTbls').checked;
+      document.querySelectorAll('.tbl-checkbox').forEach(cb => cb.checked = checked);
+    }
+  </script>
+</body>
+</html>
