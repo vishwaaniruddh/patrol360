@@ -135,4 +135,27 @@ class DashboardController
 
         Response::paginated($logs, $total, $page, $limit, 'Audit logs retrieved');
     }
+
+    /**
+     * GET /api_documentation.html or /docs
+     * Fallback to serve the interactive documentation HTML directly
+     */
+    public function apiDocumentation(array $args): void
+    {
+        $candidates = [
+            __DIR__ . '/../../api_documentation.html',
+            __DIR__ . '/../../public/api_documentation.html',
+            __DIR__ . '/../../../api_documentation.html'
+        ];
+
+        foreach ($candidates as $file) {
+            if (file_exists($file)) {
+                header('Content-Type: text/html; charset=utf-8');
+                readfile($file);
+                exit;
+            }
+        }
+
+        Response::error('API documentation file not found on server.', 404);
+    }
 }

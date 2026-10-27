@@ -41,6 +41,9 @@ $router = new Router();
 // ============================================================================
 $router->get('/', [AuthController::class, 'me'], []); // Welcome endpoint fallback
 $router->get('/api/health', [AuthController::class, 'me'], []);
+$router->get('/api_documentation.html', [DashboardController::class, 'apiDocumentation'], []);
+$router->get('/docs', [DashboardController::class, 'apiDocumentation'], []);
+$router->get('/api/docs', [DashboardController::class, 'apiDocumentation'], []);
 
 // ============================================================================
 // 2. AUTHENTICATION & PROFILE (JWT HS256)

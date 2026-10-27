@@ -4,12 +4,18 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
-    # If the request is already pointing to public, leave it alone
+    # 1. If the requested file or folder actually exists in backend/, serve it directly!
+    # (e.g. api_documentation.html, README.md, etc.)
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # 2. If the request is already pointing to public/, leave it alone
     RewriteCond %{REQUEST_URI} !^/patrol360/backend/public/
     RewriteCond %{REQUEST_URI} !^/vehicle_gov/backend/public/
     RewriteCond %{REQUEST_URI} !public/
 
-    # Forward all requests to public/
+    # 3. Forward all other API requests to public/
     RewriteRule ^$ public/ [L]
     RewriteRule ^(.*)$ public/$1 [L]
 </IfModule>

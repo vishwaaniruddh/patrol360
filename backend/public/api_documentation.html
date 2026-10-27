@@ -1,0 +1,1637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Patrol360 | Interactive REST API & Swagger Tester Console</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --background: #f8fafc;
+      --foreground: #0f172a;
+      --card: #ffffff;
+      --border: #e2e8f0;
+      --muted: #f1f5f9;
+      --muted-foreground: #64748b;
+      --primary: #0f172a;
+      --primary-foreground: #ffffff;
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      
+      --color-get: #2563eb;
+      --bg-get: #eff6ff;
+      --border-get: #bfdbfe;
+      
+      --color-post: #16a34a;
+      --bg-post: #f0fdf4;
+      --border-post: #bbf7d0;
+      
+      --color-put: #d97706;
+      --bg-put: #fffbeb;
+      --border-put: #fde68a;
+      
+      --color-delete: #dc2626;
+      --bg-delete: #fef2f2;
+      --border-delete: #fecaca;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--background);
+      color: var(--foreground);
+      font-family: var(--font-sans);
+      line-height: 1.5;
+      font-size: 13px;
+      padding-bottom: 80px;
+    }
+
+    /* Top Sticky Header */
+    header.top-header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+      padding: 0.75rem 1.5rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    }
+    .header-inner {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+      font-size: 15px;
+      color: #0f172a;
+      text-decoration: none;
+    }
+    .brand-badge {
+      background: #0f172a;
+      color: #fff;
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .nav-buttons {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .nav-btn {
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--muted-foreground);
+      text-decoration: none;
+      border: 1px solid var(--border);
+      background: #fff;
+      transition: all 0.15s ease;
+      cursor: pointer;
+    }
+    .nav-btn:hover {
+      background: var(--muted);
+      color: var(--foreground);
+    }
+    .nav-btn.primary {
+      background: #0f172a;
+      color: #fff;
+      border-color: #0f172a;
+    }
+
+    /* Main Container */
+    .container {
+      max-width: 1400px;
+      margin: 1.5rem auto 0;
+      padding: 0 1.5rem;
+    }
+
+    /* Auth & Environment Control Card */
+    .auth-bar {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+    .auth-bar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.75rem;
+    }
+    .auth-title {
+      font-weight: 700;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      display: inline-block;
+      box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+    }
+    .auth-grid {
+      display: grid;
+      grid-template-columns: 2fr 3fr auto;
+      gap: 1rem;
+      align-items: end;
+    }
+    .form-group label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted-foreground);
+      margin-bottom: 5px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .input-field {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-family: var(--font-mono);
+      background: #f8fafc;
+      color: #0f172a;
+      outline: none;
+      transition: border 0.15s ease;
+    }
+    .input-field:focus {
+      border-color: #0f172a;
+      background: #fff;
+    }
+    .quick-auth-btns {
+      display: flex;
+      gap: 6px;
+    }
+    .btn {
+      padding: 8px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid transparent;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .btn-admin {
+      background: #0f172a;
+      color: #ffffff;
+    }
+    .btn-admin:hover { background: #1e293b; }
+    .btn-user {
+      background: #eff6ff;
+      color: #1d4ed8;
+      border-color: #bfdbfe;
+    }
+    .btn-user:hover { background: #dbeafe; }
+    .btn-clear {
+      background: #f1f5f9;
+      color: #64748b;
+      border-color: #cbd5e1;
+    }
+    .btn-clear:hover { background: #e2e8f0; color: #0f172a; }
+
+    /* Category Filter Pills */
+    .filter-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .filter-pill {
+      padding: 6px 12px;
+      border-radius: 9999px;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--muted-foreground);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+    .filter-pill:hover {
+      background: var(--muted);
+      color: var(--foreground);
+    }
+    .filter-pill.active {
+      background: #0f172a;
+      color: #fff;
+      border-color: #0f172a;
+      font-weight: 600;
+    }
+
+    /* Search Bar */
+    .search-box {
+      margin-bottom: 1.5rem;
+      position: relative;
+    }
+    .search-input {
+      width: 100%;
+      padding: 10px 16px 10px 38px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      background: #ffffff;
+      color: #0f172a;
+      outline: none;
+    }
+    .search-input:focus {
+      border-color: #0f172a;
+      box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.05);
+    }
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted-foreground);
+      font-size: 14px;
+    }
+
+    /* Section Layout */
+    .section-title {
+      font-size: 16px;
+      font-weight: 800;
+      margin: 2rem 0 1rem;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-badge {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      background: #e2e8f0;
+      color: #475569;
+    }
+
+    /* Endpoint Card (Accordion Style) */
+    .endpoint-card {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      margin-bottom: 0.75rem;
+      overflow: hidden;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+      transition: border 0.15s ease;
+    }
+    .endpoint-card:hover {
+      border-color: #cbd5e1;
+    }
+    .endpoint-summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      cursor: pointer;
+      user-select: none;
+      background: #ffffff;
+      transition: background 0.1s ease;
+    }
+    .endpoint-summary:hover {
+      background: #f8fafc;
+    }
+    .endpoint-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    
+    /* Method Badges */
+    .method-badge {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: var(--radius-sm);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      min-width: 60px;
+      text-align: center;
+      display: inline-block;
+    }
+    .method-get { background: var(--bg-get); color: var(--color-get); border: 1px solid var(--border-get); }
+    .method-post { background: var(--bg-post); color: var(--color-post); border: 1px solid var(--border-post); }
+    .method-put { background: var(--bg-put); color: var(--color-put); border: 1px solid var(--border-put); }
+    .method-delete { background: var(--bg-delete); color: var(--color-delete); border: 1px solid var(--border-delete); }
+
+    .endpoint-path {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 600;
+      color: #0f172a;
+    }
+    .endpoint-desc {
+      font-size: 12px;
+      color: var(--muted-foreground);
+    }
+    .endpoint-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .role-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+    }
+    .role-public { background: #f1f5f9; color: #475569; }
+    .role-protected { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+    .role-admin { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+
+    .chevron {
+      font-size: 12px;
+      color: var(--muted-foreground);
+      transition: transform 0.2s ease;
+    }
+    .endpoint-card.open .chevron {
+      transform: rotate(180deg);
+    }
+
+    /* Endpoint Details (Expanded) */
+    .endpoint-details {
+      display: none;
+      padding: 1.25rem 1.5rem;
+      border-top: 1px solid var(--border);
+      background: #fafafa;
+    }
+    .endpoint-card.open .endpoint-details {
+      display: block;
+    }
+
+    .details-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+    @media (max-width: 900px) {
+      .details-grid { grid-template-columns: 1fr; }
+      .auth-grid { grid-template-columns: 1fr; }
+    }
+
+    .detail-section-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #475569;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Tables */
+    .param-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      margin-bottom: 1rem;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+    .param-table th {
+      background: #f1f5f9;
+      padding: 6px 10px;
+      text-align: left;
+      font-weight: 600;
+      color: #475569;
+      font-size: 11px;
+    }
+    .param-table td {
+      padding: 6px 10px;
+      border-top: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .param-name { font-family: var(--font-mono); font-weight: 600; color: #0f172a; }
+    .param-type { font-family: var(--font-mono); font-size: 11px; color: #64748b; }
+    .param-req { color: #dc2626; font-size: 10px; font-weight: bold; }
+
+    /* Code & Live Runner Box */
+    .code-box {
+      background: #0f172a;
+      color: #f8fafc;
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      line-height: 1.5;
+      overflow-x: auto;
+      border: 1px solid #1e293b;
+      margin-bottom: 0.75rem;
+      max-height: 250px;
+    }
+    .code-box pre { margin: 0; }
+
+    .try-runner {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      margin-top: 1rem;
+    }
+    .try-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+      font-weight: 700;
+      font-size: 12px;
+      color: #0f172a;
+    }
+    .execute-btn {
+      background: #0f172a;
+      color: #fff;
+      border: none;
+      padding: 7px 16px;
+      border-radius: var(--radius-sm);
+      font-weight: 600;
+      font-size: 12px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.15s ease;
+    }
+    .execute-btn:hover { background: #1e293b; }
+    .execute-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .response-container {
+      margin-top: 1rem;
+      display: none;
+    }
+    .response-status-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+    }
+    .status-code-badge {
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: bold;
+    }
+    .status-200, .status-201 { background: #dcfce7; color: #166534; }
+    .status-400, .status-422 { background: #fef9c3; color: #854d0e; }
+    .status-401, .status-403, .status-404, .status-500 { background: #fee2e2; color: #991b1b; }
+
+    .textarea-json {
+      width: 100%;
+      height: 110px;
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: #f8fafc;
+      color: #0f172a;
+      resize: vertical;
+      margin-bottom: 0.75rem;
+      outline: none;
+    }
+    .textarea-json:focus {
+      border-color: #0f172a;
+      background: #fff;
+    }
+
+    .copy-btn {
+      background: transparent;
+      border: 1px solid #334155;
+      color: #94a3b8;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .copy-btn:hover {
+      color: #ffffff;
+      border-color: #64748b;
+    }
+
+    /* Legal & Security Banner */
+    .law-banner {
+      background: #0f172a;
+      color: #ffffff;
+      border-radius: var(--radius-lg);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+    }
+    .law-left h2 { font-size: 16px; font-weight: 800; margin-bottom: 4px; }
+    .law-left p { font-size: 12px; color: #94a3b8; max-width: 750px; }
+    .law-badge {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Sticky Navigation Bar -->
+  <header class="top-header">
+    <div class="header-inner">
+      <div class="brand">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+        <span>Patrol360 Intelligence REST APIs</span>
+        <span class="brand-badge">POLICE GOV V1.0</span>
+      </div>
+      <div class="nav-buttons">
+        <a href="../index.html" class="nav-btn">Live Vehicle Dashboard</a>
+        <a href="../apis.html" class="nav-btn">Architecture Specs</a>
+        <a href="../database.html" class="nav-btn">Database DDL</a>
+        <button class="nav-btn primary" onclick="expandAll()">Expand All</button>
+        <button class="nav-btn" onclick="collapseAll()">Collapse All</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <!-- Legal Compliance Banner -->
+    <div class="law-banner">
+      <div class="law-left">
+        <h2>REST API & Mobile Edge Surveillance Console</h2>
+        <p>Comprehensive interactive API documentation for on-board NVIDIA Jetson 360° patrol vehicle systems, CCTNS central headquarters sync, and evidentiary legal incident logging under Section 65B (BSA 2023).</p>
+      </div>
+      <div class="law-badge">
+        HS256 JWT • RBAC Verified • Apache 2.4
+      </div>
+    </div>
+
+    <!-- Interactive Authentication & Base URL Configuration Bar -->
+    <div class="auth-bar">
+      <div class="auth-bar-header">
+        <div class="auth-title">
+          <span class="status-dot"></span>
+          <span>Interactive API Tester & Bearer Token Session</span>
+          <span id="activeRoleBadge" class="role-badge role-public" style="margin-left: 8px;">No Token</span>
+        </div>
+        <div style="font-size: 11px; color: var(--muted-foreground);" id="serverLatency">
+          Server: <strong style="color: #0f172a;">127.0.0.1:80</strong> | Apache Rewrite: <strong>Active</strong>
+        </div>
+      </div>
+      <div class="auth-grid">
+        <div class="form-group">
+          <label>Target API Base URL</label>
+          <input type="text" id="apiBaseUrl" class="input-field" value="http://localhost/vehicle_gov/backend/public">
+        </div>
+        <div class="form-group">
+          <label>Active JWT Bearer Token (Auto-injected into Authorization header)</label>
+          <input type="text" id="jwtTokenInput" class="input-field" placeholder="Paste JWT token or use 1-click Quick Login below...">
+        </div>
+        <div class="quick-auth-btns">
+          <button class="btn btn-admin" onclick="quickLogin('admin@police.gov.in', 'Admin@12345', 'Admin')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            1-Click Admin
+          </button>
+          <button class="btn btn-user" onclick="quickLogin('officer@police.gov.in', 'Officer@12345', 'Officer')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            1-Click Officer
+          </button>
+          <button class="btn btn-clear" onclick="clearAuth()">Clear</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Category Filters -->
+    <div class="filter-bar">
+      <button class="filter-pill active" onclick="filterCategory('all', this)">All Endpoints (16 Modules)</button>
+      <button class="filter-pill" onclick="filterCategory('auth', this)">Auth & Users</button>
+      <button class="filter-pill" onclick="filterCategory('vehicles', this)">Fleet & Telemetry</button>
+      <button class="filter-pill" onclick="filterCategory('cameras', this)">360 Cameras</button>
+      <button class="filter-pill" onclick="filterCategory('watchlist', this)">Watchlists (ANPR/FRS)</button>
+      <button class="filter-pill" onclick="filterCategory('anpr', this)">ANPR Plate Scans</button>
+      <button class="filter-pill" onclick="filterCategory('frs', this)">FRS Face Detection</button>
+      <button class="filter-pill" onclick="filterCategory('weapons', this)">Weapon Threats</button>
+      <button class="filter-pill" onclick="filterCategory('fire', this)">Fire & Smoke</button>
+      <button class="filter-pill" onclick="filterCategory('crowd', this)">Crowd Analytics</button>
+      <button class="filter-pill" onclick="filterCategory('exports', this)">Dompdf & Excel</button>
+      <button class="filter-pill" onclick="filterCategory('alerts', this)">PHPMailer Alerts</button>
+      <button class="filter-pill" onclick="filterCategory('dashboard', this)">Live Dashboard Stats</button>
+    </div>
+
+    <!-- Search Input -->
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="endpointSearch" class="search-input" placeholder="Search by route (e.g. /api/events/anpr), method (POST, GET), or keywords..." oninput="handleSearch()">
+    </div>
+
+    <!-- Endpoints Container -->
+    <div id="endpointsList">
+
+      <!-- ================================================================= -->
+      <!-- 1. AUTHENTICATION & PROFILE -->
+      <!-- ================================================================= -->
+      <div class="section-title" data-category="auth">
+        <span>1. Authentication & Officer Profile</span>
+        <span class="section-badge">JWT HS256</span>
+      </div>
+
+      <!-- POST /api/auth/login -->
+      <div class="endpoint-card" data-category="auth" data-method="POST" data-path="/api/auth/login">
+        <div class="endpoint-summary" onclick="toggleEndpoint(this)">
+          <div class="endpoint-left">
+            <span class="method-badge method-post">POST</span>
+            <span class="endpoint-path">/api/auth/login</span>
+            <span class="endpoint-desc">Authenticate officer credentials and return signed JWT Bearer token</span>
+          </div>
+          <div class="endpoint-right">
+            <span class="role-badge role-public">Public</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="endpoint-details">
+          <div class="details-grid">
+            <div>
+              <div class="detail-section-title">Request Body Parameters</div>
+              <table class="param-table">
+                <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+                <tbody>
+                  <tr><td class="param-name">email</td><td class="param-type">string</td><td class="param-req">YES</td><td>Registered police email (e.g. <code>admin@police.gov.in</code>)</td></tr>
+                  <tr><td class="param-name">password</td><td class="param-type">string</td><td class="param-req">YES</td><td>Account password (Bcrypt verified)</td></tr>
+                </tbody>
+              </table>
+
+              <div class="detail-section-title">Sample Expected Response (200 OK)</div>
+              <div class="code-box"><pre>{
+  "success": true,
+  "message": "Login successful",
+  "data": {
+    "token": "eyJ0eXAiOiJKV1QiLCJh...",
+    "user": {
+      "id": 1,
+      "name": "Super Admin Officer",
+      "email": "admin@police.gov.in",
+      "role": "admin"
+    }
+  }
+}</pre></div>
+            </div>
+
+            <!-- Try It Out Panel -->
+            <div>
+              <div class="try-runner">
+                <div class="try-header">
+                  <span>Interactive Test Runner</span>
+                  <button class="execute-btn" onclick="executeApi(this, 'POST', '/api/auth/login')">Send Request</button>
+                </div>
+                <label style="font-size: 11px; font-weight: 600; color: #475569;">Request JSON Payload</label>
+                <textarea class="textarea-json">{
+  "email": "admin@police.gov.in",
+  "password": "Admin@12345"
+}</textarea>
+                <div class="response-container">
+                  <div class="response-status-bar">
+                    <span>Status: <span class="status-code-badge status-200">200 OK</span></span>
+                    <span class="latency-timer">32 ms</span>
+                  </div>
+                  <div class="code-box"><pre class="response-body"></pre></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GET /api/auth/me -->
+      <div class="endpoint-card" data-category="auth" data-method="GET" data-path="/api/auth/me">
+        <div class="endpoint-summary" onclick="toggleEndpoint(this)">
+          <div class="endpoint-left">
+            <span class="method-badge method-get">GET</span>
+            <span class="endpoint-path">/api/auth/me</span>
+            <span class="endpoint-desc">Retrieve current authenticated user session and role from JWT claims</span>
+          </div>
+          <div class="endpoint-right">
+            <span class="role-badge role-protected">User / Admin</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="endpoint-details">
+          <div class="details-grid">
+            <div>
+              <div class="detail-section-title">Headers Required</div>
+              <p style="font-size: 12px; margin-bottom: 10px;"><code>Authorization: Bearer &lt;token&gt;</code></p>
+              <div class="detail-section-title">Sample Response (200 OK)</div>
+              <div class="code-box"><pre>{
+  "success": true,
+  "data": {
+    "id": 1,
+    "name": "Super Admin Officer",
+    "email": "admin@police.gov.in",
+    "role": "admin",
+    "badge_number": "POL-9901",
+    "police_station": "Mumbai HQ Central"
+  }
+}</pre></div>
+            </div>
+            <div>
+              <div class="try-runner">
+                <div class="try-header">
+                  <span>Interactive Test Runner</span>
+                  <button class="execute-btn" onclick="executeApi(this, 'GET', '/api/auth/me')">Send Request</button>
+                </div>
+                <div class="response-container">
+                  <div class="response-status-bar">
+                    <span>Status: <span class="status-code-badge status-200">200 OK</span></span>
+                    <span class="latency-timer">28 ms</span>
+                  </div>
+                  <div class="code-box"><pre class="response-body"></pre></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================================================================= -->
+      <!-- 2. USER MANAGEMENT (ADMIN ONLY) -->
+      <!-- ================================================================= -->
+      <div class="section-title" data-category="auth">
+        <span>2. User Management (Officer Directory)</span>
+        <span class="section-badge">RBAC: Admin Only</span>
+      </div>
+
+      <!-- GET /api/users -->
+      <div class="endpoint-card" data-category="auth" data-method="GET" data-path="/api/users">
+        <div class="endpoint-summary" onclick="toggleEndpoint(this)">
+          <div class="endpoint-left">
+            <span class="method-badge method-get">GET</span>
+            <span class="endpoint-path">/api/users</span>
+            <span class="endpoint-desc">List all police officers with pagination and search</span>
+          </div>
+          <div class="endpoint-right">
+            <span class="role-badge role-admin">Admin Only</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="endpoint-details">
+          <div class="details-grid">
+            <div>
+              <div class="detail-section-title">Query Parameters</div>
+              <table class="param-table">
+                <thead><tr><th>Param</th><th>Type</th><th>Description</th></tr></thead>
+                <tbody>
+                  <tr><td class="param-name">page</td><td class="param-type">int</td><td>Page number (default 1)</td></tr>
+                  <tr><td class="param-name">limit</td><td class="param-type">int</td><td>Records per page (default 20, max 100)</td></tr>
+                  <tr><td class="param-name">search</td><td class="param-type">string</td><td>Filter by name, email, badge, station</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div>
+              <div class="try-runner">
+                <div class="try-header">
+                  <span>Interactive Test Runner</span>
+                  <button class="execute-btn" onclick="executeApi(this, 'GET', '/api/users?page=1&limit=10')">Send Request</button>
+                </div>
+                <div class="response-container">
+                  <div class="response-status-bar">
+                    <span>Status: <span class="status-code-badge status-200">200 OK</span></span>
+                    <span class="latency-timer">35 ms</span>
+                  </div>
+                  <div class="code-box"><pre class="response-body"></pre></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================================================================= -->
+      <!-- 3. POLICE VEHICLES & TELEMETRY -->
+      <!-- ================================================================= -->
+      <div class="section-title" data-category="vehicles">
+        <span>3. Police Vehicles Fleet & Live GPS Telemetry</span>
+        <span class="section-badge">Fleet Management</span>
+      </div>
+
+      <!-- GET /api/vehicles -->
+      <div class="endpoint-card" data-category="vehicles" data-method="GET" data-path="/api/vehicles">
+        <div class="endpoint-summary" onclick="toggleEndpoint(this)">
+          <div class="endpoint-left">
+            <span class="method-badge method-get">GET</span>
+            <span class="endpoint-path">/api/vehicles</span>
+            <span class="endpoint-desc">List patrol vehicles combined with latest live GPS coordinates & telemetry</span>
+          </div>
+          <div class="endpoint-right">
+            <span class="role-badge role-protected">User / Admin</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="endpoint-details">
+          <div class="details-grid">
+            <div>
+              <div class="detail-section-title">Response Schema Highlights</div>
+              <p style="font-size: 12px; margin-bottom: 8px;">Returns vehicle identifiers along with joined real-time GPS <code>latest_lat</code>, <code>latest_lng</code>, <code>speed_kmph</code>, <code>heading_degrees</code>, and Jetson hardware temperature.</p>
+              <div class="code-box"><pre>{
+  "success": true,
+  "data": [
+    {
+      "vehicle_id": "PATROL_VAN_01",
+      "registration_number": "MH01PA2026",
+      "assigned_driver_officer": "SI Vikram Solanki",
+      "police_station": "Colaba Division",
+      "latest_lat": "18.9220000",
+      "latest_lng": "72.8347000",
+      "speed_kmph": "42.50",
+      "jetson_temperature_c": "48.20"
+    }
+  ]
+}</pre></div>
+            </div>
+            <div>
+              <div class="try-runner">
+                <div class="try-header">
+                  <span>Interactive Test Runner</span>
+                  <button class="execute-btn" onclick="executeApi(this, 'GET', '/api/vehicles')">Send Request</button>
+                </div>
+                <div class="response-container">
+                  <div class="response-status-bar">
+                    <span>Status: <span class="status-code-badge status-200">200 OK</span></span>
+                    <span class="latency-timer">30 ms</span>
+                  </div>
+                  <div class="code-box"><pre class="response-body"></pre></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- POST /api/telemetry -->
+      <div class="endpoint-card" data-category="vehicles" data-method="POST" data-path="/api/telemetry">
+        <div class="endpoint-summary" onclick="toggleEndpoint(this)">
+          <div class="endpoint-left">
+            <span class="method-badge method-post">POST</span>
+            <span class="endpoint-path">/api/telemetry</span>
+            <span class="endpoint-desc">Edge Ingestion: Ingest 1 Hz GPS coordinates, speed, heading, and battery voltage</span>
+          </div>
+          <div class="endpoint-right">
+            <span class="role-badge role-protected">In-Vehicle Edge</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="endpoint-details">
+          <div class="details-grid">
+            <div>
+              <div class="detail-section-title">Payload Parameters</div>
+              <table class="param-table">
+                <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+                <tbody>
+                  <tr><td class="param-name">vehicle_id</td><td class="param-type">string</td><td class="param-req">YES</td><td>Patrol unit identifier (e.g. <code>PATROL_VAN_01</code>)</td></tr>
+                  <tr><td class="param-name">latitude</td><td class="param-type">float</td><td class="param-req">YES</td><td>GPS latitude (-90 to +90)</td></tr>
+                  <tr><td class="param-name">longitude</td><td class="param-type">float</td><td class="param-req">YES</td><td>GPS longitude (-180 to +180)</td></tr>
+                  <tr><td class="param-name">speed_kmph</td><td class="param-type">float</td><td class="param-req">NO</td><td>Vehicle speed in km/h</td></tr>
+                  <tr><td class="param-name">heading_degrees</td><td class="param-type">float</td><td class="param-req">NO</td><td>Compass direction (0-360°)</td></tr>
+                  <tr><td class="param-name">battery_voltage</td><td class="param-type">float</td><td class="param-req">NO</td><td>Auxiliary van battery voltage (e.g. 13.8V)</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div>
+              <div class="try-runner">
+                <div class="try-header">
+                  <span>Interactive Test Runner</span>
+                  <button class="execute-btn" onclick="executeApi(this, 'POST', '/api/telemetry')">Send Request</button>
+                </div>
+                <textarea class="textarea-json">{
+  "vehicle_id": "PATROL_VAN_01",
+  "latitude": 19.076090,
+  "longitude": 72.877426,
+  "speed_kmph": 52.4,
+  "heading_degrees": 182.5,
+  "battery_voltage": 13.8,
+  "jetson_temperature_c": 46.5
+}</textarea>
+                <div class="response-container">
+                  <div class="response-status-bar">
+                    <span>Status: <span class="status-code-badge status-200">201 Created</span></span>
+                    <span class="latency-timer">29 ms</span>
+                  </div>
+                  <div class="code-box"><pre class="response-body"></pre></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================================================================= -->
+      <!-- 4. WATCHLISTS (STOLEN VEHICLES & WANTED PERSONS) -->
+      <!-- ================================================================= -->
+      <div class="section-title" data-category="watchlist">
+        <span>4. Watchlists (Stolen Vehicles & Wanted Suspects)</span>
+        <span class="section-badge">CCTNS Database Sync</span>
+      </div>
+
+      <!-- GET /api/watchlist/vehicles/check/:plate -->
+      <div class="endpoint-card" data-category="watchlist" data-method="GET" data-path="/api/watchlist/vehicles/check/:plate">
+        <div class="endpoint-summary" onclick="toggleEndpoint(this)">
+          <div class="endpoint-left">
+            <span class="method-badge method-get">GET</span>
+            <span class="endpoint-path">/api/watchlist/vehicles/check/:plate</span>
+            <span class="endpoint-desc">Instant Sub-2ms Plate Lookup: Check if a plate is flagged stolen or wanted</span>
+          </div>
+          <div class="endpoint-right">
+            <span class="role-badge role-protected">User / Admin</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="endpoint-details">
+          <div class="details-grid">
+            <div>
+              <div class="detail-section-title">Route Parameter</div>
+              <p style="font-size: 12px; margin-bottom: 8px;"><code>:plate</code> - Target vehicle plate string (e.g. <code>MH12DE1432</code> or <code>GJ01AB1234</code>)</p>
+              <div class="detail-section-title">Sample Response When Matched</div>
+              <div class="code-box"><pre>{
+  "success": true,
+  "data": {
+    "is_stolen": true,
+    "plate_number": "GJ01AB1234",
+    "alert_level": "CRITICAL",
+    "fir_number": "FIR/2026/0892",
+    "police_station": "Navrangpura PS",
+    "owner_name": "Ramesh Patel"
+  }
+}</pre></div>
+            </div>
+            <div>
+              <div class="try-runner">
+                <div class="try-header">
+                  <span>Interactive Test Runner</span>
+                  <button class="execute-btn" onclick="executeApi(this, 'GET', '/api/watchlist/vehicles/check/GJ01AB1234')">Send Request</button>
+                </div>
+                <div class="response-container">
+                  <div class="response-status-bar">
+                    <span>Status: <span class="status-code-badge status-200">200 OK</span></span>
+                    <span class="latency-timer">18 ms</span>
+                  </div>
+                  <div class="code-box"><pre class="response-body"></pre></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================================================================= -->
+      <!-- 5. ANPR DETECTION EVENTS -->
+      <!-- ================================================================= -->
+      <div class="section-title" data-category="anpr">
+        <span>5. ANPR Number Plate Detection Events</span>
+        <span class="section-badge">Edge AI Detections</span>
+      </div>
+
+      <!-- POST /api/events/anpr -->
+      <div class="endpoint-card" data-category="anpr" data-method="POST" data-path="/api/events/anpr">
+        <div class="endpoint-summary" onclick="toggleEndpoint(this)">
+          <div class="endpoint-left">
+            <span class="method-badge method-post">POST</span>
+            <span class="endpoint-path">/api/events/anpr</span>
+            <span class="endpoint-desc">Ingest Plate Detection from Jetson (Automatically matches against stolen database!)</span>
+          </div>
+          <div class="endpoint-right">
+            <span class="role-badge role-protected">Edge Device</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="endpoint-details">
+          <div class="details-grid">
+            <div>
+              <div class="detail-section-title">Automated Watchlist Matching Engine</div>
+              <p style="font-size: 12px; margin-bottom: 8px;">Whenever a plate is ingested, the backend automatically performs a clean normalized query on <code>stolen_vehicles_watchlist</code>. If matched, sets <code>is_stolen_match=1</code>, attaches FIR dossier details, and raises tactical alert status.</p>
+              <div class="code-box"><pre>{
+  "vehicle_id": "PATROL_VAN_01",
+  "camera_id": "CAM-01-ROOF-FRONT",
+  "detected_plate_number": "GJ01AB1234",
+  "vehicle_classification": "Sedan",
+  "ocr_confidence": 97.8,
+  "latitude": 19.076090,
+  "longitude": 72.877426
+}</pre></div>
+            </div>
+            <div>
+              <div class="try-runner">
+                <div class="try-header">
+                  <span>Interactive Test Runner (Try with GJ01AB1234 for Stolen Hit)</span>
+                  <button class="execute-btn" onclick="executeApi(this, 'POST', '/api/events/anpr')">Send Request</button>
+                </div>
+                <textarea class="textarea-json">{
+  "vehicle_id": "PATROL_VAN_01",
+  "camera_id": "CAM-01-ROOF-FRONT",
+  "detected_plate_number": "GJ01AB1234",
+  "vehicle_classification": "SUV",
+  "ocr_confidence": 98.4,
+  "latitude": 19.076090,
+  "longitude": 72.877426
+}</textarea>
+                <div class="response-container">
+                  <div class="response-status-bar">
+                    <span>Status: <span class="status-code-badge status-200">201 Created</span></span>
+                    <span class="latency-timer">34 ms</span>
+                  </div>
+                  <div class="code-box"><pre class="response-body"></pre></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GET /api/events/anpr/stats -->
+      <div class="endpoint-card" data-category="anpr" data-method="GET" data-path="/api/events/anpr/stats">
+        <div class="endpoint-summary" onclick="toggleEndpoint(this)">
+          <div class="endpoint-left">
+            <span class="method-badge method-get">GET</span>
+            <span class="endpoint-path">/api/events/anpr/stats</span>
+            <span class="endpoint-desc">ANPR Analytics: Total scans, stolen hits count, and today's hit rate percentage</span>
+          </div>
+          <div class="endpoint-right">
+            <span class="role-badge role-protected">User / Admin</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="endpoint-details">
+          <div class="details-grid">
+            <div>
+              <div class="detail-section-title">Statistical Metrics</div>
+              <p style="font-size: 12px; margin-bottom: 8px;">Computes real-time scan volume and alert frequencies across the fleet.</p>
+            </div>
+            <div>
+              <div class="try-runner">
+                <div class="try-header">
+                  <span>Interactive Test Runner</span>
+                  <button class="execute-btn" onclick="executeApi(this, 'GET', '/api/events/anpr/stats')">Send Request</button>
+                </div>
+                <div class="response-container">
+                  <div class="response-status-bar">
+                    <span>Status: <span class="status-code-badge status-200">200 OK</span></span>
+                    <span class="latency-timer">22 ms</span>
+                  </div>
+                  <div class="code-box"><pre class="response-body"></pre></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================================================================= -->
+      <!-- 6. FRS DETECTION & HITL VERIFICATION -->
+      <!-- ================================================================= -->
+      <div class="section-title" data-category="frs">
+        <span>6. FRS Face Recognition & Human-In-The-Loop Review</span>
+        <span class="section-badge">Facial AI</span>
+      </div>
+
+      <!-- PUT /api/events/frs/:id/verify -->
+      <div class="endpoint-card" data-category="frs" data-method="PUT" data-path="/api/events/frs/:id/verify">
+        <div class="endpoint-summary" onclick="toggleEndpoint(this)">
+          <div class="endpoint-left">
+            <span class="method-badge method-put">PUT</span>
+            <span class="endpoint-path">/api/events/frs/:id/verify</span>
+            <span class="endpoint-desc">Human-In-The-Loop (HITL) Review: Officer confirms or dismisses AI face match</span>
+          </div>
+          <div class="endpoint-right">
+            <span class="role-badge role-protected">Duty Officer</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="endpoint-details">
+          <div class="details-grid">
+            <div>
+              <div class="detail-section-title">Human Verification Standards</div>
+              <p style="font-size: 12px; margin-bottom: 8px;">Ensures legal compliance against false positives. An officer must review suspect photo vs live frame crop before issuing an interception warrant.</p>
+              <table class="param-table">
+                <thead><tr><th>Field</th><th>Type</th><th>Allowed Values</th></tr></thead>
+                <tbody>
+                  <tr><td class="param-name">review_status</td><td class="param-type">string</td><td><code>CONFIRMED</code>, <code>DISMISSED</code></td></tr>
+                  <tr><td class="param-name">reviewed_by</td><td class="param-type">string</td><td>Reviewing Officer Name / Email</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div>
+              <div class="try-runner">
+                <div class="try-header">
+                  <span>Interactive Test Runner</span>
+                  <button class="execute-btn" onclick="executeApi(this, 'PUT', '/api/events/frs/1/verify')">Send Request</button>
+                </div>
+                <textarea class="textarea-json">{
+  "review_status": "CONFIRMED",
+  "reviewed_by": "Inspector Rao"
+}</textarea>
+                <div class="response-container">
+                  <div class="response-status-bar">
+                    <span>Status: <span class="status-code-badge status-200">200 OK</span></span>
+                    <span class="latency-timer">31 ms</span>
+                  </div>
+                  <div class="code-box"><pre class="response-body"></pre></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================================================================= -->
+      <!-- 7. WEAPON THREAT DETECTION -->
+      <!-- ================================================================= -->
+      <div class="section-title" data-category="weapons">
+        <span>7. Tactical Weapon Threat Detections</span>
+        <span class="section-badge">Armed Threats</span>
+      </div>
+
+      <!-- PUT /api/events/weapons/:id/ack -->
+      <div class="endpoint-card" data-category="weapons" data-method="PUT" data-path="/api/events/weapons/:id/ack">
+        <div class="endpoint-summary" onclick="toggleEndpoint(this)">
+          <div class="endpoint-left">
+            <span class="method-badge method-put">PUT</span>
+            <span class="endpoint-path">/api/events/weapons/:id/ack</span>
+            <span class="endpoint-desc">Tactical Threat Acknowledgement: Van officer confirms firearm alert on tactical screen</span>
+          </div>
+          <div class="endpoint-right">
+            <span class="role-badge role-protected">Field Officer</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="endpoint-details">
+          <div class="details-grid">
+            <div>
+              <div class="detail-section-title">Tactical Red Alert Protocol</div>
+              <p style="font-size: 12px; margin-bottom: 8px;">Silences the high-decibel audible in-vehicle alarm once the crew has acknowledged weapon sighting and drawn tactical sidearms.</p>
+            </div>
+            <div>
+              <div class="try-runner">
+                <div class="try-header">
+                  <span>Interactive Test Runner</span>
+                  <button class="execute-btn" onclick="executeApi(this, 'PUT', '/api/events/weapons/1/ack')">Send Request</button>
+                </div>
+                <textarea class="textarea-json">{
+  "acknowledged_by": "Patrol Officer Arjun"
+}</textarea>
+                <div class="response-container">
+                  <div class="response-status-bar">
+                    <span>Status: <span class="status-code-badge status-200">200 OK</span></span>
+                    <span class="latency-timer">27 ms</span>
+                  </div>
+                  <div class="code-box"><pre class="response-body"></pre></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================================================================= -->
+      <!-- 8. EXPORTS (DOMPDF & PHPSPREADSHEET) -->
+      <!-- ================================================================= -->
+      <div class="section-title" data-category="exports">
+        <span>8. Intelligence Exports (Dompdf & PhpSpreadsheet)</span>
+        <span class="section-badge">Evidence & Reports</span>
+      </div>
+
+      <!-- GET /api/export/pdf/incident/:type/:id -->
+      <div class="endpoint-card" data-category="exports" data-method="GET" data-path="/api/export/pdf/incident/:type/:id">
+        <div class="endpoint-summary" onclick="toggleEndpoint(this)">
+          <div class="endpoint-left">
+            <span class="method-badge method-get">GET</span>
+            <span class="endpoint-path">/api/export/pdf/incident/:type/:id</span>
+            <span class="endpoint-desc">Generate Official Police Incident Dossier PDF (Dompdf Engine)</span>
+          </div>
+          <div class="endpoint-right">
+            <span class="role-badge role-protected">Dompdf PDF</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="endpoint-details">
+          <div class="details-grid">
+            <div>
+              <div class="detail-section-title">Section 65B Certified Court Evidence PDF</div>
+              <p style="font-size: 12px; margin-bottom: 8px;">Generates an A4 legal-format document with State Police insignias, SHA-256 cryptographic checksums, GPS coordinates, officer signature blocks, and FIR reference.</p>
+              <p style="font-size: 11px; color: #64748b;">Supported <code>:type</code> values: <code>anpr</code>, <code>frs</code>, <code>weapon</code>, <code>fire</code></p>
+            </div>
+            <div>
+              <div class="try-runner">
+                <div class="try-header">
+                  <span>Direct Download / Open in New Tab</span>
+                  <a id="pdfDownloadLink" href="http://localhost/vehicle_gov/backend/public/api/export/pdf/incident/anpr/1" target="_blank" class="execute-btn" style="text-decoration:none;">
+                    Open Incident PDF
+                  </a>
+                </div>
+                <p style="font-size: 11px; color: var(--muted-foreground);">Clicking opens the generated PDF rendered natively in browser with full print styling.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GET /api/export/excel/events -->
+      <div class="endpoint-card" data-category="exports" data-method="GET" data-path="/api/export/excel/events">
+        <div class="endpoint-summary" onclick="toggleEndpoint(this)">
+          <div class="endpoint-left">
+            <span class="method-badge method-get">GET</span>
+            <span class="endpoint-path">/api/export/excel/events</span>
+            <span class="endpoint-desc">Generate Multi-Sheet AI Detection Audit Log Spreadsheet (PhpSpreadsheet Engine)</span>
+          </div>
+          <div class="endpoint-right">
+            <span class="role-badge role-protected">Excel XLSX</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="endpoint-details">
+          <div class="details-grid">
+            <div>
+              <div class="detail-section-title">Spreadsheet Structure</div>
+              <p style="font-size: 12px; margin-bottom: 8px;">Generates formatted Excel document with stylized dark slate header rows, auto-filtered columns, and separate tabs for ANPR plate logs and Armed Threat logs.</p>
+            </div>
+            <div>
+              <div class="try-runner">
+                <div class="try-header">
+                  <span>Direct Download</span>
+                  <a href="http://localhost/vehicle_gov/backend/public/api/export/excel/events" target="_blank" class="execute-btn" style="text-decoration:none;">
+                    Download .XLSX Excel File
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================================================================= -->
+      <!-- 9. HIGH PRIORITY EMAIL ALERTS (PHPMAILER) -->
+      <!-- ================================================================= -->
+      <div class="section-title" data-category="alerts">
+        <span>9. High-Priority Law Enforcement Alerts (PHPMailer)</span>
+        <span class="section-badge">PHPMailer Engine</span>
+      </div>
+
+      <!-- POST /api/alerts/email -->
+      <div class="endpoint-card" data-category="alerts" data-method="POST" data-path="/api/alerts/email">
+        <div class="endpoint-summary" onclick="toggleEndpoint(this)">
+          <div class="endpoint-left">
+            <span class="method-badge method-post">POST</span>
+            <span class="endpoint-path">/api/alerts/email</span>
+            <span class="endpoint-desc">Dispatch High-Priority Threat Alert Email to Police Commissionerate (PHPMailer)</span>
+          </div>
+          <div class="endpoint-right">
+            <span class="role-badge role-protected">PHPMailer</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="endpoint-details">
+          <div class="details-grid">
+            <div>
+              <div class="detail-section-title">Tactical Alert Dispatching</div>
+              <p style="font-size: 12px; margin-bottom: 8px;">Sends an emergency HTML formatted notification email with vehicle unit identifier, GPS coordinates, and suspect details. In local development, safely logs and simulates delivery without hanging.</p>
+            </div>
+            <div>
+              <div class="try-runner">
+                <div class="try-header">
+                  <span>Interactive Test Runner</span>
+                  <button class="execute-btn" onclick="executeApi(this, 'POST', '/api/alerts/email')">Send Request</button>
+                </div>
+                <textarea class="textarea-json">{
+  "recipient_email": "commissioner@police.gov.in",
+  "subject": "CRITICAL: Stolen Plate MH12DE1432 Sighted",
+  "alert_type": "STOLEN_VEHICLE_HIT",
+  "message": "Patrol Van 01 has intercepted vehicle MH12DE1432 at Worli Junction. Backup requested.",
+  "vehicle_id": "PATROL_VAN_01",
+  "location": "Worli Sea Face (19.0169, 72.8166)"
+}</textarea>
+                <div class="response-container">
+                  <div class="response-status-bar">
+                    <span>Status: <span class="status-code-badge status-200">200 OK</span></span>
+                    <span class="latency-timer">45 ms</span>
+                  </div>
+                  <div class="code-box"><pre class="response-body"></pre></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================================================================= -->
+      <!-- 10. LIVE DASHBOARD METRICS & AUDIT -->
+      <!-- ================================================================= -->
+      <div class="section-title" data-category="dashboard">
+        <span>10. Live Dashboard Metrics & Police Audit Trails</span>
+        <span class="section-badge">Real-time Overview</span>
+      </div>
+
+      <!-- GET /api/dashboard/stats -->
+      <div class="endpoint-card" data-category="dashboard" data-method="GET" data-path="/api/dashboard/stats">
+        <div class="endpoint-summary" onclick="toggleEndpoint(this)">
+          <div class="endpoint-left">
+            <span class="method-badge method-get">GET</span>
+            <span class="endpoint-path">/api/dashboard/stats</span>
+            <span class="endpoint-desc">Comprehensive Real-Time Metrics: Active vans, cameras, detection counts, and threat feed</span>
+          </div>
+          <div class="endpoint-right">
+            <span class="role-badge role-protected">Live Dashboard</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="endpoint-details">
+          <div class="details-grid">
+            <div>
+              <div class="detail-section-title">Live Aggregation Engine</div>
+              <p style="font-size: 12px; margin-bottom: 8px;">Powers the main in-vehicle dashboard counters, threat cards, and active Jetson inference pipeline status.</p>
+            </div>
+            <div>
+              <div class="try-runner">
+                <div class="try-header">
+                  <span>Interactive Test Runner</span>
+                  <button class="execute-btn" onclick="executeApi(this, 'GET', '/api/dashboard/stats')">Send Request</button>
+                </div>
+                <div class="response-container">
+                  <div class="response-status-bar">
+                    <span>Status: <span class="status-code-badge status-200">200 OK</span></span>
+                    <span class="latency-timer">25 ms</span>
+                  </div>
+                  <div class="code-box"><pre class="response-body"></pre></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- End Endpoints Container -->
+
+  </div><!-- End Container -->
+
+  <!-- Interactive JavaScript Engine -->
+  <script>
+    // Global Authentication Session
+    let activeToken = localStorage.getItem('patrol360_jwt_token') || '';
+    let activeRole = localStorage.getItem('patrol360_user_role') || 'None';
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const baseUrlInput = document.getElementById('apiBaseUrl');
+      const tokenInput = document.getElementById('jwtTokenInput');
+      const badge = document.getElementById('activeRoleBadge');
+
+      // Auto-detect environment base URL
+      const isLocalHost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+      if (!isLocalHost && window.location.hostname) {
+        baseUrlInput.value = window.location.origin + '/patrol360/backend/public';
+        const serverStatus = document.getElementById('serverLatency');
+        if (serverStatus) {
+          serverStatus.innerHTML = `Server: <strong style="color: #0f172a;">${window.location.hostname}</strong> (Live Production)`;
+        }
+      }
+
+      if (activeToken) {
+        tokenInput.value = activeToken;
+        updateRoleBadge(activeRole);
+      }
+
+      tokenInput.addEventListener('input', () => {
+        activeToken = tokenInput.value.trim();
+        localStorage.setItem('patrol360_jwt_token', activeToken);
+        if (!activeToken) {
+          updateRoleBadge('None');
+        } else {
+          updateRoleBadge('Custom Token');
+        }
+      });
+    });
+
+    function updateRoleBadge(role) {
+      const badge = document.getElementById('activeRoleBadge');
+      badge.textContent = role + (role === 'None' ? '' : ' Token Active');
+      badge.className = 'role-badge ' + (role.toLowerCase().includes('admin') ? 'role-admin' : (role === 'None' ? 'role-public' : 'role-protected'));
+    }
+
+    async function quickLogin(email, password, roleName) {
+      const baseUrl = document.getElementById('apiBaseUrl').value.replace(/\/$/, '');
+      const badge = document.getElementById('activeRoleBadge');
+      badge.textContent = 'Authenticating...';
+
+      try {
+        const res = await fetch(`${baseUrl}/api/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+
+        if (res.ok && data.data && data.data.token) {
+          activeToken = data.data.token;
+          activeRole = roleName;
+          document.getElementById('jwtTokenInput').value = activeToken;
+          localStorage.setItem('patrol360_jwt_token', activeToken);
+          localStorage.setItem('patrol360_user_role', activeRole);
+          updateRoleBadge(activeRole);
+          alert(`Successfully authenticated as ${roleName}!\nJWT Bearer token has been injected into all API calls.`);
+        } else {
+          alert('Login failed: ' + (data.error || 'Check server connection'));
+          updateRoleBadge('None');
+        }
+      } catch (err) {
+        alert('Could not reach backend: ' + err.message + '\nMake sure Apache is running on port 80.');
+        updateRoleBadge('None');
+      }
+    }
+
+    function clearAuth() {
+      activeToken = '';
+      activeRole = 'None';
+      document.getElementById('jwtTokenInput').value = '';
+      localStorage.removeItem('patrol360_jwt_token');
+      localStorage.removeItem('patrol360_user_role');
+      updateRoleBadge('None');
+    }
+
+    function toggleEndpoint(element) {
+      const card = element.closest('.endpoint-card');
+      card.classList.toggle('open');
+    }
+
+    function expandAll() {
+      document.querySelectorAll('.endpoint-card').forEach(c => c.classList.add('open'));
+    }
+
+    function collapseAll() {
+      document.querySelectorAll('.endpoint-card').forEach(c => c.classList.remove('open'));
+    }
+
+    function filterCategory(category, pillElement) {
+      document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+      pillElement.classList.add('active');
+
+      const cards = document.querySelectorAll('.endpoint-card');
+      const sections = document.querySelectorAll('.section-title');
+
+      if (category === 'all') {
+        cards.forEach(c => c.style.display = 'block');
+        sections.forEach(s => s.style.display = 'flex');
+        return;
+      }
+
+      cards.forEach(c => {
+        c.style.display = (c.dataset.category === category) ? 'block' : 'none';
+      });
+      sections.forEach(s => {
+        s.style.display = (s.dataset.category === category) ? 'flex' : 'none';
+      });
+    }
+
+    function handleSearch() {
+      const q = document.getElementById('endpointSearch').value.toLowerCase().trim();
+      const cards = document.querySelectorAll('.endpoint-card');
+      const sections = document.querySelectorAll('.section-title');
+
+      if (!q) {
+        cards.forEach(c => c.style.display = 'block');
+        sections.forEach(s => s.style.display = 'flex');
+        return;
+      }
+
+      cards.forEach(card => {
+        const path = (card.dataset.path || '').toLowerCase();
+        const method = (card.dataset.method || '').toLowerCase();
+        const text = card.textContent.toLowerCase();
+
+        if (path.includes(q) || method.includes(q) || text.includes(q)) {
+          card.style.display = 'block';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    }
+
+    // Execute API live in Swagger tester
+    async function executeApi(btn, method, endpointPath) {
+      const baseUrl = document.getElementById('apiBaseUrl').value.replace(/\/$/, '');
+      const runner = btn.closest('.try-runner');
+      const textarea = runner.querySelector('.textarea-json');
+      const respContainer = runner.querySelector('.response-container');
+      const respStatus = runner.querySelector('.status-code-badge');
+      const respTimer = runner.querySelector('.latency-timer');
+      const respBody = runner.querySelector('.response-body');
+
+      btn.disabled = true;
+      btn.textContent = 'Sending...';
+
+      let bodyData = null;
+      if (textarea && ['POST', 'PUT', 'PATCH'].includes(method.toUpperCase())) {
+        try {
+          bodyData = JSON.parse(textarea.value);
+        } catch (e) {
+          alert('Invalid JSON in request textarea: ' + e.message);
+          btn.disabled = false;
+          btn.textContent = 'Send Request';
+          return;
+        }
+      }
+
+      const headers = {
+        'Accept': 'application/json'
+      };
+      if (bodyData) {
+        headers['Content-Type'] = 'application/json';
+      }
+      if (activeToken) {
+        headers['Authorization'] = 'Bearer ' + activeToken;
+      }
+
+      const startTime = performance.now();
+      try {
+        const fullUrl = baseUrl + endpointPath;
+        const fetchOptions = {
+          method: method.toUpperCase(),
+          headers: headers
+        };
+        if (bodyData) {
+          fetchOptions.body = JSON.stringify(bodyData);
+        }
+
+        const res = await fetch(fullUrl, fetchOptions);
+        const duration = Math.round(performance.now() - startTime);
+
+        respContainer.style.display = 'block';
+        respStatus.textContent = `${res.status} ${res.statusText || ''}`;
+        respStatus.className = 'status-code-badge status-' + res.status;
+        respTimer.textContent = `${duration} ms`;
+
+        const contentType = res.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          const json = await res.json();
+          respBody.textContent = JSON.stringify(json, null, 2);
+        } else {
+          const text = await res.text();
+          respBody.textContent = text;
+        }
+
+      } catch (err) {
+        const duration = Math.round(performance.now() - startTime);
+        respContainer.style.display = 'block';
+        respStatus.textContent = 'Network Error';
+        respStatus.className = 'status-code-badge status-500';
+        respTimer.textContent = `${duration} ms`;
+        respBody.textContent = JSON.stringify({
+          error: "Fetch request failed",
+          details: err.message,
+          suggestion: "Ensure XAMPP Apache is running and URL prefix is reachable."
+        }, null, 2);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Send Request';
+      }
+    }
+  </script>
+</body>
+</html>
