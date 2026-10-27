@@ -187,20 +187,20 @@ $router->get('/api/dashboard/stats', [DashboardController::class, 'stats'], [$au
 $router->get('/api/audit-logs', [DashboardController::class, 'auditLogs'], [$admin]);
 
 // ============================================================================
-// 17. REAL-TIME AI EDGE ALERTS (ai_alerts)
+// 17. REAL-TIME AI EDGE ALERTS (ai_alerts) - PUBLIC (NO AUTHENTICATION REQUIRED)
 // ============================================================================
-$router->get('/api/ai-alerts', [AiAlertController::class, 'index'], [$auth]);
-$router->post('/api/ai-alerts', [AiAlertController::class, 'store'], [$auth]);
-$router->get('/api/ai-alerts/:id', [AiAlertController::class, 'show'], [$auth]);
-$router->put('/api/ai-alerts/:id/close', [AiAlertController::class, 'close'], [$auth]);
-$router->put('/api/ai-alerts/:id', [AiAlertController::class, 'close'], [$auth]);
-$router->delete('/api/ai-alerts/:id', [AiAlertController::class, 'destroy'], [$admin]);
+$router->get('/api/ai-alerts', [AiAlertController::class, 'index'], []);
+$router->post('/api/ai-alerts', [AiAlertController::class, 'store'], []);
+$router->get('/api/ai-alerts/:id', [AiAlertController::class, 'show'], []);
+$router->put('/api/ai-alerts/:id/close', [AiAlertController::class, 'close'], []);
+$router->put('/api/ai-alerts/:id', [AiAlertController::class, 'close'], []);
+$router->delete('/api/ai-alerts/:id', [AiAlertController::class, 'destroy'], []);
 
 // Aliases for /api/alerts/ai
-$router->get('/api/alerts/ai', [AiAlertController::class, 'index'], [$auth]);
-$router->post('/api/alerts/ai', [AiAlertController::class, 'store'], [$auth]);
-$router->get('/api/alerts/ai/:id', [AiAlertController::class, 'show'], [$auth]);
-$router->put('/api/alerts/ai/:id/close', [AiAlertController::class, 'close'], [$auth]);
+$router->get('/api/alerts/ai', [AiAlertController::class, 'index'], []);
+$router->post('/api/alerts/ai', [AiAlertController::class, 'store'], []);
+$router->get('/api/alerts/ai/:id', [AiAlertController::class, 'show'], []);
+$router->put('/api/alerts/ai/:id/close', [AiAlertController::class, 'close'], []);
 
 // ============================================================================
 // 18. DATABASE SYNCHRONIZATION ENGINE (LOCAL <-> PRODUCTION)

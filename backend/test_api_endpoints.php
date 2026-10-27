@@ -177,7 +177,7 @@ $res = makeRequest('POST', '/api/ai-alerts', [
     'location'                    => 'Navrangpura Junction',
     'comment'                     => 'Suspect vehicle flagged at traffic junction',
     'File_loc'                    => $dummyBase64Image
-], $userToken);
+], null); // Public endpoint: NO Bearer token required
 
 echo "Status: {$res['status']}\n";
 if ($res['status'] === 201) {
@@ -191,23 +191,23 @@ if ($res['status'] === 201) {
     if (!empty($alertData['image_url'])) {
         echo " - Image Saved: " . $alertData['image_url'] . "\n";
     }
-    echo "SUCCESS\n\n";
+    echo "SUCCESS (Unauthenticated Ingestion Verified)\n\n";
 
-    // Test Listing
-    echo "[TEST 11] List AI Alerts (/api/ai-alerts?status=O)...\n";
-    $listRes = makeRequest('GET', '/api/ai-alerts?status=O', null, $userToken);
+    // Test Listing (Public / No Token)
+    echo "[TEST 11] List AI Alerts Without Bearer Token (/api/ai-alerts?status=O)...\n";
+    $listRes = makeRequest('GET', '/api/ai-alerts?status=O', null, null);
     echo "Status: {$listRes['status']}\n";
     if ($listRes['status'] === 200) {
         echo " - Open AI Alerts Count: " . count($listRes['data']['data']) . "\n";
-        echo "SUCCESS\n\n";
+        echo "SUCCESS (Unauthenticated GET Verified)\n\n";
     }
 
-    // Test Closing Alert
-    echo "[TEST 12] Close AI Alert (/api/ai-alerts/{$alertData['id']}/close)...\n";
+    // Test Closing Alert Without Bearer Token
+    echo "[TEST 12] Close AI Alert Without Bearer Token (/api/ai-alerts/{$alertData['id']}/close)...\n";
     $closeRes = makeRequest('PUT', "/api/ai-alerts/{$alertData['id']}/close", [
         'comment'  => 'Vehicle intercepted by Team Delta, driver detained.',
         'closedBy' => 'Duty Officer SI Vikram'
-    ], $userToken);
+    ], null);
     echo "Status: {$closeRes['status']}\n";
     if ($closeRes['status'] === 200) {
         echo " - Updated Status: " . $closeRes['data']['data']['status'] . " (Closed)\n";

@@ -1573,16 +1573,19 @@
           <div class="endpoint-left">
             <span class="method-badge method-post">POST</span>
             <span class="endpoint-path">/api/ai-alerts</span>
-            <span class="endpoint-desc">Ingest Edge AI Alert into ai_alerts (Base64 JPEG/PNG frames, vehicle, camera, GPS, plate hotlist check)</span>
+            <span class="endpoint-desc">Ingest Edge AI Alert into ai_alerts (Public Edge Pipeline - No Bearer Token Required, Base64 JPEG/PNG frames, vehicle, camera, GPS, plate hotlist check)</span>
           </div>
           <div class="endpoint-right">
-            <span class="role-badge role-protected">Edge / Officer</span>
+            <span class="role-badge role-public">Public (No Auth)</span>
             <span class="chevron">▼</span>
           </div>
         </div>
         <div class="endpoint-details">
           <div class="details-grid">
             <div>
+              <div style="margin-bottom: 12px; padding: 8px 12px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; font-size: 12px; color: #166534;">
+                <strong>⚡ Public Ingestion:</strong> No Bearer token or Authorization header required. Edge cameras, NVIDIA Jetson units, and ANPR scanners stream alerts continuously without holding a JWT token.
+              </div>
               <div class="detail-section-title">Request Body Parameters</div>
               <table class="param-table">
                 <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
@@ -1641,10 +1644,10 @@
           <div class="endpoint-left">
             <span class="method-badge method-get">GET</span>
             <span class="endpoint-path">/api/ai-alerts</span>
-            <span class="endpoint-desc">List AI Alerts with filters (status=O, vehicle_id, plate, pagination)</span>
+            <span class="endpoint-desc">List AI Alerts with filters (status=O, vehicle_id, plate, pagination) - Public / No Auth</span>
           </div>
           <div class="endpoint-right">
-            <span class="role-badge role-protected">User / Admin</span>
+            <span class="role-badge role-public">Public (No Auth)</span>
             <span class="chevron">▼</span>
           </div>
         </div>
@@ -1679,10 +1682,10 @@
           <div class="endpoint-left">
             <span class="method-badge method-put">PUT</span>
             <span class="endpoint-path">/api/ai-alerts/:id/close</span>
-            <span class="endpoint-desc">Close an open AI alert with resolution remarks and officer identity</span>
+            <span class="endpoint-desc">Close an open AI alert with resolution remarks and officer identity (Public / No Auth)</span>
           </div>
           <div class="endpoint-right">
-            <span class="role-badge role-protected">Duty Officer</span>
+            <span class="role-badge role-public">Public (No Auth)</span>
             <span class="chevron">▼</span>
           </div>
         </div>

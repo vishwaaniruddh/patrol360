@@ -267,11 +267,12 @@
         <div style="display: flex; align-items: center; gap: 8px;">
           <span class="badge badge-post">POST</span>
           <span style="font-family: var(--font-mono); font-size: 14px;">/api/ai-alerts</span>
+          <span style="background: #e2e8f0; color: #334155; font-size: 11px; padding: 2px 8px; border-radius: 9999px; font-weight: 600;">Public / No Auth</span>
         </div>
-        <span style="font-size: 12px; color: var(--muted-foreground);">Real-Time Edge AI Alerts Table (Base64 Frames & Hotlist Matching)</span>
+        <span style="font-size: 12px; color: var(--muted-foreground);">Real-Time Edge AI Alerts Table (Continuous Public Stream)</span>
       </div>
       <p style="color: #52525b; font-size: 12px; margin-bottom: 0.5rem;">
-        Direct ingestion into the <code>ai_alerts</code> relational table with base64 surveillance frame decoding, vehicle and camera binding, GPS coordinates, automatic stolen watchlist plate matching, and status management (<code>O</code> = Open, <code>C</code> = Closed).
+        <strong>⚡ Public Ingestion (No Bearer Token):</strong> Direct continuous ingestion into the <code>ai_alerts</code> relational table with base64 surveillance frame decoding, vehicle and camera binding, GPS coordinates, automatic stolen watchlist plate matching, and status management (<code>O</code> = Open, <code>C</code> = Closed). AI cameras and edge units can stream alerts without holding a JWT token.
       </p>
       <div class="code-container">
         <div class="code-header">
