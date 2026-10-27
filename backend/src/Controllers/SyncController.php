@@ -321,4 +321,38 @@ class SyncController
             'tables'         => $tablesData
         ];
     }
+
+    /**
+     * POST /api/sync/migrate
+     * Runs schema migration to create or verify any missing tables (e.g. ai_alerts)
+     */
+    public function migrate(array $args): void
+    {
+        $sqlFile = __DIR__ . '/../../database/schema.sql';
+        if (!file_exists($sqlFile)) {
+            Response::error('schema.sql file not found on server.', 404);
+        }
+
+        $sql = file_get_contents($sqlFile);
+        $sql = preg_replace('/CREATE DATABASE[^;]+;/i', '', $sql);
+        $sql = preg_replace('/USE `?[a-zA-Z0-9_]+`?;/i', '', $sql);
+
+        $statements = array_filter(array_map('trim', explode(';', $sql)));
+        $executed = 0;
+        foreach ($statements as $stmtSql) {
+            if (!empty($stmtSql)) {
+                $this->db->exec($stmtSql);
+                $executed++;
+            }
+        }
+
+        // Return refreshed table overview
+        $overview = $this->getLocalOverviewData();
+
+        Response::success('Database schema verified & missing tables created successfully', [
+            'statements_executed' => $executed,
+            'total_tables'        => $overview['total_tables'],
+            'tables'              => array_keys($overview['tables'])
+        ]);
+    }
 }

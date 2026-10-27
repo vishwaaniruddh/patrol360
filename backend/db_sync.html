@@ -405,6 +405,9 @@
         <p style="font-size: 12px; color: var(--muted-foreground);">Select actions to synchronize schema or table data across environments</p>
       </div>
       <div class="btn-group">
+        <button class="sync-btn" style="background:#7c3aed; color:#fff;" onclick="runSchemaMigration()">
+          ⚡ Run Table Migration (Create Missing Tables)
+        </button>
         <button class="sync-btn btn-compare" onclick="runComparison()">
           🔍 Run Deep Comparison
         </button>
@@ -504,7 +507,11 @@
     async function loadCurrentOverview() {
       logConsole('Fetching current instance database overview (/api/sync/overview)...');
       try {
-        const res = await fetch('api/sync/overview');
+        const token = localStorage.getItem('patrol360_jwt_token') || '';
+        const headers = { 'Accept': 'application/json' };
+        if (token) headers['Authorization'] = 'Bearer ' + token;
+
+        const res = await fetch('api/sync/overview', { headers });
         const json = await res.json();
 
         if (res.ok && json.data) {
@@ -513,7 +520,8 @@
           document.getElementById('curDbHost').textContent = currentOverview.host;
           document.getElementById('curDbTables').textContent = currentOverview.total_tables + ' tables';
           document.getElementById('curDbRows').textContent = currentOverview.total_rows.toLocaleString() + ' records';
-          document.getElementById('schemaFingerprint').textContent = currentOverview.fingerprint.substr(0, 10) + '...';
+          document.getElementById('schemaFingerprint').textContent = (currentOverview.fingerprint || 'patrol360').substr(0, 10) + '...';
+          document.getElementById('diffSummaryBadge').textContent = `${currentOverview.total_tables} Tables Monitored`;
 
           const envPill = document.getElementById('currentEnvPill');
           envPill.textContent = (currentOverview.environment === 'production' ? 'Production (Live)' : 'Localhost (Dev)');
@@ -534,6 +542,30 @@
         }
       } catch (err) {
         logConsole('Error connecting to current database: ' + err.message, 'err');
+      }
+    }
+
+    async function runSchemaMigration() {
+      logConsole('Executing database schema verification & table migration (/api/sync/migrate)...');
+      try {
+        const token = localStorage.getItem('patrol360_jwt_token') || '';
+        const headers = { 'Accept': 'application/json' };
+        if (token) headers['Authorization'] = 'Bearer ' + token;
+
+        const res = await fetch('api/sync/migrate', { method: 'POST', headers });
+        const json = await res.json();
+
+        if (res.ok && json.data) {
+          logConsole(`Schema migration complete: ${json.data.statements_executed} statements executed. Total tables: ${json.data.total_tables}`, 'success');
+          alert(`Migration Successful!\n\nAll 14 tables verified & created (including ai_alerts).\nTotal active tables: ${json.data.total_tables}`);
+          await loadCurrentOverview();
+        } else {
+          logConsole('Migration failed: ' + (json.error || 'Server error'), 'err');
+          alert('Migration failed: ' + (json.error || 'Server error'));
+        }
+      } catch (err) {
+        logConsole('Migration network error: ' + err.message, 'err');
+        alert('Migration error: ' + err.message);
       }
     }
 

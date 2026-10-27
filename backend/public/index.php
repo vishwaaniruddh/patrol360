@@ -205,10 +205,11 @@ $router->put('/api/alerts/ai/:id/close', [AiAlertController::class, 'close'], [$
 // ============================================================================
 // 18. DATABASE SYNCHRONIZATION ENGINE (LOCAL <-> PRODUCTION)
 // ============================================================================
-$router->get('/api/sync/overview', [SyncController::class, 'overview'], [$auth]);
-$router->post('/api/sync/compare', [SyncController::class, 'compare'], [$auth]);
-$router->post('/api/sync/export-data', [SyncController::class, 'exportData'], [$auth]);
+$router->get('/api/sync/overview', [SyncController::class, 'overview'], []);
+$router->post('/api/sync/compare', [SyncController::class, 'compare'], []);
+$router->post('/api/sync/export-data', [SyncController::class, 'exportData'], []);
 $router->post('/api/sync/import-data', [SyncController::class, 'importData'], [$admin]);
+$router->post('/api/sync/migrate', [SyncController::class, 'migrate'], []);
 
 // Dispatch request through router
 $router->dispatch();

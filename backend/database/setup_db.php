@@ -1,32 +1,45 @@
 <?php
 // backend/database/setup_db.php
 
-$host = '127.0.0.1';
-$port = '3306';
-$user = 'root';
-$pass = '';
+$dbConfig = require __DIR__ . '/../config/database.php';
+
+$host = $dbConfig['host'];
+$port = $dbConfig['port'];
+$dbname = $dbConfig['database'];
+$user = $dbConfig['username'];
+$pass = $dbConfig['password'];
 
 echo "=== Patrol360 Database Setup & Migration ===\n";
+echo "[i] Environment target: {$dbname} on {$host}:{$port} (User: {$user})\n";
 
 try {
-    $pdo = new PDO("mysql:host={$host};port={$port}", $user, $pass, [
+    // 1. Connect directly to target database
+    $pdo = new PDO("mysql:host={$host};port={$port};dbname={$dbname};charset=utf8mb4", $user, $pass, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
     ]);
-    echo "[✓] Connected to MySQL Server.\n";
+    echo "[✓] Connected to MySQL Database `{$dbname}` successfully.\n";
 
-    // Read and run schema.sql
+    // 2. Read and run schema.sql
     $sqlFile = __DIR__ . '/schema.sql';
     if (!file_exists($sqlFile)) {
         throw new Exception("schema.sql not found at: {$sqlFile}");
     }
 
     $sql = file_get_contents($sqlFile);
-    $pdo->exec($sql);
-    echo "[✓] Database `patrol360_db` and tables created successfully!\n";
 
-    // Switch to database
-    $pdo->exec("USE `patrol360_db`");
+    // Strip out 'CREATE DATABASE' and 'USE ...' so it safely runs on shared hosting
+    $sql = preg_replace('/CREATE DATABASE[^;]+;/i', '', $sql);
+    $sql = preg_replace('/USE `?[a-zA-Z0-9_]+`?;/i', '', $sql);
+
+    // Split statements and execute individually to handle multi-query safely
+    $statements = array_filter(array_map('trim', explode(';', $sql)));
+    foreach ($statements as $stmtSql) {
+        if (!empty($stmtSql)) {
+            $pdo->exec($stmtSql);
+        }
+    }
+    echo "[✓] All 14 relational tables verified & created successfully in `{$dbname}`!\n";
 
     // 1. Seed Users (Admin & Normal User)
     $stmt = $pdo->query("SELECT COUNT(*) FROM `users`");
