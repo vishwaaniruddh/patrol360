@@ -237,3 +237,31 @@ CREATE TABLE IF NOT EXISTS `audit_logs` (
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX `idx_audit_time` (`created_at` DESC)
 ) ENGINE=InnoDB;
+
+-- 14. REAL-TIME AI EDGE ALERTS TABLE
+CREATE TABLE IF NOT EXISTS `ai_alerts` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `vehicle_id` VARCHAR(50) NOT NULL,
+    `camera_id` VARCHAR(50) NOT NULL,
+    `lat` VARCHAR(20) NOT NULL,
+    `lon` VARCHAR(20) NOT NULL,
+    `createtime` DATETIME NOT NULL,
+    `receivedtime` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    `comment` VARCHAR(500) DEFAULT NULL,
+    `status` CHAR(1) NOT NULL DEFAULT 'O',
+    `closedBy` VARCHAR(50) DEFAULT NULL,
+    `closedtime` DATETIME DEFAULT NULL,
+    `sendip` VARCHAR(45) DEFAULT NULL,
+    `alerttype` VARCHAR(50) DEFAULT NULL,
+    `location` VARCHAR(100) DEFAULT NULL,
+    `ATMCode` VARCHAR(50) DEFAULT NULL,
+    `File_loc` MEDIUMTEXT DEFAULT NULL,
+    `scanned_vehicle_numberplate` VARCHAR(50) DEFAULT NULL,
+    INDEX `idx_ai_alerts_veh` (`vehicle_id`),
+    INDEX `idx_ai_alerts_cam` (`camera_id`),
+    INDEX `idx_ai_alerts_status` (`status`),
+    INDEX `idx_ai_alerts_type` (`alerttype`),
+    INDEX `idx_ai_alerts_plate` (`scanned_vehicle_numberplate`),
+    INDEX `idx_ai_alerts_createtime` (`createtime` DESC)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+

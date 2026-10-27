@@ -162,6 +162,61 @@ if ($res['status'] === 200) {
     echo "SUCCESS\n\n";
 }
 
+// 10. Real-time AI Edge Alert Ingestion (ai_alerts)
+echo "[TEST 10] AI Edge Alert Ingestion (/api/ai-alerts)...\n";
+$dummyBase64Image = 'data:image/jpeg;base64,' . base64_encode('SIMULATED_AI_CAMERA_FRAME_PATROL360');
+$res = makeRequest('POST', '/api/ai-alerts', [
+    'vehicle_id'                  => 'PATROL_VAN_01',
+    'camera_id'                   => 'CAM_01_FRONT',
+    'lat'                         => '23.022512',
+    'lon'                         => '72.571432',
+    'createtime'                  => date('Y-m-d H:i:s'),
+    'alerttype'                   => 'ANPR_HOTLIST_MATCH',
+    'scanned_vehicle_numberplate' => 'MH12DE1432',
+    'ATMCode'                     => 'ATM-SBI-001',
+    'location'                    => 'Navrangpura Junction',
+    'comment'                     => 'Suspect vehicle flagged at traffic junction',
+    'File_loc'                    => $dummyBase64Image
+], $userToken);
+
+echo "Status: {$res['status']}\n";
+if ($res['status'] === 201) {
+    $alertData = $res['data']['data'];
+    echo " - Alert ID: #" . $alertData['id'] . "\n";
+    echo " - Vehicle: " . $alertData['vehicle_id'] . "\n";
+    echo " - Camera: " . $alertData['camera_id'] . "\n";
+    echo " - Status: " . $alertData['status'] . " (Open)\n";
+    echo " - Scanned Plate: " . $alertData['scanned_vehicle_numberplate'] . "\n";
+    echo " - Stolen Watchlist Hit: " . ($alertData['is_stolen_hit'] ? 'YES [MATCHED!]' : 'NO') . "\n";
+    if (!empty($alertData['image_url'])) {
+        echo " - Image Saved: " . $alertData['image_url'] . "\n";
+    }
+    echo "SUCCESS\n\n";
+
+    // Test Listing
+    echo "[TEST 11] List AI Alerts (/api/ai-alerts?status=O)...\n";
+    $listRes = makeRequest('GET', '/api/ai-alerts?status=O', null, $userToken);
+    echo "Status: {$listRes['status']}\n";
+    if ($listRes['status'] === 200) {
+        echo " - Open AI Alerts Count: " . count($listRes['data']['data']) . "\n";
+        echo "SUCCESS\n\n";
+    }
+
+    // Test Closing Alert
+    echo "[TEST 12] Close AI Alert (/api/ai-alerts/{$alertData['id']}/close)...\n";
+    $closeRes = makeRequest('PUT', "/api/ai-alerts/{$alertData['id']}/close", [
+        'comment'  => 'Vehicle intercepted by Team Delta, driver detained.',
+        'closedBy' => 'Duty Officer SI Vikram'
+    ], $userToken);
+    echo "Status: {$closeRes['status']}\n";
+    if ($closeRes['status'] === 200) {
+        echo " - Updated Status: " . $closeRes['data']['data']['status'] . " (Closed)\n";
+        echo " - Closed By: " . $closeRes['data']['data']['closedBy'] . "\n";
+        echo " - Closed Time: " . $closeRes['data']['data']['closedtime'] . "\n";
+        echo "SUCCESS\n\n";
+    }
+}
+
 echo "========================================================\n";
 echo "ALL REST API ENDPOINTS TESTED & OPERATIONAL!\n";
 echo "========================================================\n";

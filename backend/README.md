@@ -188,6 +188,13 @@ Base URL (Production): `https://sarsspl.com/patrol360/backend/public`
   - `POST /api/events/crowd` - Ingest head count & threshold alert *(User/Admin)*
   - `DELETE /api/events/crowd/:id` - Delete event *(Admin)*
 
+### F2. Real-Time AI Edge Alerts (`ai_alerts` Table)
+- `POST /api/ai-alerts` or `POST /api/alerts/ai` - Ingest edge AI alert with `vehicle_id`, `camera_id`, `lat`, `lon`, `createtime`, `alerttype`, `scanned_vehicle_numberplate`, `File_loc` (Base64 JPEG/PNG image), `ATMCode`, `location`, `comment`, `status` (default `'O'` Open), `sendip`. Automatically checks plate against stolen vehicles hotlist! *(User/Admin)*
+- `GET /api/ai-alerts` or `GET /api/alerts/ai` - Query alerts filtered by `status=O`, `alerttype`, `vehicle_id`, `plate`, with pagination *(User/Admin)*
+- `GET /api/ai-alerts/:id` - Single alert details with full base64 frame and decoded public image URL *(User/Admin)*
+- `PUT /api/ai-alerts/:id/close` - Close alert with duty officer name and resolution remarks (`status='C'`, `closedBy`, `closedtime=NOW()`) *(User/Admin)*
+- `DELETE /api/ai-alerts/:id` - Remove alert record *(Admin)*
+
 ### G. Exports (Dompdf & PhpSpreadsheet)
 - `GET /api/export/pdf/incident/:type/:id` - Printable Police Incident Dossier PDF *(Dompdf)*
 - `GET /api/export/excel/events` - Complete multi-sheet AI detection logs Excel `.xlsx` *(PhpSpreadsheet)*

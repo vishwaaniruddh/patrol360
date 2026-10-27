@@ -261,6 +261,39 @@
   }
 }</pre>
       </div>
+    <!-- REAL-TIME AI EDGE ALERT (ai_alerts) -->
+    <div class="card">
+      <div class="card-title">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span class="badge badge-post">POST</span>
+          <span style="font-family: var(--font-mono); font-size: 14px;">/api/ai-alerts</span>
+        </div>
+        <span style="font-size: 12px; color: var(--muted-foreground);">Real-Time Edge AI Alerts Table (Base64 Frames & Hotlist Matching)</span>
+      </div>
+      <p style="color: #52525b; font-size: 12px; margin-bottom: 0.5rem;">
+        Direct ingestion into the <code>ai_alerts</code> relational table with base64 surveillance frame decoding, vehicle and camera binding, GPS coordinates, automatic stolen watchlist plate matching, and status management (<code>O</code> = Open, <code>C</code> = Closed).
+      </p>
+      <div class="code-container">
+        <div class="code-header">
+          <span>SAMPLE JSON PAYLOAD</span>
+          <button class="btn-sm" onclick="copySnippet(this)">Copy JSON</button>
+        </div>
+        <pre class="code-body">{
+  "vehicle_id": "PATROL_VAN_01",
+  "camera_id": "CAM_01_FRONT",
+  "lat": "23.022512",
+  "lon": "72.571432",
+  "createtime": "2026-10-27 16:30:00",
+  "alerttype": "ANPR_HOTLIST_MATCH",
+  "scanned_vehicle_numberplate": "MH12DE1432",
+  "ATMCode": "ATM-SBI-001",
+  "location": "Navrangpura Junction",
+  "comment": "Suspect vehicle flagged at traffic junction",
+  "File_loc": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD...",
+  "status": "O",
+  "sendip": "192.168.1.101"
+}</pre>
+      </div>
     </div>
 
     <!-- OFFLINE BUFFER RULES -->

@@ -662,6 +662,7 @@
       <button class="filter-pill" onclick="filterCategory('crowd', this)">Crowd Analytics</button>
       <button class="filter-pill" onclick="filterCategory('exports', this)">Dompdf & Excel</button>
       <button class="filter-pill" onclick="filterCategory('alerts', this)">PHPMailer Alerts</button>
+      <button class="filter-pill" onclick="filterCategory('ai-alerts', this)">🚨 AI Edge Alerts (Table)</button>
       <button class="filter-pill" onclick="filterCategory('dashboard', this)">Live Dashboard Stats</button>
     </div>
 
@@ -1549,6 +1550,168 @@
                   <div class="response-status-bar">
                     <span>Status: <span class="status-code-badge status-200">200 OK</span></span>
                     <span class="latency-timer">45 ms</span>
+                  </div>
+                  <div class="code-box"><pre class="response-body"></pre></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================================================================= -->
+      <!-- 9b. REAL-TIME AI EDGE ALERTS (ai_alerts TABLE) -->
+      <!-- ================================================================= -->
+      <div class="section-title" data-category="ai-alerts">
+        <span>9b. Real-Time AI Edge Surveillance Alerts (ai_alerts Table)</span>
+        <span class="section-badge">Edge Alert Pipeline</span>
+      </div>
+
+      <!-- POST /api/ai-alerts -->
+      <div class="endpoint-card" data-category="ai-alerts" data-method="POST" data-path="/api/ai-alerts">
+        <div class="endpoint-summary" onclick="toggleEndpoint(this)">
+          <div class="endpoint-left">
+            <span class="method-badge method-post">POST</span>
+            <span class="endpoint-path">/api/ai-alerts</span>
+            <span class="endpoint-desc">Ingest Edge AI Alert into ai_alerts (Base64 JPEG/PNG frames, vehicle, camera, GPS, plate hotlist check)</span>
+          </div>
+          <div class="endpoint-right">
+            <span class="role-badge role-protected">Edge / Officer</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="endpoint-details">
+          <div class="details-grid">
+            <div>
+              <div class="detail-section-title">Request Body Parameters</div>
+              <table class="param-table">
+                <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+                <tbody>
+                  <tr><td class="param-name">vehicle_id</td><td class="param-type">string</td><td class="param-req">YES</td><td>Police Patrol Unit ID (e.g. <code>PATROL_VAN_01</code>)</td></tr>
+                  <tr><td class="param-name">camera_id</td><td class="param-type">string</td><td class="param-req">YES</td><td>Mounted Camera ID (e.g. <code>CAM_01_FRONT</code>)</td></tr>
+                  <tr><td class="param-name">lat</td><td class="param-type">string</td><td class="param-req">YES</td><td>GPS Latitude (e.g. <code>23.022512</code>)</td></tr>
+                  <tr><td class="param-name">lon</td><td class="param-type">string</td><td class="param-req">YES</td><td>GPS Longitude (e.g. <code>72.571432</code>)</td></tr>
+                  <tr><td class="param-name">createtime</td><td class="param-type">datetime</td><td class="param-req">NO</td><td>Edge detection time (defaults to <code>NOW()</code>)</td></tr>
+                  <tr><td class="param-name">alerttype</td><td class="param-type">string</td><td class="param-req">NO</td><td>Classification (e.g. <code>ANPR</code>, <code>WEAPON</code>, <code>HOTLIST_MATCH</code>)</td></tr>
+                  <tr><td class="param-name">scanned_vehicle_numberplate</td><td class="param-type">string</td><td class="param-req">NO</td><td>Recognized license plate (Auto-matches stolen database!)</td></tr>
+                  <tr><td class="param-name">File_loc</td><td class="param-type">mediumtext</td><td class="param-req">NO</td><td>Base64 JPEG/PNG image frame (or URL)</td></tr>
+                  <tr><td class="param-name">location</td><td class="param-type">string</td><td class="param-req">NO</td><td>Physical landmark or zone (e.g. <code>Navrangpura Circle</code>)</td></tr>
+                  <tr><td class="param-name">ATMCode</td><td class="param-type">string</td><td class="param-req">NO</td><td>Associated ATM or junction code</td></tr>
+                  <tr><td class="param-name">comment</td><td class="param-type">string</td><td class="param-req">NO</td><td>Initial detection remarks (default null)</td></tr>
+                  <tr><td class="param-name">status</td><td class="param-type">char(1)</td><td class="param-req">NO</td><td>Alert status: <code>O</code> (Open), <code>C</code> (Closed)</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div>
+              <div class="try-runner">
+                <div class="try-header">
+                  <span>Interactive Test Runner</span>
+                  <button class="execute-btn" onclick="executeApi(this, 'POST', '/api/ai-alerts')">Send Request</button>
+                </div>
+                <textarea class="textarea-json">{
+  "vehicle_id": "PATROL_VAN_01",
+  "camera_id": "CAM_01_FRONT",
+  "lat": "23.022512",
+  "lon": "72.571432",
+  "createtime": "2026-10-27 16:30:00",
+  "alerttype": "ANPR_HOTLIST_MATCH",
+  "scanned_vehicle_numberplate": "MH12DE1432",
+  "ATMCode": "ATM-SBI-001",
+  "location": "Navrangpura Circle",
+  "comment": "Suspect vehicle detected at junction",
+  "File_loc": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP...",
+  "status": "O"
+}</textarea>
+                <div class="response-container">
+                  <div class="response-status-bar">
+                    <span>Status: <span class="status-code-badge status-200">201 Created</span></span>
+                    <span class="latency-timer">28 ms</span>
+                  </div>
+                  <div class="code-box"><pre class="response-body"></pre></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GET /api/ai-alerts -->
+      <div class="endpoint-card" data-category="ai-alerts" data-method="GET" data-path="/api/ai-alerts">
+        <div class="endpoint-summary" onclick="toggleEndpoint(this)">
+          <div class="endpoint-left">
+            <span class="method-badge method-get">GET</span>
+            <span class="endpoint-path">/api/ai-alerts</span>
+            <span class="endpoint-desc">List AI Alerts with filters (status=O, vehicle_id, plate, pagination)</span>
+          </div>
+          <div class="endpoint-right">
+            <span class="role-badge role-protected">User / Admin</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="endpoint-details">
+          <div class="details-grid">
+            <div>
+              <div class="detail-section-title">Query Parameters</div>
+              <p style="font-size: 12px; margin-bottom: 8px;"><code>status=O</code> (Open alerts), <code>vehicle_id=PATROL_VAN_01</code>, <code>plate=MH12</code>, <code>page=1</code>, <code>limit=20</code></p>
+            </div>
+            <div>
+              <div class="try-runner">
+                <div class="try-header">
+                  <span>Interactive Test Runner</span>
+                  <button class="execute-btn" onclick="executeApi(this, 'GET', '/api/ai-alerts?status=O')">Send Request</button>
+                </div>
+                <div class="response-container">
+                  <div class="response-status-bar">
+                    <span>Status: <span class="status-code-badge status-200">200 OK</span></span>
+                    <span class="latency-timer">20 ms</span>
+                  </div>
+                  <div class="code-box"><pre class="response-body"></pre></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PUT /api/ai-alerts/:id/close -->
+      <div class="endpoint-card" data-category="ai-alerts" data-method="PUT" data-path="/api/ai-alerts/:id/close">
+        <div class="endpoint-summary" onclick="toggleEndpoint(this)">
+          <div class="endpoint-left">
+            <span class="method-badge method-put">PUT</span>
+            <span class="endpoint-path">/api/ai-alerts/:id/close</span>
+            <span class="endpoint-desc">Close an open AI alert with resolution remarks and officer identity</span>
+          </div>
+          <div class="endpoint-right">
+            <span class="role-badge role-protected">Duty Officer</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="endpoint-details">
+          <div class="details-grid">
+            <div>
+              <div class="detail-section-title">Request Body Parameters</div>
+              <table class="param-table">
+                <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+                <tbody>
+                  <tr><td class="param-name">comment</td><td class="param-type">string</td><td class="param-req">NO</td><td>Resolution remarks (e.g. <code>Driver detained and questioned</code>)</td></tr>
+                  <tr><td class="param-name">closedBy</td><td class="param-type">string</td><td class="param-req">NO</td><td>Officer name (defaults to authenticated user)</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div>
+              <div class="try-runner">
+                <div class="try-header">
+                  <span>Interactive Test Runner</span>
+                  <button class="execute-btn" onclick="executeApi(this, 'PUT', '/api/ai-alerts/1/close')">Send Request</button>
+                </div>
+                <textarea class="textarea-json">{
+  "comment": "Vehicle intercepted by Team Delta, driver detained.",
+  "closedBy": "SI Vikram Solanki"
+}</textarea>
+                <div class="response-container">
+                  <div class="response-status-bar">
+                    <span>Status: <span class="status-code-badge status-200">200 OK</span></span>
+                    <span class="latency-timer">25 ms</span>
                   </div>
                   <div class="code-box"><pre class="response-body"></pre></div>
                 </div>

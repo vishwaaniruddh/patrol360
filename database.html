@@ -288,8 +288,32 @@ CREATE TABLE IF NOT EXISTS central_api_dispatch_queue (
     retry_count INTEGER DEFAULT 0,
     last_retry_at TIMESTAMP,
     delivery_status VARCHAR(16) DEFAULT 'QUEUED'
+CREATE INDEX idx_queue_status ON central_api_dispatch_queue(delivery_status, retry_count);
+
+-- 10. REAL-TIME AI EDGE ALERTS TABLE (ai_alerts)
+CREATE TABLE IF NOT EXISTS ai_alerts (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    vehicle_id VARCHAR(50) NOT NULL,
+    camera_id VARCHAR(50) NOT NULL,
+    lat VARCHAR(20) NOT NULL,
+    lon VARCHAR(20) NOT NULL,
+    createtime DATETIME NOT NULL,
+    receivedtime DATETIME DEFAULT CURRENT_TIMESTAMP,
+    comment VARCHAR(500) DEFAULT NULL,
+    status CHAR(1) NOT NULL DEFAULT 'O', -- 'O' = Open, 'C' = Closed
+    closedBy VARCHAR(50) DEFAULT NULL,
+    closedtime DATETIME DEFAULT NULL,
+    sendip VARCHAR(45) DEFAULT NULL,
+    alerttype VARCHAR(50) DEFAULT NULL,
+    location VARCHAR(100) DEFAULT NULL,
+    ATMCode VARCHAR(50) DEFAULT NULL,
+    File_loc MEDIUMTEXT DEFAULT NULL, -- Base64 JPEG/PNG frame
+    scanned_vehicle_numberplate VARCHAR(50) DEFAULT NULL
 );
-CREATE INDEX idx_queue_status ON central_api_dispatch_queue(delivery_status, retry_count);</pre>
+CREATE INDEX idx_ai_alerts_veh ON ai_alerts(vehicle_id);
+CREATE INDEX idx_ai_alerts_status ON ai_alerts(status);
+CREATE INDEX idx_ai_alerts_type ON ai_alerts(alerttype);
+CREATE INDEX idx_ai_alerts_plate ON ai_alerts(scanned_vehicle_numberplate);</pre>
       </div>
     </div>
   </main>

@@ -28,6 +28,7 @@ use App\Controllers\MailerController;
 use App\Controllers\DashboardController;
 use App\Controllers\SystemController;
 use App\Controllers\SyncController;
+use App\Controllers\AiAlertController;
 
 // Enable CORS and handle OPTIONS preflight
 CorsMiddleware::handle();
@@ -186,7 +187,23 @@ $router->get('/api/dashboard/stats', [DashboardController::class, 'stats'], [$au
 $router->get('/api/audit-logs', [DashboardController::class, 'auditLogs'], [$admin]);
 
 // ============================================================================
-// 17. DATABASE SYNCHRONIZATION ENGINE (LOCAL <-> PRODUCTION)
+// 17. REAL-TIME AI EDGE ALERTS (ai_alerts)
+// ============================================================================
+$router->get('/api/ai-alerts', [AiAlertController::class, 'index'], [$auth]);
+$router->post('/api/ai-alerts', [AiAlertController::class, 'store'], [$auth]);
+$router->get('/api/ai-alerts/:id', [AiAlertController::class, 'show'], [$auth]);
+$router->put('/api/ai-alerts/:id/close', [AiAlertController::class, 'close'], [$auth]);
+$router->put('/api/ai-alerts/:id', [AiAlertController::class, 'close'], [$auth]);
+$router->delete('/api/ai-alerts/:id', [AiAlertController::class, 'destroy'], [$admin]);
+
+// Aliases for /api/alerts/ai
+$router->get('/api/alerts/ai', [AiAlertController::class, 'index'], [$auth]);
+$router->post('/api/alerts/ai', [AiAlertController::class, 'store'], [$auth]);
+$router->get('/api/alerts/ai/:id', [AiAlertController::class, 'show'], [$auth]);
+$router->put('/api/alerts/ai/:id/close', [AiAlertController::class, 'close'], [$auth]);
+
+// ============================================================================
+// 18. DATABASE SYNCHRONIZATION ENGINE (LOCAL <-> PRODUCTION)
 // ============================================================================
 $router->get('/api/sync/overview', [SyncController::class, 'overview'], [$auth]);
 $router->post('/api/sync/compare', [SyncController::class, 'compare'], [$auth]);
