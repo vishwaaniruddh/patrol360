@@ -44,7 +44,8 @@ class AuthController
 
         $token = JWTHandler::generateToken($user);
 
-        unset($user['password']);
+        // Sanitize user object: remove password, binary blobs (e.g. faceEncoding), and private data
+        unset($user['password'], $user['faceEncoding'], $user['face_encoding']);
 
         // Log audit
         $audit = $this->db->prepare("INSERT INTO `audit_logs` (`user_id`, `user_email`, `action`, `entity_type`, `entity_id`, `details`, `ip_address`) VALUES (?, ?, 'LOGIN', 'USER', ?, 'Successful login', ?)");
@@ -52,7 +53,17 @@ class AuthController
 
         Response::success('Login successful', [
             'token' => $token,
-            'user'  => $user
+            'user'  => [
+                'id'             => (int)$user['id'],
+                'name'           => $user['name'],
+                'email'          => $user['email'],
+                'role'           => $user['role'],
+                'badge_number'   => $user['badge_number'] ?? null,
+                'police_station' => $user['police_station'] ?? null,
+                'is_active'      => (int)$user['is_active'],
+                'created_at'     => $user['created_at'] ?? null,
+                'updated_at'     => $user['updated_at'] ?? null
+            ]
         ]);
     }
 

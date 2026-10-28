@@ -9,7 +9,15 @@ class Response
     {
         http_response_code($statusCode);
         header('Content-Type: application/json; charset=utf-8');
-        echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+        $json = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_INVALID_UTF8_SUBSTITUTE);
+        if ($json === false) {
+            $json = json_encode([
+                'success'   => false,
+                'error'     => 'Internal JSON serialization failed: ' . json_last_error_msg(),
+                'timestamp' => date('c')
+            ]);
+        }
+        echo $json;
         exit;
     }
 
