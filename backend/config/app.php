@@ -56,7 +56,26 @@ return [
     ],
     'cors'       => [
         'allowed_origins' => ['*'],
-        'allowed_methods' => ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-        'allowed_headers' => ['Content-Type', 'Authorization', 'X-Requested-With']
+        'allowed_methods' => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+        'allowed_headers' => [
+            'Content-Type',
+            'Authorization',
+            'X-Requested-With',
+            'Accept',
+            'Origin',
+            'Cache-Control',
+            'Pragma',
+            'X-Auth-Token',
+            'X-CSRF-Token'
+        ],
+        'exposed_headers' => [
+            'Content-Length',
+            'Content-Disposition',
+            'Authorization',
+            'Content-Type',
+            'X-Total-Count',
+            'X-Request-Id'
+        ],
+        'max_age'         => 86400
     ]
 ];

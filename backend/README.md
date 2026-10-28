@@ -101,6 +101,16 @@ The backend features **zero-configuration auto-detection**. It automatically det
 
 ---
 
+## 3.1 React / Frontend Cross-Origin Resource Sharing (CORS)
+
+The backend is pre-configured for modern Single Page Applications (React, Vite, Next.js, React Native):
+- **Dynamic Origin Reflection:** Reflects the client's `Origin` header (`http://localhost:3000`, `http://localhost:5173`, etc.) while maintaining `Access-Control-Allow-Credentials: true` without violating W3C restrictions.
+- **Preflight `OPTIONS` Acceleration:** Automatically intercepts preflight `OPTIONS` requests, returns `HTTP 204 No Content`, and injects `Access-Control-Max-Age: 86400` (caching preflight results in the browser for 24 hours to minimize roundtrips).
+- **Dynamic Header Allowance:** Automatically permits custom headers (`Authorization`, `Content-Type`, `X-Requested-With`, `Accept`, `Cache-Control`, `X-Auth-Token`, etc.) and echoes `Access-Control-Request-Headers`.
+- **Exposed Response Headers:** Exposes `Content-Length`, `Content-Disposition`, `Authorization`, `X-Total-Count`, and `Content-Type` so React state engines (Axios / Fetch) can read response metadata and download files directly.
+
+---
+
 ## 4. Seeded Default Credentials
 
 | Role | Email | Password | Permissions |
