@@ -300,7 +300,7 @@ CREATE TABLE IF NOT EXISTS ai_alerts (
     createtime DATETIME NOT NULL,
     receivedtime DATETIME DEFAULT CURRENT_TIMESTAMP,
     comment VARCHAR(500) DEFAULT NULL,
-    status CHAR(1) NOT NULL DEFAULT 'O', -- 'O' = Open, 'C' = Closed
+    status CHAR(1) NOT NULL DEFAULT 'O', -- 'O' = Open, 'A' = Acknowledged, 'C' = Closed
     closedBy VARCHAR(50) DEFAULT NULL,
     closedtime DATETIME DEFAULT NULL,
     sendip VARCHAR(45) DEFAULT NULL,
@@ -308,7 +308,10 @@ CREATE TABLE IF NOT EXISTS ai_alerts (
     location VARCHAR(100) DEFAULT NULL,
     ATMCode VARCHAR(50) DEFAULT NULL,
     File_loc MEDIUMTEXT DEFAULT NULL, -- Base64 JPEG/PNG frame
-    scanned_vehicle_numberplate VARCHAR(50) DEFAULT NULL
+    scanned_vehicle_numberplate VARCHAR(50) DEFAULT NULL,
+    acknowledged_by VARCHAR(100) DEFAULT NULL,
+    acknowledged_at DATETIME DEFAULT NULL,
+    action_taken VARCHAR(255) DEFAULT NULL
 );
 CREATE INDEX idx_ai_alerts_veh ON ai_alerts(vehicle_id);
 CREATE INDEX idx_ai_alerts_status ON ai_alerts(status);

@@ -157,7 +157,10 @@ CREATE TABLE IF NOT EXISTS ai_alerts (
     location VARCHAR(100) DEFAULT NULL,
     ATMCode VARCHAR(50) DEFAULT NULL,
     File_loc MEDIUMTEXT DEFAULT NULL,
-    scanned_vehicle_numberplate VARCHAR(50) DEFAULT NULL
+    scanned_vehicle_numberplate VARCHAR(50) DEFAULT NULL,
+    acknowledged_by VARCHAR(100) DEFAULT NULL,
+    acknowledged_at DATETIME DEFAULT NULL,
+    action_taken VARCHAR(255) DEFAULT NULL
 );
 CREATE INDEX idx_ai_alerts_veh ON ai_alerts(vehicle_id);
 CREATE INDEX idx_ai_alerts_status ON ai_alerts(status);

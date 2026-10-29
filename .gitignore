@@ -11,3 +11,9 @@ Thumbs.db
 .vscode/
 .idea/
 *.tmp
+# Scratch & temporary scripts
+scratch/
+backend/scratch/
+
+# Source client directory
+client/

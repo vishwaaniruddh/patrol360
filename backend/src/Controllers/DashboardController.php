@@ -204,4 +204,27 @@ class DashboardController
 
         Response::error('Fleet management page file not found on server.', 404);
     }
+
+    /**
+     * GET /officer.html or /officer
+     * Serves the Officer Tactical Console HTML directly
+     */
+    public function officerPage(array $args): void
+    {
+        $candidates = [
+            __DIR__ . '/../../officer.html',
+            __DIR__ . '/../../public/officer.html',
+            __DIR__ . '/../../../officer.html'
+        ];
+
+        foreach ($candidates as $file) {
+            if (file_exists($file)) {
+                header('Content-Type: text/html; charset=utf-8');
+                readfile($file);
+                exit;
+            }
+        }
+
+        Response::error('Officer portal page file not found on server.', 404);
+    }
 }

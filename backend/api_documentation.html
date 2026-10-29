@@ -219,6 +219,113 @@
     }
     .btn-clear:hover { background: #e2e8f0; color: #0f172a; }
 
+    
+    /* Role Switcher Tabs (Officer vs Admin vs All) */
+    .role-tabs-bar {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 1.25rem;
+    }
+    .role-tab {
+      background: #ffffff;
+      border: 2px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 14px 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      text-align: left;
+    }
+    .role-tab:hover {
+      border-color: #94a3b8;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+    .role-tab.active {
+      border-color: #0284c7;
+      background: linear-gradient(to right, #f0f9ff, #ffffff);
+      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.12);
+    }
+    .role-tab.tab-officer.active {
+      border-color: #059669;
+      background: linear-gradient(to right, #ecfdf5, #ffffff);
+      box-shadow: 0 4px 14px rgba(5, 150, 105, 0.12);
+    }
+    .role-tab.tab-admin.active {
+      border-color: #7c3aed;
+      background: linear-gradient(to right, #f5f3ff, #ffffff);
+      box-shadow: 0 4px 14px rgba(124, 58, 237, 0.12);
+    }
+    .role-tab-badge-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      background: #f1f5f9;
+      flex-shrink: 0;
+    }
+    .tab-officer .role-tab-badge-icon { background: #d1fae5; color: #065f46; }
+    .tab-admin .role-tab-badge-icon { background: #ede9fe; color: #5b21b6; }
+    .tab-all .role-tab-badge-icon { background: #e0f2fe; color: #0369a1; }
+    .role-tab-body { flex: 1; }
+    .role-tab-main {
+      font-size: 15px;
+      font-weight: 700;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .role-tab-sub {
+      font-size: 12px;
+      color: #64748b;
+      margin-top: 2px;
+    }
+    .role-tab-count {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 9999px;
+      background: #e2e8f0;
+      color: #334155;
+      margin-left: auto;
+    }
+    .tab-officer.active .role-tab-count { background: #10b981; color: #fff; }
+    .tab-admin.active .role-tab-count { background: #8b5cf6; color: #fff; }
+    .tab-all.active .role-tab-count { background: #0ea5e9; color: #fff; }
+    
+    .role-info-banner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      border-radius: var(--radius-sm);
+      border: 1px solid #a7f3d0;
+      background: #ecfdf5;
+      margin-bottom: 1.25rem;
+      font-size: 13px;
+    }
+    .badge-role-tag {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: #d1fae5;
+      color: #065f46;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .badge-role-tag.admin {
+      background: #ede9fe;
+      color: #5b21b6;
+    }
+
     /* Category Filter Pills */
     .filter-bar {
       display: flex;
@@ -648,6 +755,48 @@
       </div>
     </div>
 
+        <!-- ROLE SWITCHER TABS (User/Officer vs Admin vs All) -->
+    <div class="role-tabs-bar">
+      <div class="role-tab active tab-officer" id="tabOfficer" onclick="switchRoleView('officer')">
+        <div class="role-tab-badge-icon">👮</div>
+        <div class="role-tab-body">
+          <div class="role-tab-main">Officer & User APIs <span class="badge-role-tag">Non-Admin / Field</span></div>
+          <div class="role-tab-sub">Tactical Alerts Feed (<code>/api/officer/alerts</code>), Live Sirens, Plate Lookups, Field Actions</div>
+        </div>
+        <span class="role-tab-count">24 Routes</span>
+      </div>
+
+      <div class="role-tab tab-admin" id="tabAdmin" onclick="switchRoleView('admin')">
+        <div class="role-tab-badge-icon">👑</div>
+        <div class="role-tab-body">
+          <div class="role-tab-main">Admin-Only APIs <span class="badge-role-tag admin">Super Admin</span></div>
+          <div class="role-tab-sub">User Directory CRUD, DB Sync Migrations, Watchlist Imports, Audit Logs</div>
+        </div>
+        <span class="role-tab-count">14 Routes</span>
+      </div>
+
+      <div class="role-tab tab-all" id="tabAll" onclick="switchRoleView('all')">
+        <div class="role-tab-badge-icon">🌟</div>
+        <div class="role-tab-body">
+          <div class="role-tab-main">All APIs (Full Master Directory)</div>
+          <div class="role-tab-sub">Complete Swagger Catalogue Across All 17 Relational Modules</div>
+        </div>
+        <span class="role-tab-count">38 Routes</span>
+      </div>
+    </div>
+
+    <!-- Active Role Notification Banner -->
+    <div id="roleAlertBanner" class="role-info-banner">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 20px;">👮</span>
+        <div>
+          <strong style="color: #065f46;">Officer / User Mode Active:</strong>
+          <span style="color: #047857; margin-left: 4px;">Displaying tactical APIs accessible to field officers, patrol cars, and station operators (centered around <code>ai_alerts</code>).</span>
+        </div>
+      </div>
+      <button class="btn btn-user btn-sm" onclick="quickLogin('officer@police.gov.in', 'Officer@12345', 'Officer')">🔑 Auto-Fill Officer Token</button>
+    </div>
+
     <!-- Category Filters -->
     <div class="filter-bar">
       <button class="filter-pill active" onclick="filterCategory('all', this)">All Endpoints (16 Modules)</button>
@@ -663,6 +812,7 @@
       <button class="filter-pill" onclick="filterCategory('exports', this)">Dompdf & Excel</button>
       <button class="filter-pill" onclick="filterCategory('alerts', this)">PHPMailer Alerts</button>
       <button class="filter-pill" onclick="filterCategory('ai-alerts', this)">🚨 AI Edge Alerts (Table)</button>
+      <button class="filter-pill" onclick="filterCategory('officer', this)">👮 Officer Tactical APIs</button>
       <button class="filter-pill" onclick="filterCategory('dashboard', this)">Live Dashboard Stats</button>
     </div>
 
@@ -684,7 +834,7 @@
       </div>
 
       <!-- POST /api/auth/login -->
-      <div class="endpoint-card" data-category="auth" data-method="POST" data-path="/api/auth/login">
+      <div class="endpoint-card" data-category="auth" data-method="POST" data-path="/api/auth/login" data-role="both">
         <div class="endpoint-summary" onclick="toggleEndpoint(this)">
           <div class="endpoint-left">
             <span class="method-badge method-post">POST</span>
@@ -750,7 +900,7 @@
       </div>
 
       <!-- GET /api/auth/me -->
-      <div class="endpoint-card" data-category="auth" data-method="GET" data-path="/api/auth/me">
+      <div class="endpoint-card" data-category="auth" data-method="GET" data-path="/api/auth/me" data-role="both">
         <div class="endpoint-summary" onclick="toggleEndpoint(this)">
           <div class="endpoint-left">
             <span class="method-badge method-get">GET</span>
@@ -800,6 +950,424 @@
       </div>
 
       <!-- ================================================================= -->
+      <!-- 11. POLICE OFFICER & FIELD OPERATIONS (ai_alerts Centered) -->
+      <!-- ================================================================= -->
+      <div class="section-title" data-category="officer">
+        <span>2. Police Officer & Tactical Field Operations (ai_alerts Centered)</span>
+        <span class="section-badge" style="background: #10b981; color: white;">Field Operations</span>
+      </div>
+
+      <!-- GET /api/officer/alerts -->
+      <div class="endpoint-card" data-category="officer" data-method="GET" data-path="/api/officer/alerts" data-role="user">
+        <div class="endpoint-summary" onclick="toggleEndpoint(this)">
+          <div class="endpoint-left">
+            <span class="method-badge method-get">GET</span>
+            <span class="endpoint-path">/api/officer/alerts</span>
+            <span class="endpoint-desc">Scoped Alerts Feed: lightweight payload with direct image stream URLs and filters (scope=my|all, status, vehicle, plate, today)</span>
+          </div>
+          <div class="endpoint-right">
+            <span class="role-badge role-user">Officer / Admin</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="endpoint-details">
+          <div class="details-grid">
+            <div>
+              <div class="detail-section-title">Query Parameters</div>
+              <table class="param-table">
+                <thead><tr><th>Query Param</th><th>Type</th><th>Description</th></tr></thead>
+                <tbody>
+                  <tr><td class="param-name">scope</td><td class="param-type">string</td><td>Filter scope: <code>my</code> (Officer assigned vehicle + personal actions only) or <code>all</code> (Entire city fleet grid, default: <code>all</code>)</td></tr>
+                  <tr><td class="param-name">status</td><td class="param-type">string</td><td>Filter: <code>O</code> (Open), <code>A</code> (Acknowledged), <code>C</code> (Closed)</td></tr>
+                  <tr><td class="param-name">vehicle_id</td><td class="param-type">string</td><td>Filter by specific patrol vehicle (e.g. <code>PATROL_VAN_01</code>)</td></tr>
+                  <tr><td class="param-name">camera_id</td><td class="param-type">string</td><td>Filter by specific camera mount position (e.g. <code>CAM_01_FRONT</code>)</td></tr>
+                  <tr><td class="param-name">alerttype</td><td class="param-type">string</td><td>Filter by type: e.g. <code>STOLEN_VEHICLE_MATCH</code>, <code>ANPR</code></td></tr>
+                  <tr><td class="param-name">plate</td><td class="param-type">string</td><td>Filter by scanned vehicle registration plate</td></tr>
+                  <tr><td class="param-name">today</td><td class="param-type">integer</td><td>Set to <code>1</code> to fetch today's alerts only</td></tr>
+                  <tr><td class="param-name">limit</td><td class="param-type">integer</td><td>Results per page (default: 20, max: 100)</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div>
+              <div class="try-runner">
+                <div class="try-header">
+                  <span>Interactive Test Runner</span>
+                  <div style="display: flex; gap: 6px;">
+                    <button class="execute-btn" onclick="executeApi(this, 'GET', '/api/officer/alerts?scope=my&limit=5')">👤 My Unit (scope=my)</button>
+                    <button class="execute-btn" style="background: #0284c7;" onclick="executeApi(this, 'GET', '/api/officer/alerts?scope=all&limit=5')">🌐 All Fleet (scope=all)</button>
+                  </div>
+                </div>
+                <div class="response-container">
+                  <div class="response-status-bar">
+                    <span>Status: <span class="status-code-badge status-200">200 OK</span></span>
+                    <span class="latency-timer">22 ms</span>
+                  </div>
+                  <div class="code-box"><pre class="response-body"></pre></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GET /api/officer/my-activity -->
+      <div class="endpoint-card" data-category="officer" data-method="GET" data-path="/api/officer/my-activity" data-role="user">
+        <div class="endpoint-summary" onclick="toggleEndpoint(this)">
+          <div class="endpoint-left">
+            <span class="method-badge method-get">GET</span>
+            <span class="endpoint-path">/api/officer/my-activity</span>
+            <span class="endpoint-desc">In-Vehicle Edge Cockpit: Officer identity, assigned vehicle, mounted 4 RTSP cameras, live telemetry, duty metrics & personal alerts</span>
+          </div>
+          <div class="endpoint-right">
+            <span class="role-badge role-user">Officer / Admin</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="endpoint-details">
+          <div class="details-grid">
+            <div>
+              <div class="detail-section-title">Dedicated Edge In-Vehicle Cockpit API</div>
+              <p style="font-size: 12px; color: #64748b; line-height: 1.5;">Single edge endpoint tailored for in-vehicle terminal displays and MDTs. Returns assigned vehicle hardware details, 4 mounted RTSP camera configurations (FRONT, REAR, LEFT, RIGHT), live speed/GPS telemetry, duty metrics (today's unit alerts, open count, acknowledged count, resolved count), and recent scoped alerts.</p>
+            </div>
+            <div>
+              <div class="try-runner">
+                <div class="try-header">
+                  <span>Interactive Test Runner</span>
+                  <button class="execute-btn" onclick="executeApi(this, 'GET', '/api/officer/my-activity')">Send Request</button>
+                </div>
+                <div class="response-container">
+                  <div class="response-status-bar">
+                    <span>Status: <span class="status-code-badge status-200">200 OK</span></span>
+                    <span class="latency-timer">25 ms</span>
+                  </div>
+                  <div class="code-box"><pre class="response-body"></pre></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GET /api/officer/fleet-activity -->
+      <div class="endpoint-card" data-category="officer" data-method="GET" data-path="/api/officer/fleet-activity" data-role="user">
+        <div class="endpoint-summary" onclick="toggleEndpoint(this)">
+          <div class="endpoint-left">
+            <span class="method-badge method-get">GET</span>
+            <span class="endpoint-path">/api/officer/fleet-activity</span>
+            <span class="endpoint-desc">City Fleet Grid: Real-time telemetry & positions for all 6 patrol vans, active camera feeds, and citywide alert metrics</span>
+          </div>
+          <div class="endpoint-right">
+            <span class="role-badge role-user">Officer / Admin</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="endpoint-details">
+          <div class="details-grid">
+            <div>
+              <div class="detail-section-title">Citywide Situational Awareness</div>
+              <p style="font-size: 12px; color: #64748b; line-height: 1.5;">Allows field officers and dispatchers to maintain full grid awareness. Returns status and live GPS pins for all patrol vehicles, all streaming cameras across units, and fleet-wide alert summaries.</p>
+            </div>
+            <div>
+              <div class="try-runner">
+                <div class="try-header">
+                  <span>Interactive Test Runner</span>
+                  <button class="execute-btn" onclick="executeApi(this, 'GET', '/api/officer/fleet-activity')">Send Request</button>
+                </div>
+                <div class="response-container">
+                  <div class="response-status-bar">
+                    <span>Status: <span class="status-code-badge status-200">200 OK</span></span>
+                    <span class="latency-timer">28 ms</span>
+                  </div>
+                  <div class="code-box"><pre class="response-body"></pre></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GET /api/officer/dashboard -->
+      <div class="endpoint-card" data-category="officer" data-method="GET" data-path="/api/officer/dashboard" data-role="user">
+        <div class="endpoint-summary" onclick="toggleEndpoint(this)">
+          <div class="endpoint-left">
+            <span class="method-badge method-get">GET</span>
+            <span class="endpoint-path">/api/officer/dashboard</span>
+            <span class="endpoint-desc">Officer Operational Intelligence: today's counts, open vs acknowledged, urgent alerts, assigned vehicle status</span>
+          </div>
+          <div class="endpoint-right">
+            <span class="role-badge role-user">Officer / Admin</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="endpoint-details">
+          <div class="details-grid">
+            <div>
+              <div class="detail-section-title">Field Intelligence Overview</div>
+              <p style="font-size: 12px; color: #64748b; line-height: 1.5;">Provides the authenticated patrol officer with actionable metrics: today's total alerts, unresolved open alerts, critical stolen plate hits, breakdown by alert type, and assigned van status with GPS coordinates.</p>
+            </div>
+            <div>
+              <div class="try-runner">
+                <div class="try-header">
+                  <span>Interactive Test Runner</span>
+                  <button class="execute-btn" onclick="executeApi(this, 'GET', '/api/officer/dashboard')">Send Request</button>
+                </div>
+                <div class="response-container">
+                  <div class="response-status-bar">
+                    <span>Status: <span class="status-code-badge status-200">200 OK</span></span>
+                    <span class="latency-timer">20 ms</span>
+                  </div>
+                  <div class="code-box"><pre class="response-body"></pre></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GET /api/officer/alerts/live -->
+      <div class="endpoint-card" data-category="officer" data-method="GET" data-path="/api/officer/alerts/live" data-role="user">
+        <div class="endpoint-summary" onclick="toggleEndpoint(this)">
+          <div class="endpoint-left">
+            <span class="method-badge method-get">GET</span>
+            <span class="endpoint-path">/api/officer/alerts/live</span>
+            <span class="endpoint-desc">Live Alerts Polling: returns alerts with id > since_id and hotlist siren trigger flag</span>
+          </div>
+          <div class="endpoint-right">
+            <span class="role-badge role-user">Officer / Admin</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="endpoint-details">
+          <div class="details-grid">
+            <div>
+              <div class="detail-section-title">Real-Time Polling Engine</div>
+              <p style="font-size: 12px; color: #64748b;">Designed for 2-second in-vehicle MDT polling. If <code>has_stolen_hit</code> is true, field tablet plays an emergency audio siren.</p>
+            </div>
+            <div>
+              <div class="try-runner">
+                <div class="try-header">
+                  <span>Interactive Test Runner</span>
+                  <button class="execute-btn" onclick="executeApi(this, 'GET', '/api/officer/alerts/live?since_id=0&limit=5')">Send Request</button>
+                </div>
+                <div class="response-container">
+                  <div class="response-status-bar">
+                    <span>Status: <span class="status-code-badge status-200">200 OK</span></span>
+                    <span class="latency-timer">18 ms</span>
+                  </div>
+                  <div class="code-box"><pre class="response-body"></pre></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GET /api/officer/alerts/:id/image -->
+      <div class="endpoint-card" data-category="officer" data-method="GET" data-path="/api/officer/alerts/:id/image" data-role="user">
+        <div class="endpoint-summary" onclick="toggleEndpoint(this)">
+          <div class="endpoint-left">
+            <span class="method-badge method-get">GET</span>
+            <span class="endpoint-path">/api/officer/alerts/:id/image</span>
+            <span class="endpoint-desc">Direct Binary Image Stream: decodes base64 File_loc into image/jpeg with 24-hr cache</span>
+          </div>
+          <div class="endpoint-right">
+            <span class="role-badge role-public">Public / Officer</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="endpoint-details">
+          <div class="details-grid">
+            <div>
+              <div class="detail-section-title">Direct Image Rendering</div>
+              <p style="font-size: 12px; color: #64748b;">Enables direct use in <code>&lt;img src="/api/officer/alerts/104/image"&gt;</code> without downloading bulky JSON base64 payloads.</p>
+            </div>
+            <div>
+              <div class="try-runner">
+                <div class="try-header">
+                  <span>Interactive Test Runner</span>
+                  <button class="execute-btn" onclick="executeApi(this, 'GET', '/api/officer/alerts/104/image')">Test Stream</button>
+                </div>
+                <div class="response-container">
+                  <div class="response-status-bar">
+                    <span>Status: <span class="status-code-badge status-200">200 OK (image/jpeg)</span></span>
+                  </div>
+                  <div class="code-box"><pre class="response-body">[Binary Image Stream 200 OK]</pre></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PUT /api/officer/alerts/:id/acknowledge -->
+      <div class="endpoint-card" data-category="officer" data-method="PUT" data-path="/api/officer/alerts/:id/acknowledge" data-role="user">
+        <div class="endpoint-summary" onclick="toggleEndpoint(this)">
+          <div class="endpoint-left">
+            <span class="method-badge method-put">PUT</span>
+            <span class="endpoint-path">/api/officer/alerts/:id/acknowledge</span>
+            <span class="endpoint-desc">Officer Acknowledges Alert: sets status='A', records badge number, timestamp, and field note</span>
+          </div>
+          <div class="endpoint-right">
+            <span class="role-badge role-user">Officer / Admin</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="endpoint-details">
+          <div class="details-grid">
+            <div>
+              <div class="detail-section-title">Request Body</div>
+              <table class="param-table">
+                <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+                <tbody>
+                  <tr><td class="param-name">note</td><td class="param-type">string</td><td>Field remark (e.g. <code>Patrol Car 01 responding, intercepting</code>)</td></tr>
+                  <tr><td class="param-name">officer_name</td><td class="param-type">string</td><td>Officer name & badge (defaults to authenticated JWT user)</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div>
+              <div class="try-runner">
+                <div class="try-header">
+                  <span>Interactive Test Runner</span>
+                  <button class="execute-btn" onclick="executeApi(this, 'PUT', '/api/officer/alerts/104/acknowledge')">Send Request</button>
+                </div>
+                <textarea class="textarea-json">{
+  "note": "Patrol Unit responding. En route to intercept suspect vehicle.",
+  "officer_name": "Inspector Rajesh Sharma (INSP-402)"
+}</textarea>
+                <div class="response-container">
+                  <div class="response-status-bar">
+                    <span>Status: <span class="status-code-badge status-200">200 OK</span></span>
+                  </div>
+                  <div class="code-box"><pre class="response-body"></pre></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PUT /api/officer/alerts/:id/resolve -->
+      <div class="endpoint-card" data-category="officer" data-method="PUT" data-path="/api/officer/alerts/:id/resolve" data-role="user">
+        <div class="endpoint-summary" onclick="toggleEndpoint(this)">
+          <div class="endpoint-left">
+            <span class="method-badge method-put">PUT</span>
+            <span class="endpoint-path">/api/officer/alerts/:id/resolve</span>
+            <span class="endpoint-desc">Officer Resolves Alert: sets status='C', records action_taken, closedBy, and final resolution notes</span>
+          </div>
+          <div class="endpoint-right">
+            <span class="role-badge role-user">Officer / Admin</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="endpoint-details">
+          <div class="details-grid">
+            <div>
+              <div class="detail-section-title">Request Body</div>
+              <table class="param-table">
+                <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+                <tbody>
+                  <tr><td class="param-name">action_taken</td><td class="param-type">string</td><td class="param-req">YES</td><td>e.g. <code>INTERCEPTED</code>, <code>CHALLAN_ISSUED</code>, <code>SUSPECT_DETAINED</code>, <code>FALSE_ALARM</code></td></tr>
+                  <tr><td class="param-name">comment</td><td class="param-type">string</td><td class="param-req">NO</td><td>Resolution details and outcome notes</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div>
+              <div class="try-runner">
+                <div class="try-header">
+                  <span>Interactive Test Runner</span>
+                  <button class="execute-btn" onclick="executeApi(this, 'PUT', '/api/officer/alerts/104/resolve')">Send Request</button>
+                </div>
+                <textarea class="textarea-json">{
+  "action_taken": "INTERCEPTED",
+  "comment": "Suspect vehicle detained. Verified stolen status with FIR 883/2024. Handed over to Navrangpura PS.",
+  "officer_name": "Inspector Rajesh Sharma (INSP-402)"
+}</textarea>
+                <div class="response-container">
+                  <div class="response-status-bar">
+                    <span>Status: <span class="status-code-badge status-200">200 OK</span></span>
+                  </div>
+                  <div class="code-box"><pre class="response-body"></pre></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GET /api/officer/lookup/plate/:plate -->
+      <div class="endpoint-card" data-category="officer" data-method="GET" data-path="/api/officer/lookup/plate/:plate" data-role="user">
+        <div class="endpoint-summary" onclick="toggleEndpoint(this)">
+          <div class="endpoint-left">
+            <span class="method-badge method-get">GET</span>
+            <span class="endpoint-path">/api/officer/lookup/plate/:plate</span>
+            <span class="endpoint-desc">License Plate Intelligence: checks stolen watchlist hotlist + past GPS sightings across all patrol vans</span>
+          </div>
+          <div class="endpoint-right">
+            <span class="role-badge role-user">Officer / Admin</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="endpoint-details">
+          <div class="details-grid">
+            <div>
+              <div class="detail-section-title">Real-Time Plate Dossier</div>
+              <p style="font-size: 12px; color: #64748b;">Instant lookup for officers on patrol. Returns stolen FIR record, theft date, owner name, total times captured by patrol cameras, and last known GPS location coordinates with Google Maps pin.</p>
+            </div>
+            <div>
+              <div class="try-runner">
+                <div class="try-header">
+                  <span>Interactive Test Runner</span>
+                  <button class="execute-btn" onclick="executeApi(this, 'GET', '/api/officer/lookup/plate/GJ01AB1234')">Send Request</button>
+                </div>
+                <div class="response-container">
+                  <div class="response-status-bar">
+                    <span>Status: <span class="status-code-badge status-200">200 OK</span></span>
+                  </div>
+                  <div class="code-box"><pre class="response-body"></pre></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GET /api/officer/my-vehicle -->
+      <div class="endpoint-card" data-category="officer" data-method="GET" data-path="/api/officer/my-vehicle" data-role="user">
+        <div class="endpoint-summary" onclick="toggleEndpoint(this)">
+          <div class="endpoint-left">
+            <span class="method-badge method-get">GET</span>
+            <span class="endpoint-path">/api/officer/my-vehicle</span>
+            <span class="endpoint-desc">Assigned Vehicle Profile: patrol car registration, live speed, GPS breadcrumb, battery, and 4 mounted RTSP cameras</span>
+          </div>
+          <div class="endpoint-right">
+            <span class="role-badge role-user">Officer / Admin</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="endpoint-details">
+          <div class="details-grid">
+            <div>
+              <div class="detail-section-title">Patrol Unit Status</div>
+              <p style="font-size: 12px; color: #64748b;">Maps the logged-in officer to their assigned patrol vehicle, returning real-time IoT telemetry and all 4 camera streams.</p>
+            </div>
+            <div>
+              <div class="try-runner">
+                <div class="try-header">
+                  <span>Interactive Test Runner</span>
+                  <button class="execute-btn" onclick="executeApi(this, 'GET', '/api/officer/my-vehicle')">Send Request</button>
+                </div>
+                <div class="response-container">
+                  <div class="response-status-bar">
+                    <span>Status: <span class="status-code-badge status-200">200 OK</span></span>
+                  </div>
+                  <div class="code-box"><pre class="response-body"></pre></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- 2. USER MANAGEMENT (ADMIN ONLY) -->
       <!-- ================================================================= -->
       <div class="section-title" data-category="auth">
@@ -808,7 +1376,7 @@
       </div>
 
       <!-- GET /api/users -->
-      <div class="endpoint-card" data-category="auth" data-method="GET" data-path="/api/users">
+      <div class="endpoint-card" data-category="auth" data-method="GET" data-path="/api/users" data-role="admin">
         <div class="endpoint-summary" onclick="toggleEndpoint(this)">
           <div class="endpoint-left">
             <span class="method-badge method-get">GET</span>
@@ -861,7 +1429,7 @@
       </div>
 
       <!-- GET /api/vehicles -->
-      <div class="endpoint-card" data-category="vehicles" data-method="GET" data-path="/api/vehicles">
+      <div class="endpoint-card" data-category="vehicles" data-method="GET" data-path="/api/vehicles" data-role="both">
         <div class="endpoint-summary" onclick="toggleEndpoint(this)">
           <div class="endpoint-left">
             <span class="method-badge method-get">GET</span>
@@ -925,7 +1493,7 @@
       </div>
 
       <!-- POST /api/vehicles -->
-      <div class="endpoint-card" data-category="vehicles" data-method="POST" data-path="/api/vehicles">
+      <div class="endpoint-card" data-category="vehicles" data-method="POST" data-path="/api/vehicles" data-role="admin">
         <div class="endpoint-summary" onclick="toggleEndpoint(this)">
           <div class="endpoint-left">
             <span class="method-badge method-post">POST</span>
@@ -984,7 +1552,7 @@
       </div>
 
       <!-- POST /api/telemetry -->
-      <div class="endpoint-card" data-category="vehicles" data-method="POST" data-path="/api/telemetry">
+      <div class="endpoint-card" data-category="vehicles" data-method="POST" data-path="/api/telemetry" data-role="both">
         <div class="endpoint-summary" onclick="toggleEndpoint(this)">
           <div class="endpoint-left">
             <span class="method-badge method-post">POST</span>
@@ -1049,7 +1617,7 @@
       </div>
 
       <!-- GET /api/cameras -->
-      <div class="endpoint-card" data-category="cameras" data-method="GET" data-path="/api/cameras">
+      <div class="endpoint-card" data-category="cameras" data-method="GET" data-path="/api/cameras" data-role="both">
         <div class="endpoint-summary" onclick="toggleEndpoint(this)">
           <div class="endpoint-left">
             <span class="method-badge method-get">GET</span>
@@ -1104,7 +1672,7 @@
       </div>
 
       <!-- POST /api/cameras -->
-      <div class="endpoint-card" data-category="cameras" data-method="POST" data-path="/api/cameras">
+      <div class="endpoint-card" data-category="cameras" data-method="POST" data-path="/api/cameras" data-role="admin">
         <div class="endpoint-summary" onclick="toggleEndpoint(this)">
           <div class="endpoint-left">
             <span class="method-badge method-post">POST</span>
@@ -1172,7 +1740,7 @@
       </div>
 
       <!-- GET /api/watchlist/vehicles/check/:plate -->
-      <div class="endpoint-card" data-category="watchlist" data-method="GET" data-path="/api/watchlist/vehicles/check/:plate">
+      <div class="endpoint-card" data-category="watchlist" data-method="GET" data-path="/api/watchlist/vehicles/check/:plate" data-role="both">
         <div class="endpoint-summary" onclick="toggleEndpoint(this)">
           <div class="endpoint-left">
             <span class="method-badge method-get">GET</span>
@@ -1230,7 +1798,7 @@
       </div>
 
       <!-- POST /api/events/anpr -->
-      <div class="endpoint-card" data-category="anpr" data-method="POST" data-path="/api/events/anpr">
+      <div class="endpoint-card" data-category="anpr" data-method="POST" data-path="/api/events/anpr" data-role="both">
         <div class="endpoint-summary" onclick="toggleEndpoint(this)">
           <div class="endpoint-left">
             <span class="method-badge method-post">POST</span>
@@ -1286,7 +1854,7 @@
       </div>
 
       <!-- GET /api/events/anpr/stats -->
-      <div class="endpoint-card" data-category="anpr" data-method="GET" data-path="/api/events/anpr/stats">
+      <div class="endpoint-card" data-category="anpr" data-method="GET" data-path="/api/events/anpr/stats" data-role="both">
         <div class="endpoint-summary" onclick="toggleEndpoint(this)">
           <div class="endpoint-left">
             <span class="method-badge method-get">GET</span>
@@ -1332,7 +1900,7 @@
       </div>
 
       <!-- PUT /api/events/frs/:id/verify -->
-      <div class="endpoint-card" data-category="frs" data-method="PUT" data-path="/api/events/frs/:id/verify">
+      <div class="endpoint-card" data-category="frs" data-method="PUT" data-path="/api/events/frs/:id/verify" data-role="both">
         <div class="endpoint-summary" onclick="toggleEndpoint(this)">
           <div class="endpoint-left">
             <span class="method-badge method-put">PUT</span>
@@ -1389,7 +1957,7 @@
       </div>
 
       <!-- PUT /api/events/weapons/:id/ack -->
-      <div class="endpoint-card" data-category="weapons" data-method="PUT" data-path="/api/events/weapons/:id/ack">
+      <div class="endpoint-card" data-category="weapons" data-method="PUT" data-path="/api/events/weapons/:id/ack" data-role="both">
         <div class="endpoint-summary" onclick="toggleEndpoint(this)">
           <div class="endpoint-left">
             <span class="method-badge method-put">PUT</span>
@@ -1438,7 +2006,7 @@
       </div>
 
       <!-- GET /api/export/pdf/incident/:type/:id -->
-      <div class="endpoint-card" data-category="exports" data-method="GET" data-path="/api/export/pdf/incident/:type/:id">
+      <div class="endpoint-card" data-category="exports" data-method="GET" data-path="/api/export/pdf/incident/:type/:id" data-role="both">
         <div class="endpoint-summary" onclick="toggleEndpoint(this)">
           <div class="endpoint-left">
             <span class="method-badge method-get">GET</span>
@@ -1473,7 +2041,7 @@
       </div>
 
       <!-- GET /api/export/excel/events -->
-      <div class="endpoint-card" data-category="exports" data-method="GET" data-path="/api/export/excel/events">
+      <div class="endpoint-card" data-category="exports" data-method="GET" data-path="/api/export/excel/events" data-role="both">
         <div class="endpoint-summary" onclick="toggleEndpoint(this)">
           <div class="endpoint-left">
             <span class="method-badge method-get">GET</span>
@@ -1514,7 +2082,7 @@
       </div>
 
       <!-- POST /api/alerts/email -->
-      <div class="endpoint-card" data-category="alerts" data-method="POST" data-path="/api/alerts/email">
+      <div class="endpoint-card" data-category="alerts" data-method="POST" data-path="/api/alerts/email" data-role="both">
         <div class="endpoint-summary" onclick="toggleEndpoint(this)">
           <div class="endpoint-left">
             <span class="method-badge method-post">POST</span>
@@ -1568,7 +2136,7 @@
       </div>
 
       <!-- POST /api/ai-alerts -->
-      <div class="endpoint-card" data-category="ai-alerts" data-method="POST" data-path="/api/ai-alerts">
+      <div class="endpoint-card" data-category="ai-alerts" data-method="POST" data-path="/api/ai-alerts" data-role="both">
         <div class="endpoint-summary" onclick="toggleEndpoint(this)">
           <div class="endpoint-left">
             <span class="method-badge method-post">POST</span>
@@ -1639,7 +2207,7 @@
       </div>
 
       <!-- GET /api/ai-alerts -->
-      <div class="endpoint-card" data-category="ai-alerts" data-method="GET" data-path="/api/ai-alerts">
+      <div class="endpoint-card" data-category="ai-alerts" data-method="GET" data-path="/api/ai-alerts" data-role="both">
         <div class="endpoint-summary" onclick="toggleEndpoint(this)">
           <div class="endpoint-left">
             <span class="method-badge method-get">GET</span>
@@ -1677,7 +2245,7 @@
       </div>
 
       <!-- PUT /api/ai-alerts/:id/close -->
-      <div class="endpoint-card" data-category="ai-alerts" data-method="PUT" data-path="/api/ai-alerts/:id/close">
+      <div class="endpoint-card" data-category="ai-alerts" data-method="PUT" data-path="/api/ai-alerts/:id/close" data-role="both">
         <div class="endpoint-summary" onclick="toggleEndpoint(this)">
           <div class="endpoint-left">
             <span class="method-badge method-put">PUT</span>
@@ -1733,7 +2301,7 @@
       </div>
 
       <!-- GET /api/dashboard/stats -->
-      <div class="endpoint-card" data-category="dashboard" data-method="GET" data-path="/api/dashboard/stats">
+      <div class="endpoint-card" data-category="dashboard" data-method="GET" data-path="/api/dashboard/stats" data-role="both">
         <div class="endpoint-summary" onclick="toggleEndpoint(this)">
           <div class="endpoint-left">
             <span class="method-badge method-get">GET</span>
@@ -1770,15 +2338,17 @@
         </div>
       </div>
 
-    </div><!-- End Endpoints Container -->
+      <!-- ================================================================= -->
+      </div><!-- End Endpoints Container -->
 
   </div><!-- End Container -->
 
   <!-- Interactive JavaScript Engine -->
   <script>
     // Global Authentication Session
-    let activeToken = localStorage.getItem('patrol360_jwt_token') || '';
+        let activeToken = localStorage.getItem('patrol360_jwt_token') || '';
     let activeRole = localStorage.getItem('patrol360_user_role') || 'None';
+    let activeRoleFilter = 'officer'; // Default to Officer view as requested!
 
     window.addEventListener('DOMContentLoaded', () => {
       const baseUrlInput = document.getElementById('apiBaseUrl');
@@ -1788,7 +2358,7 @@
       // Auto-detect environment base URL
       const isLocalHost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
       if (!isLocalHost && window.location.hostname) {
-        baseUrlInput.value = window.location.origin + '/patrol360/backend/public';
+        baseUrlInput.value = window.location.origin + '/vehicle_gov/backend/public';
         const serverStatus = document.getElementById('serverLatency');
         if (serverStatus) {
           serverStatus.innerHTML = `Server: <strong style="color: #0f172a;">${window.location.hostname}</strong> (Live Production)`;
@@ -1812,9 +2382,115 @@
 
       baseUrlInput.addEventListener('change', checkDbHealth);
 
-      // Verify Live Database Health immediately
+      // Initialize with Officer view by default
+      switchRoleView('officer');
       checkDbHealth();
     });
+
+    function switchRoleView(role) {
+      activeRoleFilter = role;
+      document.querySelectorAll('.role-tab').forEach(t => t.classList.remove('active'));
+      const banner = document.getElementById('roleAlertBanner');
+
+      if (role === 'officer') {
+        document.getElementById('tabOfficer').classList.add('active');
+        if (banner) {
+          banner.style.display = 'flex';
+          banner.style.background = '#ecfdf5';
+          banner.style.borderColor = '#a7f3d0';
+          banner.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 20px;">👮</span>
+              <div>
+                <strong style="color: #065f46;">Officer / User Mode Active:</strong>
+                <span style="color: #047857; margin-left: 4px;">Displaying tactical APIs accessible to field officers, patrol cars, and station operators (centered around <code>ai_alerts</code>).</span>
+              </div>
+            </div>
+            <button class="btn btn-user btn-sm" onclick="quickLogin('officer@police.gov.in', 'Officer@12345', 'Officer')">🔑 Auto-Fill Officer Token</button>
+          `;
+        }
+      } else if (role === 'admin') {
+        document.getElementById('tabAdmin').classList.add('active');
+        if (banner) {
+          banner.style.display = 'flex';
+          banner.style.background = '#f5f3ff';
+          banner.style.borderColor = '#ddd6fe';
+          banner.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 20px;">👑</span>
+              <div>
+                <strong style="color: #5b21b6;">Administrator Mode Active:</strong>
+                <span style="color: #6d28d9; margin-left: 4px;">Supervision controls: User provisioning (/api/users), database synchronization, watchlist imports, compliance audit logs.</span>
+              </div>
+            </div>
+            <button class="btn btn-admin btn-sm" onclick="quickLogin('admin@police.gov.in', 'Admin@12345', 'Admin')">🔑 Auto-Fill Admin Token</button>
+          `;
+        }
+      } else {
+        document.getElementById('tabAll').classList.add('active');
+        if (banner) banner.style.display = 'none';
+      }
+
+      applyActiveFilters();
+    }
+
+    function applyActiveFilters() {
+      const q = (document.getElementById('endpointSearch').value || '').toLowerCase().trim();
+      const activePill = document.querySelector('.filter-pill.active');
+      const category = activePill ? (activePill.getAttribute('data-cat') || 'all') : 'all';
+
+      const cards = document.querySelectorAll('.endpoint-card');
+      const sections = document.querySelectorAll('.section-title');
+
+      cards.forEach(card => {
+        const cardRole = card.dataset.role || 'both';
+        let roleMatches = true;
+        if (activeRoleFilter === 'officer') {
+          roleMatches = (cardRole === 'user' || cardRole === 'both');
+        } else if (activeRoleFilter === 'admin') {
+          roleMatches = (cardRole === 'admin' || cardRole === 'both');
+        }
+
+        let catMatches = true;
+        if (category !== 'all') {
+          catMatches = (card.dataset.category === category);
+        }
+
+        let searchMatches = true;
+        if (q) {
+          const path = (card.dataset.path || '').toLowerCase();
+          const method = (card.dataset.method || '').toLowerCase();
+          const text = card.textContent.toLowerCase();
+          searchMatches = (path.includes(q) || method.includes(q) || text.includes(q));
+        }
+
+        const isVisible = roleMatches && catMatches && searchMatches;
+        card.style.display = isVisible ? 'block' : 'none';
+      });
+
+      // Toggle sections
+      sections.forEach(sec => {
+        const cat = sec.dataset.category;
+        const catCards = document.querySelectorAll(`.endpoint-card[data-category="${cat}"]`);
+        let hasVisible = false;
+        catCards.forEach(c => {
+          if (c.style.display !== 'none') hasVisible = true;
+        });
+        sec.style.display = hasVisible ? 'flex' : 'none';
+      });
+    }
+
+    function filterCategory(category, pillElement) {
+      document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+      pillElement.classList.add('active');
+      pillElement.setAttribute('data-cat', category);
+      applyActiveFilters();
+    }
+
+    function handleSearch() {
+      applyActiveFilters();
+    }
+
 
     async function checkDbHealth() {
       const baseUrl = document.getElementById('apiBaseUrl').value.replace(/\/$/, '');
@@ -1924,50 +2600,6 @@
       document.querySelectorAll('.endpoint-card').forEach(c => c.classList.remove('open'));
     }
 
-    function filterCategory(category, pillElement) {
-      document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
-      pillElement.classList.add('active');
-
-      const cards = document.querySelectorAll('.endpoint-card');
-      const sections = document.querySelectorAll('.section-title');
-
-      if (category === 'all') {
-        cards.forEach(c => c.style.display = 'block');
-        sections.forEach(s => s.style.display = 'flex');
-        return;
-      }
-
-      cards.forEach(c => {
-        c.style.display = (c.dataset.category === category) ? 'block' : 'none';
-      });
-      sections.forEach(s => {
-        s.style.display = (s.dataset.category === category) ? 'flex' : 'none';
-      });
-    }
-
-    function handleSearch() {
-      const q = document.getElementById('endpointSearch').value.toLowerCase().trim();
-      const cards = document.querySelectorAll('.endpoint-card');
-      const sections = document.querySelectorAll('.section-title');
-
-      if (!q) {
-        cards.forEach(c => c.style.display = 'block');
-        sections.forEach(s => s.style.display = 'flex');
-        return;
-      }
-
-      cards.forEach(card => {
-        const path = (card.dataset.path || '').toLowerCase();
-        const method = (card.dataset.method || '').toLowerCase();
-        const text = card.textContent.toLowerCase();
-
-        if (path.includes(q) || method.includes(q) || text.includes(q)) {
-          card.style.display = 'block';
-        } else {
-          card.style.display = 'none';
-        }
-      });
-    }
 
     // Execute API live in Swagger tester
     async function executeApi(btn, method, endpointPath) {

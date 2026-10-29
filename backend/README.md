@@ -198,12 +198,31 @@ Base URL (Production): `https://sarsspl.com/patrol360/backend/public`
   - `POST /api/events/crowd` - Ingest head count & threshold alert *(User/Admin)*
   - `DELETE /api/events/crowd/:id` - Delete event *(Admin)*
 
-### F2. Real-Time AI Edge Alerts (`ai_alerts` Table) - Public (No Auth Required)
+### F2. Real-Time AI Edge Alerts (`ai_alerts` Table) - Public & Field Pipelines
 - `POST /api/ai-alerts` or `POST /api/alerts/ai` - **(Public / No Token Required)** Ingest edge AI alert with `vehicle_id`, `camera_id`, `lat`, `lon`, `createtime`, `alerttype`, `scanned_vehicle_numberplate`, `File_loc` (Base64 JPEG/PNG image), `ATMCode`, `location`, `comment`, `status` (default `'O'` Open), `sendip`. Continuous ingestion from edge cameras without Bearer auth. Automatically checks plate against stolen vehicles hotlist! *(Public / Edge)*
 - `GET /api/ai-alerts` or `GET /api/alerts/ai` - **(Public / No Token Required)** Query alerts filtered by `status=O`, `alerttype`, `vehicle_id`, `plate`, with pagination *(Public)*
 - `GET /api/ai-alerts/:id` - **(Public / No Token Required)** Single alert details with full base64 frame and decoded public image URL *(Public)*
+- `GET /api/ai-alerts/:id/image` - **(Public / Direct Stream)** Serves decoded binary image (JPEG/PNG) with 24-hour cache headers for direct `<img src="...">` rendering in browsers *(Public)*
+- `PUT /api/ai-alerts/:id/acknowledge` - Acknowledge alert (`status='A'`, `acknowledged_by`, `acknowledged_at=NOW()`) *(Public / Officer)*
 - `PUT /api/ai-alerts/:id/close` - **(Public / No Token Required)** Close alert with duty officer name and resolution remarks (`status='C'`, `closedBy`, `closedtime=NOW()`) *(Public / Duty Officer)*
-- `DELETE /api/ai-alerts/:id` - Remove alert record *(Public)*
+- `DELETE /api/ai-alerts/:id` - Remove alert record *(Admin)*
+
+### F3. Police Officer & Patrol Operator Intelligence APIs (`/api/officer/...`) - Scoped for Non-Admin Users
+- `GET /api/officer/my-activity` - **(Dedicated Edge In-Vehicle Cockpit API)** Single consolidated edge payload: officer profile, assigned vehicle hardware, 4 mounted RTSP camera streams (FRONT, REAR, LEFT, RIGHT), live GPS telemetry (speed, heading, battery, engine), duty performance metrics (today's alerts on my car, open alerts, acknowledged by me, resolved by me), scoped alerts feed, and personal audit logs *(Officer/User)*
+- `GET /api/officer/fleet-activity` - **(City Fleet Grid Situational Awareness)** Consolidated overview of all 6 patrol vans (online status, live GPS pins, speed, battery), all mounted camera feeds, and citywide alert metrics *(Officer/User)*
+- `GET /api/officer/dashboard` - Operational intelligence dashboard tailored for field officers: today's alert totals, open count, acknowledged count, hotlist matches, breakdowns by alert type, top urgent alerts, and assigned vehicle telemetry *(Officer/User)*
+- `GET /api/officer/alerts` - Scoped, filterable, paginated alert feed (`scope=my|all`, `status`, `alerttype`, `vehicle_id`, `camera_id`, `plate`, `today=1`, `search`, `limit`, `page`). Returns lightweight payload with direct image stream URLs. Use `scope=my` to see my vehicle/actions only, or `scope=all` to see the entire city fleet *(Officer/User)*
+- `GET /api/officer/alerts/live` - Lightweight real-time polling endpoint for in-vehicle terminal sirens and notifications (`scope=my|all`, `since_id`, `vehicle_id`). Returns `has_stolen_hit` siren flag *(Officer/User)*
+- `GET /api/officer/alerts/:id` - Full single alert inspection with GPS map coordinates, vehicle details, camera details, and stolen watchlist match card *(Officer/User)*
+- `GET /api/officer/alerts/:id/image` - Direct binary image stream (JPEG/PNG) decoded from base64 `File_loc` with caching headers for fast rendering without JSON payload bloat *(Public/Officer)*
+- `PUT /api/officer/alerts/:id/acknowledge` - Officer acknowledges alert (`status='A'`, sets `acknowledged_by`, `acknowledged_at`, and investigative remark) *(Officer/User)*
+- `PUT /api/officer/alerts/:id/resolve` - Officer completes resolution (`status='C'`, sets `action_taken`, `closedBy`, `closedtime`, and action notes) *(Officer/User)*
+- `POST /api/officer/alerts/:id/notes` - Officer appends field remarks / witness notes to ongoing alert timeline *(Officer/User)*
+- `GET /api/officer/lookup/plate/:plate` - License plate intelligence dossier: instant check against `stolen_vehicles_watchlist` plus all historical sightings in `ai_alerts` with GPS locations and patrol vans *(Officer/User)*
+- `GET /api/officer/my-vehicle` - Assigned patrol vehicle profile, live telemetry (speed, heading, GPS, battery), mounted cameras, and today's alert count *(Officer/User)*
+- `GET /api/officer/cameras` - Patrol vehicle cameras list with RTSP streams and mount positions *(Officer/User)*
+- `POST /api/officer/report-incident` - Field officer manual incident logging with optional photo attachment and automatic plate hotlist check *(Officer/User)*
+- Tactical Console: **`officer.html`** or **`/officer`** - Tactical edge console with In-Vehicle Edge Mode vs City Fleet Grid toggle, 4-Camera Edge Matrix, and siren audio alerts.
 
 ### G. Exports (Dompdf & PhpSpreadsheet)
 - `GET /api/export/pdf/incident/:type/:id` - Printable Police Incident Dossier PDF *(Dompdf)*

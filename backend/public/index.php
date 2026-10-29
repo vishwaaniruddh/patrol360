@@ -29,6 +29,7 @@ use App\Controllers\DashboardController;
 use App\Controllers\SystemController;
 use App\Controllers\SyncController;
 use App\Controllers\AiAlertController;
+use App\Controllers\OfficerController;
 
 // Enable CORS and handle OPTIONS preflight
 CorsMiddleware::handle();
@@ -52,6 +53,8 @@ $router->get('/db_sync.html', [DashboardController::class, 'dbSyncPage'], []);
 $router->get('/sync', [DashboardController::class, 'dbSyncPage'], []);
 $router->get('/fleet.html', [DashboardController::class, 'fleetPage'], []);
 $router->get('/fleet', [DashboardController::class, 'fleetPage'], []);
+$router->get('/officer.html', [DashboardController::class, 'officerPage'], []);
+$router->get('/officer', [DashboardController::class, 'officerPage'], []);
 
 // ============================================================================
 // 2. AUTHENTICATION & PROFILE (JWT HS256)
@@ -191,7 +194,9 @@ $router->get('/api/audit-logs', [DashboardController::class, 'auditLogs'], [$adm
 // ============================================================================
 $router->get('/api/ai-alerts', [AiAlertController::class, 'index'], []);
 $router->post('/api/ai-alerts', [AiAlertController::class, 'store'], []);
+$router->get('/api/ai-alerts/:id/image', [AiAlertController::class, 'image'], []);
 $router->get('/api/ai-alerts/:id', [AiAlertController::class, 'show'], []);
+$router->put('/api/ai-alerts/:id/acknowledge', [AiAlertController::class, 'acknowledge'], []);
 $router->put('/api/ai-alerts/:id/close', [AiAlertController::class, 'close'], []);
 $router->put('/api/ai-alerts/:id', [AiAlertController::class, 'close'], []);
 $router->delete('/api/ai-alerts/:id', [AiAlertController::class, 'destroy'], []);
@@ -199,6 +204,7 @@ $router->delete('/api/ai-alerts/:id', [AiAlertController::class, 'destroy'], [])
 // Aliases for /api/alerts/ai
 $router->get('/api/alerts/ai', [AiAlertController::class, 'index'], []);
 $router->post('/api/alerts/ai', [AiAlertController::class, 'store'], []);
+$router->get('/api/alerts/ai/:id/image', [AiAlertController::class, 'image'], []);
 $router->get('/api/alerts/ai/:id', [AiAlertController::class, 'show'], []);
 $router->put('/api/alerts/ai/:id/close', [AiAlertController::class, 'close'], []);
 
@@ -210,6 +216,25 @@ $router->post('/api/sync/compare', [SyncController::class, 'compare'], []);
 $router->post('/api/sync/export-data', [SyncController::class, 'exportData'], []);
 $router->post('/api/sync/import-data', [SyncController::class, 'importData'], [$admin]);
 $router->post('/api/sync/migrate', [SyncController::class, 'migrate'], []);
+
+// ============================================================================
+// 19. POLICE OFFICER & PATROL OPERATOR INTELLIGENCE APIS (ai_alerts centered)
+// ============================================================================
+$router->get('/api/officer/dashboard', [OfficerController::class, 'dashboard'], [$auth]);
+$router->get('/api/officer/stats', [OfficerController::class, 'dashboard'], [$auth]);
+$router->get('/api/officer/alerts', [OfficerController::class, 'index'], [$auth]);
+$router->get('/api/officer/alerts/live', [OfficerController::class, 'live'], [$auth]);
+$router->get('/api/officer/alerts/:id/image', [OfficerController::class, 'image'], []); // Direct binary image streaming for <img> tags
+$router->get('/api/officer/alerts/:id', [OfficerController::class, 'show'], [$auth]);
+$router->put('/api/officer/alerts/:id/acknowledge', [OfficerController::class, 'acknowledge'], [$auth]);
+$router->put('/api/officer/alerts/:id/resolve', [OfficerController::class, 'resolve'], [$auth]);
+$router->post('/api/officer/alerts/:id/notes', [OfficerController::class, 'addNote'], [$auth]);
+$router->get('/api/officer/lookup/plate/:plate', [OfficerController::class, 'lookupPlate'], [$auth]);
+$router->get('/api/officer/my-vehicle', [OfficerController::class, 'myVehicle'], [$auth]);
+$router->get('/api/officer/my-activity', [OfficerController::class, 'myActivity'], [$auth]);
+$router->get('/api/officer/fleet-activity', [OfficerController::class, 'fleetActivity'], [$auth]);
+$router->get('/api/officer/cameras', [OfficerController::class, 'cameras'], [$auth]);
+$router->post('/api/officer/report-incident', [OfficerController::class, 'reportIncident'], [$auth]);
 
 // Dispatch request through router
 $router->dispatch();

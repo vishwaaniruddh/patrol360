@@ -1,0 +1,1473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Patrol360 - Police Officer Tactical Edge Console</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #070b12;
+      --card-bg: rgba(15, 23, 42, 0.85);
+      --card-border: #1e293b;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --primary: #06b6d4;
+      --primary-hover: #0891b2;
+      --accent: #38bdf8;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --success: #10b981;
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg);
+      background-image: 
+        radial-gradient(circle at 15% 10%, rgba(6, 182, 212, 0.12), transparent 45%),
+        radial-gradient(circle at 85% 85%, rgba(239, 68, 68, 0.08), transparent 45%),
+        linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 32px 32px, 32px 32px;
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header */
+    header {
+      background: rgba(11, 17, 32, 0.95);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--card-border);
+      padding: 12px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .badge-police {
+      background: linear-gradient(135deg, #0284c7, #0369a1);
+      color: #fff;
+      font-weight: 800;
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      box-shadow: 0 0 10px rgba(2, 132, 199, 0.5);
+    }
+
+    .brand h1 {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand span {
+      font-size: 12px;
+      color: var(--text-muted);
+      border-left: 1px solid #334155;
+      padding-left: 10px;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .officer-badge-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(30, 41, 59, 0.6);
+      padding: 6px 14px;
+      border-radius: 9999px;
+      border: 1px solid var(--card-border);
+      font-size: 13px;
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--success);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--success);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.3); }
+    }
+
+    .btn {
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 7px 14px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+      text-decoration: none;
+    }
+
+    .btn-primary { background: var(--primary); color: #082f49; font-weight: 700; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-outline { background: transparent; border: 1px solid var(--card-border); color: var(--text-main); }
+    .btn-outline:hover { background: rgba(255, 255, 255, 0.05); border-color: #475569; }
+    .btn-success { background: var(--success); color: #022c22; font-weight: 700; }
+    .btn-success:hover { background: #059669; }
+    .btn-warning { background: var(--warning); color: #451a03; font-weight: 700; }
+    .btn-warning:hover { background: #d97706; }
+    .btn-danger { background: var(--danger); color: #fff; font-weight: 700; }
+    .btn-danger:hover { background: #dc2626; }
+    .btn-sm { padding: 4px 10px; font-size: 11px; }
+
+    /* Edge Scope Switcher Bar */
+    .edge-control-bar {
+      background: rgba(15, 23, 42, 0.95);
+      border-bottom: 1px solid var(--card-border);
+      padding: 10px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .scope-selector {
+      display: flex;
+      background: #0b1120;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 3px;
+      gap: 4px;
+    }
+
+    .scope-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .scope-btn strong {
+      color: inherit;
+    }
+
+    .scope-btn small {
+      font-size: 11px;
+      font-weight: 400;
+      opacity: 0.8;
+      display: block;
+    }
+
+    .scope-btn.active {
+      background: linear-gradient(135deg, #0284c7, #06b6d4);
+      color: #082f49;
+      box-shadow: 0 2px 10px rgba(6, 182, 212, 0.35);
+    }
+
+    .scope-btn.active strong {
+      color: #082f49;
+      font-weight: 800;
+    }
+
+    .view-selector {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .view-btn {
+      background: #1e293b;
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .view-btn.active {
+      background: #38bdf8;
+      color: #082f49;
+      border-color: #38bdf8;
+      font-weight: 700;
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      padding: 24px;
+      max-width: 1580px;
+      margin: 0 auto;
+      width: 100%;
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 24px;
+    }
+
+    /* Stats Grid */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 20px;
+      grid-column: 1 / -1;
+    }
+
+    .stat-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 16px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; bottom: 0; width: 4px;
+    }
+
+    .stat-card.blue::before { background: var(--primary); }
+    .stat-card.amber::before { background: var(--warning); }
+    .stat-card.red::before { background: var(--danger); }
+    .stat-card.green::before { background: var(--success); }
+
+    .stat-label { 
+      font-size: 11px; 
+      color: var(--text-muted); 
+      font-weight: 600; 
+      text-transform: uppercase; 
+      letter-spacing: 0.5px;
+    }
+
+    .stat-val { 
+      font-size: 26px; 
+      font-weight: 800; 
+      margin-top: 6px; 
+      font-family: var(--font-mono); 
+    }
+
+    .stat-sub {
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 4px;
+    }
+
+    /* Left Sidebar */
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 18px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(8px);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .card-title {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+      color: #cbd5e1;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Plate Lookup Widget */
+    .plate-input-group {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .plate-input {
+      flex: 1;
+      background: #0b1120;
+      border: 1px solid #334155;
+      color: #fff;
+      padding: 10px 12px;
+      border-radius: 6px;
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .plate-input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    #plateResultCard {
+      background: #0b1120;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 12px;
+      display: none;
+      border: 1px solid #334155;
+    }
+
+    /* IoT Telemetry Info List */
+    .info-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      font-size: 13px;
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      color: var(--text-muted);
+    }
+
+    .info-row strong {
+      color: var(--text-main);
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    /* Feed Controls */
+    .feed-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .filter-tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .tab-btn {
+      background: #1e293b;
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      padding: 6px 14px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .tab-btn.active {
+      background: var(--primary);
+      color: #082f49;
+      border-color: var(--primary);
+      font-weight: 700;
+    }
+
+    /* 4-Camera Edge Matrix View */
+    #matrixViewContainer {
+      display: none;
+      margin-bottom: 24px;
+    }
+
+    .camera-matrix-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    .camera-box {
+      background: #020617;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+    }
+
+    .camera-box.live-stream {
+      border-color: #0284c7;
+    }
+
+    .camera-viewport {
+      height: 220px;
+      position: relative;
+      background: #050b17;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .camera-viewport img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .camera-hud-overlay {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      right: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      pointer-events: none;
+    }
+
+    .cam-chip {
+      background: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(4px);
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+
+    .rec-indicator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid rgba(239, 68, 68, 0.5);
+      color: #f87171;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      font-family: var(--font-mono);
+    }
+
+    .rec-dot {
+      width: 6px;
+      height: 6px;
+      background: #ef4444;
+      border-radius: 50%;
+      animation: pulse 1s infinite;
+    }
+
+    .camera-footer {
+      padding: 10px 14px;
+      background: #0b1120;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid #1e293b;
+      font-size: 12px;
+    }
+
+    .camera-meta {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .camera-meta strong {
+      color: #e2e8f0;
+      font-size: 12px;
+    }
+
+    .camera-meta span {
+      font-size: 11px;
+      color: #64748b;
+      font-family: var(--font-mono);
+    }
+
+    /* Alert Cards Stream */
+    .alerts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 18px;
+    }
+
+    .alert-card {
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.15s ease, border-color 0.15s ease;
+      position: relative;
+    }
+
+    .alert-card:hover {
+      transform: translateY(-2px);
+      border-color: #38bdf8;
+    }
+
+    .alert-card.critical {
+      border-color: var(--danger);
+      box-shadow: 0 0 20px rgba(239, 68, 68, 0.25);
+    }
+
+    .alert-media {
+      width: 100%;
+      height: 190px;
+      background: #020617;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .alert-media img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .alert-top-badge {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .chip {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .chip-hotlist { background: var(--danger); color: #fff; animation: pulse 1.5s infinite; }
+    .chip-open { background: #38bdf8; color: #082f49; }
+    .chip-ack { background: var(--warning); color: #451a03; }
+    .chip-closed { background: var(--success); color: #022c22; }
+
+    .alert-body {
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      gap: 10px;
+    }
+
+    .alert-plate {
+      font-size: 17px;
+      font-weight: 800;
+      font-family: var(--font-mono);
+      color: #38bdf8;
+      letter-spacing: 1px;
+    }
+
+    .alert-meta {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .alert-comment {
+      font-size: 12px;
+      color: #cbd5e1;
+      background: rgba(30, 41, 59, 0.5);
+      padding: 8px 10px;
+      border-radius: 6px;
+      border-left: 2px solid #38bdf8;
+    }
+
+    .alert-actions {
+      display: flex;
+      gap: 6px;
+      margin-top: auto;
+      padding-top: 10px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    /* Modals */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(5px);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+    }
+
+    .modal-box {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 480px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.7);
+    }
+
+    .modal-title { font-size: 16px; font-weight: 700; color: #f8fafc; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-label { font-size: 12px; color: var(--text-muted); font-weight: 600; }
+    .form-input, .form-select, .form-textarea {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 13px;
+    }
+
+    @media (max-width: 980px) {
+      main { grid-template-columns: 1fr; }
+      .stats-row { grid-template-columns: repeat(2, 1fr); }
+      .camera-matrix-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header>
+    <div class="brand">
+      <span class="badge-police">TACTICAL EDGE</span>
+      <h1>Patrol360 Officer Console</h1>
+      <span id="unitStationHeader">Navrangpura Division • Patrol Van 01</span>
+    </div>
+
+    <div class="header-actions">
+      <div class="officer-badge-info">
+        <div class="pulse-dot"></div>
+        <span id="officerNameDisplay">Inspector Rajesh Sharma (INSP-402)</span>
+      </div>
+      <button class="btn btn-outline" onclick="toggleAudio()" id="audioBtn">
+        🔊 Siren Alert: ON
+      </button>
+      <a href="api_documentation.html" class="btn btn-outline">📚 API Docs</a>
+      <a href="fleet.html" class="btn btn-outline">Fleet 360</a>
+    </div>
+  </header>
+
+  <!-- Edge Operational Scope Controller Bar -->
+  <div class="edge-control-bar">
+    <div class="scope-selector">
+      <button class="scope-btn active" id="btnScopeMy" onclick="setScope('my')">
+        <span style="font-size: 18px;">👤</span>
+        <div>
+          <strong>In-Vehicle Edge Mode (My Unit & Activity Only)</strong>
+          <small id="subScopeMy">Assigned to PATROL_VAN_01 & Your Field Responses</small>
+        </div>
+      </button>
+
+      <button class="scope-btn" id="btnScopeAll" onclick="setScope('all')">
+        <span style="font-size: 18px;">🌐</span>
+        <div>
+          <strong>City Fleet Grid (All Units Activity)</strong>
+          <small>Citywide Situational Awareness Across All 6 Patrol Vans</small>
+        </div>
+      </button>
+    </div>
+
+    <div class="view-selector">
+      <button class="view-btn active" id="btnViewFeed" onclick="setViewMode('feed')">🚨 Alerts Feed</button>
+      <button class="view-btn" id="btnViewMatrix" onclick="setViewMode('matrix')">📹 4-Camera Edge Matrix</button>
+    </div>
+  </div>
+
+  <!-- Main View -->
+  <main>
+    <!-- Top Stats Row -->
+    <div class="stats-row">
+      <div class="stat-card blue">
+        <div class="stat-label" id="statLabel1">Today Total AI Alerts</div>
+        <div class="stat-val" id="statVal1">--</div>
+        <div class="stat-sub" id="statSub1">Detected by AI vision pipelines</div>
+      </div>
+      <div class="stat-card amber">
+        <div class="stat-label" id="statLabel2">Pending Response (Open)</div>
+        <div class="stat-val" id="statVal2">--</div>
+        <div class="stat-sub" id="statSub2">Immediate action required</div>
+      </div>
+      <div class="stat-card red">
+        <div class="stat-label" id="statLabel3">Hotlist Stolen Hits</div>
+        <div class="stat-val" id="statVal3">--</div>
+        <div class="stat-sub" id="statSub3">Stolen vehicles watchlist match</div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-label" id="statLabel4">Resolved Incidents</div>
+        <div class="stat-val" id="statVal4">--</div>
+        <div class="stat-sub" id="statSub4">Interceptions completed</div>
+      </div>
+    </div>
+
+    <!-- Left Sidebar: Unit Status, Quick Plate Lookup & Manual Incident -->
+    <aside class="sidebar">
+      <!-- Quick License Plate Hotlist Search -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">🔍 Quick Plate Hotlist Search</span>
+        </div>
+        <div class="plate-input-group">
+          <input type="text" id="plateInput" class="plate-input" placeholder="e.g. GJ01AB1234" maxlength="15">
+          <button class="btn btn-primary" onclick="searchPlate()">Search</button>
+        </div>
+        <div id="plateResultCard">
+          <div id="plateResultBody"></div>
+        </div>
+      </div>
+
+      <!-- In-Vehicle Unit IoT & Camera Feeds Status -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">🚔 In-Vehicle Edge Unit</span>
+          <span class="pulse-dot" title="Edge Online"></span>
+        </div>
+        <div class="info-list" id="vehicleInfoList">
+          <div class="info-row"><span>Unit ID:</span> <strong id="vId">PATROL_VAN_01</strong></div>
+          <div class="info-row"><span>Registration:</span> <strong id="vReg">GJ-01-G-9999</strong></div>
+          <div class="info-row"><span>Station:</span> <strong id="vStation">Navrangpura PS</strong></div>
+          <div class="info-row"><span>Speed:</span> <strong id="vSpeed">0.0 km/h</strong></div>
+          <div class="info-row"><span>GPS Telemetry:</span> <strong id="vGps">23.0225, 72.5714</strong></div>
+          <div class="info-row"><span>Jetson IoT:</span> <strong id="vIoT">13.8V • Engine ON</strong></div>
+          <div class="info-row"><span>Mounted Cameras:</span> <strong id="vCams">4 Active RTSP Streams</strong></div>
+          <div class="info-row"><span>My Unit Alerts:</span> <strong id="vTodayAlerts">0</strong></div>
+        </div>
+      </div>
+
+      <!-- Quick Manual Incident Ingest -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">🚨 Manual Incident Report</span>
+        </div>
+        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Log a field incident directly into the AI alerts pipeline:</p>
+        <button class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="openReportModal()">+ Report Field Alert</button>
+      </div>
+    </aside>
+
+    <!-- Right Workspace: 4-Camera Edge Matrix OR Alert Cards Stream -->
+    <section>
+      <!-- 4-Camera Matrix View -->
+      <div id="matrixViewContainer">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+          <h2 style="font-size: 15px; font-weight: 700; color: #e2e8f0; display: flex; align-items: center; gap: 8px;">
+            <span>📹 360° Mounted Vehicle Cameras Matrix</span>
+            <span class="chip chip-open" id="matrixUnitBadge">PATROL_VAN_01</span>
+          </h2>
+          <span style="font-size: 12px; color: var(--text-muted);">Real-Time Video Analytics Pipeline</span>
+        </div>
+
+        <div class="camera-matrix-grid" id="cameraMatrixGrid">
+          <!-- Rendered 4-Camera Grid -->
+        </div>
+      </div>
+
+      <!-- Real-Time Alerts Feed View -->
+      <div id="feedViewContainer">
+        <div class="feed-controls">
+          <div class="filter-tabs">
+            <button class="tab-btn active" onclick="setFilter('all', this)">All Scope Alerts</button>
+            <button class="tab-btn" onclick="setFilter('O', this)">Open (Action Needed)</button>
+            <button class="tab-btn" onclick="setFilter('A', this)">Acknowledged</button>
+            <button class="tab-btn" onclick="setFilter('C', this)">Resolved</button>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-outline" onclick="loadScopeData()">🔄 Refresh</button>
+          </div>
+        </div>
+
+        <div class="alerts-grid" id="alertsGrid">
+          <!-- Rendered Alert Cards -->
+          <div style="padding: 40px; text-align: center; color: var(--text-muted); grid-column: 1 / -1;">
+            Loading real-time alerts from edge cameras...
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modal: Resolve Alert -->
+  <div class="modal-overlay" id="resolveModal">
+    <div class="modal-box">
+      <div class="modal-title">Resolve Alert #<span id="resolveModalAlertId"></span></div>
+      <div class="form-group">
+        <label class="form-label">Action Taken Category</label>
+        <select id="resolveAction" class="form-select">
+          <option value="INTERCEPTED">INTERCEPTED - Vehicle / Suspect Stopped</option>
+          <option value="CHALLAN_ISSUED">CHALLAN_ISSUED - Traffic Violation Fine</option>
+          <option value="SUSPECT_DETAINED">SUSPECT_DETAINED - Handed to Station</option>
+          <option value="FALSE_ALARM">FALSE_ALARM - OCR misread or harmless</option>
+          <option value="AREA_COMBED">AREA_COMBED - Patrol sweep completed</option>
+          <option value="WARNING_ISSUED">WARNING_ISSUED - Verbal Warning Given</option>
+          <option value="OTHER">OTHER - Custom Resolution</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Officer Field Investigation Remarks</label>
+        <textarea id="resolveNotes" class="form-textarea" rows="3" placeholder="Enter details of action taken on field..."></textarea>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button class="btn btn-outline" onclick="closeResolveModal()">Cancel</button>
+        <button class="btn btn-success" onclick="submitResolve()">Confirm Resolution</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Append Field Note -->
+  <div class="modal-overlay" id="noteModal">
+    <div class="modal-box">
+      <div class="modal-title">Append Field Note - Alert #<span id="noteModalAlertId"></span></div>
+      <div class="form-group">
+        <label class="form-label">Officer Observation / Progress Update</label>
+        <textarea id="noteContent" class="form-textarea" rows="3" placeholder="e.g., Driver stopped at traffic junction, inspecting boot..."></textarea>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button class="btn btn-outline" onclick="closeNoteModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="submitNote()">Save Field Note</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Manual Incident Report -->
+  <div class="modal-overlay" id="reportModal">
+    <div class="modal-box">
+      <div class="modal-title">Log Field Incident Report</div>
+      <div class="form-group">
+        <label class="form-label">Alert Classification</label>
+        <select id="repType" class="form-select">
+          <option value="SUSPICIOUS_VEHICLE">SUSPICIOUS_VEHICLE</option>
+          <option value="ANPR_HOTLIST_MATCH">ANPR_HOTLIST_MATCH</option>
+          <option value="TRAFFIC_BLOCK">TRAFFIC_BLOCK</option>
+          <option value="WEAPON_ALERT">WEAPON_ALERT</option>
+          <option value="CROWD_GATHERING">CROWD_GATHERING</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Vehicle Plate Number (Optional)</label>
+        <input type="text" id="repPlate" class="form-input" placeholder="e.g. GJ01AB1234">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Landmark / Location</label>
+        <input type="text" id="repLoc" class="form-input" placeholder="e.g. Navrangpura Cross Road">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Field Notes / Details</label>
+        <textarea id="repComment" class="form-textarea" rows="2" placeholder="Describe observed situation..."></textarea>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button class="btn btn-outline" onclick="closeReportModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="submitReport()">Submit Incident</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = window.location.origin + '/vehicle_gov/backend/public';
+    let currentScope = 'my';      // 'my' = In-Vehicle Edge Mode, 'all' = Fleet City Grid
+    let currentView = 'feed';     // 'feed' = Alert Cards, 'matrix' = 4-Camera Matrix
+    let currentFilter = 'all';    // 'all', 'O', 'A', 'C'
+    let activeToken = localStorage.getItem('patrol360_jwt_token') || '';
+    let audioEnabled = true;
+    let latestSeenId = 0;
+    let activeAlertId = null;
+    let myVehicleId = 'PATROL_VAN_01';
+    let cachedCameras = [];
+
+    // Siren Audio synthesis via Web Audio API
+    function playSiren() {
+      if (!audioEnabled) return;
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(600, ctx.currentTime);
+        osc.frequency.linearRampToValueAtTime(900, ctx.currentTime + 0.25);
+        osc.frequency.linearRampToValueAtTime(600, ctx.currentTime + 0.5);
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.5);
+      } catch (e) {}
+    }
+
+    function toggleAudio() {
+      audioEnabled = !audioEnabled;
+      document.getElementById('audioBtn').textContent = audioEnabled ? '🔊 Siren Alert: ON' : '🔇 Siren Alert: OFF';
+    }
+
+    // Scope Controller: Switch between 'my' (Edge In-Vehicle) and 'all' (City Fleet Grid)
+    function setScope(scope) {
+      currentScope = scope;
+      document.getElementById('btnScopeMy').classList.toggle('active', scope === 'my');
+      document.getElementById('btnScopeAll').classList.toggle('active', scope === 'all');
+      loadScopeData();
+    }
+
+    // View Controller: Switch between 'feed' and 'matrix'
+    function setViewMode(mode) {
+      currentView = mode;
+      document.getElementById('btnViewFeed').classList.toggle('active', mode === 'feed');
+      document.getElementById('btnViewMatrix').classList.toggle('active', mode === 'matrix');
+      document.getElementById('feedViewContainer').style.display = mode === 'feed' ? 'block' : 'none';
+      document.getElementById('matrixViewContainer').style.display = mode === 'matrix' ? 'block' : 'none';
+      if (mode === 'matrix') {
+        renderCameraMatrix();
+      }
+    }
+
+    // Filter Controller
+    function setFilter(filter, btn) {
+      currentFilter = filter;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      loadScopeData();
+    }
+
+    // Main Init
+    async function init() {
+      if (!activeToken) {
+        try {
+          const res = await fetch(`${API_BASE}/api/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: 'officer@police.gov.in', password: 'Officer@12345' })
+          });
+          const data = await res.json();
+          if (data.success) {
+            activeToken = data.data.token;
+            localStorage.setItem('patrol360_jwt_token', activeToken);
+          }
+        } catch (e) {
+          console.error('Login error', e);
+        }
+      }
+
+      await loadScopeData();
+
+      // Real-time live siren polling every 3.5s
+      setInterval(pollLiveAlerts, 3500);
+    }
+
+    // Load data based on active scope
+    async function loadScopeData() {
+      if (currentScope === 'my') {
+        await loadMyActivity();
+      } else {
+        await loadFleetActivity();
+      }
+    }
+
+    // Load Dedicated Edge API: /api/officer/my-activity
+    async function loadMyActivity() {
+      try {
+        const res = await fetch(`${API_BASE}/api/officer/my-activity`, {
+          headers: { 'Authorization': `Bearer ${activeToken}` }
+        });
+        const json = await res.json();
+        if (json.success) {
+          const d = json.data;
+          myVehicleId = d.vehicle ? d.vehicle.vehicle_id : 'PATROL_VAN_01';
+          cachedCameras = d.cameras || [];
+
+          // 1. Header info
+          if (d.officer) {
+            document.getElementById('officerNameDisplay').textContent = `${d.officer.name} (${d.officer.badge_number})`;
+          }
+          if (d.vehicle) {
+            document.getElementById('unitStationHeader').textContent = `${d.vehicle.police_station} • ${d.vehicle.vehicle_id} (${d.vehicle.registration_number})`;
+            document.getElementById('subScopeMy').textContent = `Assigned to ${d.vehicle.vehicle_id} (${d.vehicle.registration_number}) & Your Responses`;
+            document.getElementById('matrixUnitBadge').textContent = `${d.vehicle.vehicle_id} • ${d.vehicle.registration_number}`;
+          }
+
+          // 2. Stats row
+          document.getElementById('statLabel1').textContent = "My Car Alerts Today";
+          document.getElementById('statVal1').textContent = d.duty_metrics.my_alerts_today;
+          document.getElementById('statSub1').textContent = "Alerts generated by my patrol unit";
+
+          document.getElementById('statLabel2').textContent = "Open on My Unit";
+          document.getElementById('statVal2').textContent = d.duty_metrics.my_open_alerts;
+          document.getElementById('statSub2').textContent = "Needing immediate field action";
+
+          document.getElementById('statLabel3').textContent = "Acknowledged by Me";
+          document.getElementById('statVal3').textContent = d.duty_metrics.acknowledged_by_me;
+          document.getElementById('statSub3').textContent = "Field pursuits & dispatches";
+
+          document.getElementById('statLabel4').textContent = "Resolved by Me";
+          document.getElementById('statVal4').textContent = d.duty_metrics.resolved_by_me;
+          document.getElementById('statSub4').textContent = "Incidents completed & closed";
+
+          // 3. IoT Telemetry
+          if (d.vehicle) {
+            document.getElementById('vId').textContent = d.vehicle.vehicle_id;
+            document.getElementById('vReg').textContent = d.vehicle.registration_number;
+            document.getElementById('vStation').textContent = d.vehicle.police_station;
+          }
+          if (d.telemetry) {
+            document.getElementById('vSpeed').textContent = `${d.telemetry.speed_kmph} km/h`;
+            document.getElementById('vGps').textContent = `${parseFloat(d.telemetry.latitude).toFixed(4)}, ${parseFloat(d.telemetry.longitude).toFixed(4)}`;
+            document.getElementById('vIoT').textContent = `${d.telemetry.battery_voltage}V • Engine ${d.telemetry.is_engine_running ? 'ON' : 'OFF'}`;
+          }
+          document.getElementById('vCams').textContent = `${cachedCameras.length} Active RTSP Streams`;
+          document.getElementById('vTodayAlerts').textContent = d.duty_metrics.my_alerts_today;
+
+          // 4. Render feed
+          renderAlerts(d.recent_alerts);
+          if (currentView === 'matrix') {
+            renderCameraMatrix();
+          }
+        }
+      } catch (e) {
+        console.error('My activity error', e);
+      }
+    }
+
+    // Load City Grid Fleet API: /api/officer/fleet-activity
+    async function loadFleetActivity() {
+      try {
+        const res = await fetch(`${API_BASE}/api/officer/fleet-activity`, {
+          headers: { 'Authorization': `Bearer ${activeToken}` }
+        });
+        const json = await res.json();
+        if (json.success) {
+          const d = json.data;
+          cachedCameras = d.cameras || [];
+
+          // 1. Stats row (City Fleet Grid)
+          document.getElementById('statLabel1').textContent = "Today Fleet AI Alerts";
+          document.getElementById('statVal1').textContent = d.fleet_summary.today_total_alerts;
+          document.getElementById('statSub1').textContent = `Across all ${d.fleet_summary.total_vehicles} patrol vans`;
+
+          document.getElementById('statLabel2').textContent = "Fleet Open Alerts";
+          document.getElementById('statVal2').textContent = d.fleet_summary.open_alerts;
+          document.getElementById('statSub2').textContent = "Pending field units action";
+
+          document.getElementById('statLabel3').textContent = "Hotlist Stolen Hits";
+          document.getElementById('statVal3').textContent = d.fleet_summary.hotlist_hits_today;
+          document.getElementById('statSub3').textContent = "Watchlist hits across city";
+
+          document.getElementById('statLabel4').textContent = "Resolved Today";
+          document.getElementById('statVal4').textContent = d.fleet_summary.closed_today;
+          document.getElementById('statSub4').textContent = "Interceptions completed";
+
+          // 2. Sidebar IoT status
+          document.getElementById('vId').textContent = "ALL FLEET (6 UNITS)";
+          document.getElementById('vReg').textContent = "CITY PATROL GRID";
+          document.getElementById('vStation').textContent = "Navrangpura Division";
+          document.getElementById('vSpeed').textContent = "Fleet Active";
+          document.getElementById('vCams').textContent = `${d.fleet_summary.total_cameras} Online Streams`;
+          document.getElementById('vTodayAlerts').textContent = d.fleet_summary.today_total_alerts;
+
+          // 3. Render feed
+          renderAlerts(d.recent_alerts);
+          if (currentView === 'matrix') {
+            renderCameraMatrix();
+          }
+        }
+      } catch (e) {
+        console.error('Fleet activity error', e);
+      }
+    }
+
+    // Render Alert Cards
+    function renderAlerts(alerts) {
+      const grid = document.getElementById('alertsGrid');
+      if (!alerts || alerts.length === 0) {
+        grid.innerHTML = '<div style="padding: 40px; text-align: center; color: var(--text-muted); grid-column: 1 / -1;">No alerts recorded for this view.</div>';
+        return;
+      }
+
+      // Filter by status if tab selected
+      let filtered = alerts;
+      if (currentFilter !== 'all') {
+        filtered = alerts.filter(a => a.status === currentFilter);
+      }
+
+      if (filtered.length === 0) {
+        grid.innerHTML = '<div style="padding: 40px; text-align: center; color: var(--text-muted); grid-column: 1 / -1;">No alerts matching the selected status filter.</div>';
+        return;
+      }
+
+      grid.innerHTML = filtered.map(a => renderAlertCard(a)).join('');
+
+      if (filtered[0] && filtered[0].id > latestSeenId) {
+        latestSeenId = filtered[0].id;
+      }
+    }
+
+    function renderAlertCard(a) {
+      const isCritical = a.is_stolen_hit == 1 || (a.alerttype && a.alerttype.includes('STOLEN'));
+      const chipClass = a.status === 'O' ? 'chip-open' : (a.status === 'A' ? 'chip-ack' : 'chip-closed');
+      const imgUrl = `${API_BASE}/api/officer/alerts/${a.id}/image`;
+
+      return `
+        <div class="alert-card ${isCritical ? 'critical' : ''}">
+          <div class="alert-media">
+            <img src="${imgUrl}" alt="Alert #${a.id}" loading="lazy" onerror="this.src='https://placehold.co/600x340/020617/38bdf8?text=PATROL360+AI+FRAME'">
+            <div class="alert-top-badge">
+              <span class="chip ${chipClass}">${a.status_label || a.status}</span>
+              ${isCritical ? '<span class="chip chip-hotlist">🚨 STOLEN HIT</span>' : ''}
+              <span class="chip" style="background: rgba(0,0,0,0.65); color: #fff;">${a.alerttype || 'ALERT'}</span>
+            </div>
+          </div>
+
+          <div class="alert-body">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span class="alert-plate">${a.scanned_vehicle_numberplate || 'PLATE UNKNOWN'}</span>
+              <span style="font-size: 11px; color: var(--text-muted); font-family: var(--font-mono);">${a.createtime}</span>
+            </div>
+
+            <div class="alert-meta">
+              <div>Unit: <strong>${a.vehicle_id}</strong></div>
+              <div>Camera: <strong>${a.camera_id}</strong></div>
+              <div style="grid-column: span 2;">Location: <strong>${a.location || 'Patrol Route'}</strong></div>
+            </div>
+
+            ${a.comment ? `<div class="alert-comment">${escapeHtml(a.comment)}</div>` : ''}
+
+            <div class="alert-actions">
+              ${a.status === 'O' ? `
+                <button class="btn btn-warning btn-sm" style="flex: 1;" onclick="acknowledgeAlert(${a.id})">✋ Acknowledge</button>
+              ` : ''}
+              ${a.status !== 'C' ? `
+                <button class="btn btn-success btn-sm" style="flex: 1;" onclick="openResolveModal(${a.id})">✅ Resolve</button>
+                <button class="btn btn-outline btn-sm" onclick="openNoteModal(${a.id})" title="Add field note">📝 Note</button>
+              ` : `
+                <span style="font-size: 11px; color: var(--success); font-weight: 600; padding: 4px;">Resolved: ${a.action_taken || 'Completed'}</span>
+              `}
+              <a href="${a.maps_url}" target="_blank" class="btn btn-outline btn-sm" title="Open Map Pin">📍 Map</a>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Render 4-Camera Edge Matrix
+    function renderCameraMatrix() {
+      const container = document.getElementById('cameraMatrixGrid');
+      let cams = cachedCameras;
+
+      // In 'my' mode, restrict to officer's vehicle cameras
+      if (currentScope === 'my') {
+        cams = cachedCameras.filter(c => c.vehicle_id === myVehicleId);
+      }
+
+      if (!cams || cams.length === 0) {
+        container.innerHTML = '<div style="padding: 30px; text-align: center; color: var(--text-muted); grid-column: 1 / -1;">No mounted camera streams registered for this vehicle.</div>';
+        return;
+      }
+
+      container.innerHTML = cams.map((c, idx) => `
+        <div class="camera-box live-stream">
+          <div class="camera-viewport">
+            <svg width="100%" height="100%" viewBox="0 0 400 220" style="background: #030712;">
+              <defs>
+                <pattern id="grid_${c.id}" width="20" height="20" patternUnits="userSpaceOnUse">
+                  <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#1e293b" stroke-width="0.5"/>
+                </pattern>
+              </defs>
+              <rect width="400" height="220" fill="url(#grid_${c.id})" />
+              <!-- Crosshair -->
+              <circle cx="200" cy="110" r="30" fill="none" stroke="#0284c7" stroke-width="1.5" stroke-dasharray="4 2"/>
+              <line x1="160" y1="110" x2="240" y2="110" stroke="#0284c7" stroke-width="1.5"/>
+              <line x1="200" y1="70" x2="200" y2="150" stroke="#0284c7" stroke-width="1.5"/>
+              <text x="200" y="160" font-family="'JetBrains Mono', monospace" font-size="12" fill="#38bdf8" text-anchor="middle" font-weight="bold">AI ANPR SENSOR ONLINE</text>
+              <text x="200" y="180" font-family="'JetBrains Mono', monospace" font-size="10" fill="#64748b" text-anchor="middle">${c.mount_position} • ${c.resolution} @ ${c.fps}FPS</text>
+            </svg>
+            <div class="camera-hud-overlay">
+              <span class="cam-chip">${c.mount_position} MOUNT</span>
+              <div class="rec-indicator">
+                <span class="rec-dot"></span>
+                <span>RTSP STREAM OK</span>
+              </div>
+            </div>
+          </div>
+          <div class="camera-footer">
+            <div class="camera-meta">
+              <strong>${c.camera_name} (${c.camera_id})</strong>
+              <span>${c.rtsp_url}</span>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="copyRtsp('${c.rtsp_url}')">📋 Copy RTSP</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function copyRtsp(url) {
+      navigator.clipboard.writeText(url);
+      alert('RTSP stream URL copied to clipboard: ' + url);
+    }
+
+    // Acknowledge Alert
+    async function acknowledgeAlert(id) {
+      try {
+        const res = await fetch(`${API_BASE}/api/officer/alerts/${id}/acknowledge`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${activeToken}`
+          },
+          body: JSON.stringify({ note: 'Patrol unit acknowledged alert. In pursuit / intercepting.' })
+        });
+        const json = await res.json();
+        if (json.success) {
+          loadScopeData();
+        }
+      } catch (e) {
+        console.error('Ack error', e);
+      }
+    }
+
+    // Resolve Modal
+    function openResolveModal(id) {
+      activeAlertId = id;
+      document.getElementById('resolveModalAlertId').textContent = id;
+      document.getElementById('resolveModal').style.display = 'flex';
+    }
+
+    function closeResolveModal() {
+      document.getElementById('resolveModal').style.display = 'none';
+    }
+
+    async function submitResolve() {
+      if (!activeAlertId) return;
+      const action = document.getElementById('resolveAction').value;
+      const notes = document.getElementById('resolveNotes').value.trim();
+
+      try {
+        const res = await fetch(`${API_BASE}/api/officer/alerts/${activeAlertId}/resolve`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${activeToken}`
+          },
+          body: JSON.stringify({
+            action_taken: action,
+            comment: notes || 'Action completed by field officer'
+          })
+        });
+        const json = await res.json();
+        if (json.success) {
+          closeResolveModal();
+          loadScopeData();
+        }
+      } catch (e) {
+        console.error('Resolve error', e);
+      }
+    }
+
+    // Add Field Note Modal
+    function openNoteModal(id) {
+      activeAlertId = id;
+      document.getElementById('noteModalAlertId').textContent = id;
+      document.getElementById('noteContent').value = '';
+      document.getElementById('noteModal').style.display = 'flex';
+    }
+
+    function closeNoteModal() {
+      document.getElementById('noteModal').style.display = 'none';
+    }
+
+    async function submitNote() {
+      if (!activeAlertId) return;
+      const note = document.getElementById('noteContent').value.trim();
+      if (!note) return;
+
+      try {
+        const res = await fetch(`${API_BASE}/api/officer/alerts/${activeAlertId}/notes`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${activeToken}`
+          },
+          body: JSON.stringify({ note: note })
+        });
+        const json = await res.json();
+        if (json.success) {
+          closeNoteModal();
+          loadScopeData();
+        }
+      } catch (e) {
+        console.error('Add note error', e);
+      }
+    }
+
+    // Plate Lookup
+    async function searchPlate() {
+      const plate = document.getElementById('plateInput').value.trim();
+      if (!plate) return;
+
+      const card = document.getElementById('plateResultCard');
+      const body = document.getElementById('plateResultBody');
+      card.style.display = 'block';
+      body.innerHTML = 'Querying stolen vehicle hotlist and camera sightings...';
+
+      try {
+        const res = await fetch(`${API_BASE}/api/officer/lookup/plate/${encodeURIComponent(plate)}`, {
+          headers: { 'Authorization': `Bearer ${activeToken}` }
+        });
+        const json = await res.json();
+        if (json.success) {
+          const d = json.data;
+          let html = `
+            <div style="font-weight: 800; font-size: 13px; margin-bottom: 6px; color: ${d.is_stolen_watchlist ? 'var(--danger)' : 'var(--success)'};">
+              ${d.is_stolen_watchlist ? '🚨 HOTLIST MATCH: STOLEN VEHICLE' : '✓ Clean Plate (Not In Stolen Database)'}
+            </div>
+          `;
+
+          if (d.is_stolen_watchlist && d.stolen_details) {
+            html += `
+              <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid var(--danger); padding: 8px; border-radius: 6px; margin-bottom: 8px;">
+                <div>FIR Number: <strong>${d.stolen_details.fir_number}</strong></div>
+                <div>Station: <strong>${d.stolen_details.police_station}</strong></div>
+                <div>Theft Date: <strong>${d.stolen_details.theft_date}</strong></div>
+                <div>Owner: <strong>${d.stolen_details.owner_name}</strong></div>
+              </div>
+            `;
+          }
+
+          html += `
+            <div style="color: var(--text-muted); font-size: 11px;">
+              Total Sightings by Patrol Cams: <strong>${d.total_sightings}</strong><br>
+              ${d.last_seen ? `Last Sighting: <strong>${d.last_seen}</strong>` : ''}
+            </div>
+          `;
+
+          body.innerHTML = html;
+        } else {
+          body.innerHTML = 'Plate lookup failed.';
+        }
+      } catch (e) {
+        body.innerHTML = 'Network error querying plate.';
+      }
+    }
+
+    // Manual Report Incident Modal
+    function openReportModal() {
+      document.getElementById('reportModal').style.display = 'flex';
+    }
+
+    function closeReportModal() {
+      document.getElementById('reportModal').style.display = 'none';
+    }
+
+    async function submitReport() {
+      const type = document.getElementById('repType').value;
+      const plate = document.getElementById('repPlate').value.trim();
+      const loc = document.getElementById('repLoc').value.trim();
+      const comment = document.getElementById('repComment').value.trim();
+
+      try {
+        const res = await fetch(`${API_BASE}/api/officer/report-incident`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${activeToken}`
+          },
+          body: JSON.stringify({
+            vehicle_id: myVehicleId,
+            alerttype: type,
+            scanned_vehicle_numberplate: plate,
+            location: loc,
+            comment: comment
+          })
+        });
+        const json = await res.json();
+        if (json.success) {
+          closeReportModal();
+          loadScopeData();
+        }
+      } catch (e) {
+        console.error('Report incident error', e);
+      }
+    }
+
+    // Real-Time Polling for Alerts
+    async function pollLiveAlerts() {
+      if (!activeToken) return;
+      try {
+        let url = `${API_BASE}/api/officer/alerts/live?since_id=${latestSeenId}&limit=5&scope=${currentScope}`;
+        const res = await fetch(url, {
+          headers: { 'Authorization': `Bearer ${activeToken}` }
+        });
+        const json = await res.json();
+        if (json.success && json.data.has_new) {
+          latestSeenId = json.data.latest_id;
+          if (json.data.has_stolen_hit) {
+            playSiren();
+          }
+          loadScopeData();
+        }
+      } catch (e) {}
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>

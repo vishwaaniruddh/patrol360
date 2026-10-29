@@ -102,8 +102,21 @@
       </p>
     </div>
 
+    <!-- ROLE SWITCHER TABS (Officer vs Admin vs All) -->
+    <div style="display: flex; gap: 10px; margin-bottom: 1.5rem; flex-wrap: wrap;">
+      <button class="btn-role-tab active" id="btnTabOfficer" onclick="switchRoleTab('officer')" style="padding: 10px 18px; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; border: 2px solid #059669; background: #ecfdf5; color: #065f46; display: flex; align-items: center; gap: 8px;">
+        👮 Officer & User APIs (Non-Admin Field Operations)
+      </button>
+      <button class="btn-role-tab" id="btnTabAdmin" onclick="switchRoleTab('admin')" style="padding: 10px 18px; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; border: 2px solid #e2e8f0; background: #fff; color: #475569; display: flex; align-items: center; gap: 8px;">
+        👑 Admin-Only APIs (Supervision & Setup)
+      </button>
+      <button class="btn-role-tab" id="btnTabAll" onclick="switchRoleTab('all')" style="padding: 10px 18px; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; border: 2px solid #e2e8f0; background: #fff; color: #475569; display: flex; align-items: center; gap: 8px;">
+        🌟 All APIs
+      </button>
+    </div>
+
     <!-- 1. ANPR API -->
-    <div class="card">
+    <div class="card api-card" data-role="both">
       <div class="card-title">
         <div style="display: flex; align-items: center; gap: 8px;">
           <span class="badge badge-post">POST</span>
@@ -297,6 +310,84 @@
       </div>
     </div>
 
+    <!-- OFFICER & PATROL OPERATOR INTELLIGENCE APIS -->
+    <div class="card" style="border-left: 4px solid #10b981;">
+      <div class="card-title">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span class="badge" style="background: #10b981; color: #fff;">OFFICER</span>
+          <span style="font-family: var(--font-mono); font-size: 14px;">/api/officer/*</span>
+          <span style="background: #d1fae5; color: #065f46; font-size: 11px; padding: 2px 8px; border-radius: 9999px; font-weight: 600;">Officer / Field User</span>
+        </div>
+        <span style="font-size: 12px; color: var(--muted-foreground);">Officer Operations, AI Alerts Monitoring, Plate Dossier & HITL Actions</span>
+      </div>
+      <p style="color: #52525b; font-size: 12px; margin-bottom: 0.5rem;">
+        Dedicated tactical API suite for patrol officers, duty officers, and field operators centered around <code>ai_alerts</code>. Enables non-admin officers to monitor live vehicle alerts, stream camera frames, acknowledge threats, record field actions, and perform real-time hotlist lookups.
+      </p>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px; margin-bottom: 12px; font-size: 12px;">
+        <div style="background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <strong>📊 Dashboard & Metrics</strong><br>
+          <code>GET /api/officer/dashboard</code><br>
+          <span style="color: #64748b;">Daily alert counts, open vs acknowledged, hotlist hits, vehicle status.</span>
+        </div>
+        <div style="background: #f0fdf4; padding: 10px; border-radius: 6px; border: 1px solid #86efac;">
+          <strong>👤 My Activity Only (Edge Cockpit)</strong><br>
+          <code>GET /api/officer/my-activity</code><br>
+          <span style="color: #166534;">In-Vehicle Edge payload: Officer identity, assigned vehicle, 4 RTSP cameras, live GPS telemetry, duty stats & personal alerts.</span>
+        </div>
+        <div style="background: #eff6ff; padding: 10px; border-radius: 6px; border: 1px solid #93c5fd;">
+          <strong>🌐 City Fleet Grid Activity</strong><br>
+          <code>GET /api/officer/fleet-activity</code><br>
+          <span style="color: #1e40af;">Situational awareness: Status & GPS for all 6 patrol vans, active cameras & citywide alert metrics.</span>
+        </div>
+        <div style="background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <strong>🚨 Scoped Alerts Feed</strong><br>
+          <code>GET /api/officer/alerts?scope=my|all</code><br>
+          <span style="color: #64748b;">Filter by scope (my unit vs all fleet), status, vehicle, plate, type. Lightweight payload.</span>
+        </div>
+        <div style="background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <strong>⚡ Live Stream Polling</strong><br>
+          <code>GET /api/officer/alerts/live?scope=my|all&since_id=X</code><br>
+          <span style="color: #64748b;">Fast terminal polling with hotlist siren audio triggers.</span>
+        </div>
+        <div style="background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <strong>🖼️ Direct Binary Image Stream</strong><br>
+          <code>GET /api/officer/alerts/:id/image</code><br>
+          <span style="color: #64748b;">Streams JPEG/PNG directly for &lt;img src="..."&gt; tags.</span>
+        </div>
+        <div style="background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <strong>✋ Acknowledge Alert</strong><br>
+          <code>PUT /api/officer/alerts/:id/acknowledge</code><br>
+          <span style="color: #64748b;">Mark status='A' (In Pursuit / En Route), record badge.</span>
+        </div>
+        <div style="background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <strong>✅ Resolve & Close Alert</strong><br>
+          <code>PUT /api/officer/alerts/:id/resolve</code><br>
+          <span style="color: #64748b;">Mark status='C' with action_taken and resolution notes.</span>
+        </div>
+        <div style="background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <strong>🔍 Plate Hotlist & Sightings Lookup</strong><br>
+          <code>GET /api/officer/lookup/plate/:plate</code><br>
+          <span style="color: #64748b;">Instant stolen check + all past GPS sightings across patrol cars.</span>
+        </div>
+        <div style="background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <strong>🚔 Assigned Patrol Van & Cameras</strong><br>
+          <code>GET /api/officer/my-vehicle</code><br>
+          <span style="color: #64748b;">Vehicle model, registration, speed, 4 RTSP cameras, alerts.</span>
+        </div>
+      </div>
+      <div class="code-container">
+        <div class="code-header">
+          <span>SAMPLE OFFICER RESOLUTION PAYLOAD (PUT /api/officer/alerts/:id/resolve)</span>
+          <button class="btn-sm" onclick="copySnippet(this)">Copy JSON</button>
+        </div>
+        <pre class="code-body">{
+  "action_taken": "INTERCEPTED",
+  "comment": "Suspect vehicle pulled over at Navrangpura circle. Stolen vehicle recovered, FIR FIR 883/2024 verified.",
+  "officer_name": "Inspector Rajesh Sharma (INSP-402)"
+}</pre>
+      </div>
+    </div>
+
     <!-- OFFLINE BUFFER RULES -->
     <div class="card" style="background: #fafafa; border-left: 4px solid #2563eb;">
       <h3 style="font-size: 14px; color: #1e3a8a; margin-bottom: 4px;">📡 Store-and-Forward Offline Queue Policy</h3>
@@ -316,6 +407,47 @@
         setTimeout(() => { btn.textContent = 'Copy JSON'; }, 2000);
       });
     }
+
+    function switchRoleTab(role) {
+      document.querySelectorAll('.btn-role-tab').forEach(b => {
+        b.style.border = '2px solid #e2e8f0';
+        b.style.background = '#fff';
+        b.style.color = '#475569';
+      });
+
+      const cards = document.querySelectorAll('.card');
+      const activeBtn = document.getElementById(role === 'officer' ? 'btnTabOfficer' : (role === 'admin' ? 'btnTabAdmin' : 'btnTabAll'));
+      if (activeBtn) {
+        if (role === 'officer') {
+          activeBtn.style.border = '2px solid #059669';
+          activeBtn.style.background = '#ecfdf5';
+          activeBtn.style.color = '#065f46';
+        } else if (role === 'admin') {
+          activeBtn.style.border = '2px solid #7c3aed';
+          activeBtn.style.background = '#f5f3ff';
+          activeBtn.style.color = '#5b21b6';
+        } else {
+          activeBtn.style.border = '2px solid #0284c7';
+          activeBtn.style.background = '#f0f9ff';
+          activeBtn.style.color = '#0369a1';
+        }
+      }
+
+      cards.forEach(card => {
+        const cardRole = card.getAttribute('data-role') || 'both';
+        if (role === 'all') {
+          card.style.display = 'block';
+        } else if (role === 'officer') {
+          card.style.display = (cardRole === 'user' || cardRole === 'both') ? 'block' : 'none';
+        } else if (role === 'admin') {
+          card.style.display = (cardRole === 'admin' || cardRole === 'both') ? 'block' : 'none';
+        }
+      });
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      switchRoleTab('officer');
+    });
   </script>
 </body>
 </html>

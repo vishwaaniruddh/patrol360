@@ -93,11 +93,20 @@ class AiAlertController
                 a.`status`,
                 a.`closedBy`,
                 a.`closedtime`,
+                a.`acknowledged_by`,
+                a.`acknowledged_at`,
+                a.`action_taken`,
                 a.`sendip`,
                 a.`alerttype`,
                 a.`location`,
                 a.`ATMCode`,
                 a.`scanned_vehicle_numberplate`,
+                CASE 
+                    WHEN a.`status` = 'O' THEN 'Open'
+                    WHEN a.`status` = 'A' THEN 'Acknowledged'
+                    WHEN a.`status` = 'C' THEN 'Closed'
+                    ELSE 'Other'
+                END AS `status_label`,
                 CASE 
                     WHEN a.`File_loc` IS NOT NULL AND a.`File_loc` != '' THEN 1 
                     ELSE 0 
@@ -115,6 +124,12 @@ class AiAlertController
         $stmt = $this->db->prepare($sql);
         $stmt->execute($fetchParams);
         $alerts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($alerts as &$alt) {
+            $alt['image_url'] = "/api/ai-alerts/{$alt['id']}/image";
+            $alt['maps_url'] = "https://www.google.com/maps?q={$alt['lat']},{$alt['lon']}";
+        }
+        unset($alt);
 
         Response::paginate($alerts, $total, $page, $limit, 'AI alerts retrieved successfully');
     }
@@ -396,5 +411,104 @@ class AiAlertController
         $del->execute([$id]);
 
         Response::success("AI Alert #{$id} deleted successfully");
+    }
+
+    /**
+     * GET /api/ai-alerts/:id/image
+     * Directly renders and streams the binary image (JPEG/PNG) from base64 File_loc
+     */
+    public function image(array $args): void
+    {
+        $id = $args['params'][0] ?? null;
+        if (!$id) {
+            http_response_code(400);
+            echo "Missing alert ID";
+            exit;
+        }
+
+        $stmt = $this->db->prepare("SELECT `File_loc` FROM `ai_alerts` WHERE `id` = ?");
+        $stmt->execute([$id]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$row || empty($row['File_loc'])) {
+            header('Content-Type: image/svg+xml');
+            header('Cache-Control: public, max-age=3600');
+            echo '<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360">
+                    <rect width="100%" height="100%" fill="#0f172a"/>
+                    <rect x="20" y="20" width="600" height="320" rx="12" fill="#1e293b" stroke="#334155" stroke-width="2"/>
+                    <circle cx="320" cy="150" r="45" fill="#3b82f6" opacity="0.2"/>
+                    <text x="320" y="230" font-family="system-ui, sans-serif" font-size="18" fill="#94a3b8" text-anchor="middle" font-weight="600">NO FRAME CAPTURED</text>
+                  </svg>';
+            exit;
+        }
+
+        $raw = $row['File_loc'];
+        $mime = 'image/jpeg';
+        $base64Data = $raw;
+
+        if (preg_match('/^data:image\/(\w+);base64,/', $raw, $matches)) {
+            $ext = strtolower($matches[1]);
+            $mime = ($ext === 'png') ? 'image/png' : 'image/jpeg';
+            $base64Data = substr($raw, strpos($raw, ',') + 1);
+        }
+
+        $binary = base64_decode($base64Data);
+        if ($binary === false) {
+            http_response_code(500);
+            echo "Failed to decode image";
+            exit;
+        }
+
+        header("Content-Type: {$mime}");
+        header('Content-Length: ' . strlen($binary));
+        header('Cache-Control: public, max-age=86400');
+        echo $binary;
+        exit;
+    }
+
+    /**
+     * PUT /api/ai-alerts/:id/acknowledge
+     * Acknowledge alert
+     */
+    public function acknowledge(array $args): void
+    {
+        $id = $args['params'][0] ?? null;
+        if (!$id) {
+            Response::error('Alert ID required', 400);
+        }
+
+        $body = $args['body'] ?? [];
+        $ackBy = !empty($body['officer_name']) 
+            ? trim($body['officer_name']) 
+            : ($args['user']['name'] ?? 'Duty Officer');
+        $note = !empty($body['note']) ? trim($body['note']) : 'Acknowledged by duty officer';
+
+        $checkStmt = $this->db->prepare("SELECT `id`, `comment` FROM `ai_alerts` WHERE `id` = ?");
+        $checkStmt->execute([$id]);
+        $existing = $checkStmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$existing) {
+            Response::error('AI Alert not found', 404);
+        }
+
+        $timestamp = date('Y-m-d H:i:s');
+        $ackRemark = "[ACKNOWLEDGED by {$ackBy} at {$timestamp}]: {$note}";
+        $updatedComment = $existing['comment'] ? "{$existing['comment']} | {$ackRemark}" : $ackRemark;
+
+        $update = $this->db->prepare("
+            UPDATE `ai_alerts`
+            SET `status` = 'A',
+                `acknowledged_by` = ?,
+                `acknowledged_at` = ?,
+                `comment` = ?
+            WHERE `id` = ?
+        ");
+        $update->execute([$ackBy, $timestamp, $updatedComment, $id]);
+
+        $fetchStmt = $this->db->prepare("SELECT * FROM `ai_alerts` WHERE `id` = ?");
+        $fetchStmt->execute([$id]);
+        $updated = $fetchStmt->fetch(PDO::FETCH_ASSOC);
+
+        Response::success('AI Alert acknowledged successfully', $updated);
     }
 }
