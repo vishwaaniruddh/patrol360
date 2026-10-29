@@ -1,0 +1,22 @@
+# Root .htaccess for Patrol360
+# Handles Single Page Application (SPA) routing and assets
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # 1. Allow backend API and documentation to be handled directly by their folders
+    RewriteCond %{REQUEST_URI} (backend|documentation) [NC]
+    RewriteRule ^ - [L]
+
+    # 2. Map any nested asset requests (e.g. /officer/assets/... or /patrolling/assets/...) directly to assets/
+    RewriteRule ^(.*/)?assets/(.*)$ assets/$2 [L,NC,QSA]
+    RewriteRule ^(.*/)?(favicon\.svg|icons\.svg)$ $2 [L,NC,QSA]
+
+    # 3. If the requested file or folder actually exists, serve it directly
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # 4. Single Page Application (SPA) fallback: rewrite all other routes to index.html
+    RewriteRule ^ index.html [L]
+</IfModule>
