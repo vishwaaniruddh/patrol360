@@ -166,3 +166,9 @@ CREATE INDEX idx_ai_alerts_veh ON ai_alerts(vehicle_id);
 CREATE INDEX idx_ai_alerts_status ON ai_alerts(status);
 CREATE INDEX idx_ai_alerts_type ON ai_alerts(alerttype);
 CREATE INDEX idx_ai_alerts_plate ON ai_alerts(scanned_vehicle_numberplate);
+
+-- Schema Patches (Idempotent Column Additions)
+ALTER TABLE `ai_alerts` ADD COLUMN IF NOT EXISTS `acknowledged_by` VARCHAR(100) DEFAULT NULL AFTER `scanned_vehicle_numberplate`;
+ALTER TABLE `ai_alerts` ADD COLUMN IF NOT EXISTS `acknowledged_at` DATETIME DEFAULT NULL AFTER `acknowledged_by`;
+ALTER TABLE `ai_alerts` ADD COLUMN IF NOT EXISTS `action_taken` VARCHAR(255) DEFAULT NULL AFTER `acknowledged_at`;
+

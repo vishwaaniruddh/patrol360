@@ -268,3 +268,11 @@ CREATE TABLE IF NOT EXISTS `ai_alerts` (
     INDEX `idx_ai_alerts_createtime` (`createtime` DESC)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- ========================================================
+-- 15. SCHEMA PATCHES (IDEMPOTENT COLUMN ADDITIONS)
+-- ========================================================
+ALTER TABLE `ai_alerts` ADD COLUMN IF NOT EXISTS `acknowledged_by` VARCHAR(100) DEFAULT NULL AFTER `scanned_vehicle_numberplate`;
+ALTER TABLE `ai_alerts` ADD COLUMN IF NOT EXISTS `acknowledged_at` DATETIME DEFAULT NULL AFTER `acknowledged_by`;
+ALTER TABLE `ai_alerts` ADD COLUMN IF NOT EXISTS `action_taken` VARCHAR(255) DEFAULT NULL AFTER `acknowledged_at`;
+
+

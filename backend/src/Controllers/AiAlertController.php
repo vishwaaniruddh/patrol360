@@ -79,6 +79,12 @@ class AiAlertController
         $countStmt->execute($params);
         $total = (int)$countStmt->fetchColumn();
 
+        // Dynamically inspect column availability for zero-downtime resilience
+        $cols = $this->db->query("SHOW COLUMNS FROM `ai_alerts`")->fetchAll(PDO::FETCH_COLUMN);
+        $ackByCol = in_array('acknowledged_by', $cols, true) ? "a.`acknowledged_by`" : "NULL AS `acknowledged_by`";
+        $ackAtCol = in_array('acknowledged_at', $cols, true) ? "a.`acknowledged_at`" : "NULL AS `acknowledged_at`";
+        $actTakenCol = in_array('action_taken', $cols, true) ? "a.`action_taken`" : "NULL AS `action_taken`";
+
         // Fetch records
         $sql = "
             SELECT 
@@ -93,9 +99,9 @@ class AiAlertController
                 a.`status`,
                 a.`closedBy`,
                 a.`closedtime`,
-                a.`acknowledged_by`,
-                a.`acknowledged_at`,
-                a.`action_taken`,
+                {$ackByCol},
+                {$ackAtCol},
+                {$actTakenCol},
                 a.`sendip`,
                 a.`alerttype`,
                 a.`location`,
@@ -495,15 +501,26 @@ class AiAlertController
         $ackRemark = "[ACKNOWLEDGED by {$ackBy} at {$timestamp}]: {$note}";
         $updatedComment = $existing['comment'] ? "{$existing['comment']} | {$ackRemark}" : $ackRemark;
 
-        $update = $this->db->prepare("
-            UPDATE `ai_alerts`
-            SET `status` = 'A',
-                `acknowledged_by` = ?,
-                `acknowledged_at` = ?,
-                `comment` = ?
-            WHERE `id` = ?
-        ");
-        $update->execute([$ackBy, $timestamp, $updatedComment, $id]);
+        $cols = $this->db->query("SHOW COLUMNS FROM `ai_alerts`")->fetchAll(PDO::FETCH_COLUMN);
+        if (in_array('acknowledged_by', $cols, true) && in_array('acknowledged_at', $cols, true)) {
+            $update = $this->db->prepare("
+                UPDATE `ai_alerts`
+                SET `status` = 'A',
+                    `acknowledged_by` = ?,
+                    `acknowledged_at` = ?,
+                    `comment` = ?
+                WHERE `id` = ?
+            ");
+            $update->execute([$ackBy, $timestamp, $updatedComment, $id]);
+        } else {
+            $update = $this->db->prepare("
+                UPDATE `ai_alerts`
+                SET `status` = 'A',
+                    `comment` = ?
+                WHERE `id` = ?
+            ");
+            $update->execute([$updatedComment, $id]);
+        }
 
         $fetchStmt = $this->db->prepare("SELECT * FROM `ai_alerts` WHERE `id` = ?");
         $fetchStmt->execute([$id]);

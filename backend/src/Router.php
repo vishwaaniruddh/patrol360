@@ -112,19 +112,27 @@ class Router
                     }
                 }
 
-                // Call controller
-                [$controllerClass, $methodName] = $route['handler'];
-                $controller = new $controllerClass();
+                // Call controller safely
+                try {
+                    [$controllerClass, $methodName] = $route['handler'];
+                    $controller = new $controllerClass();
 
-                // Pass params, body, query, authUser
-                $args = [
-                    'params'   => $matches,
-                    'body'     => $requestBody,
-                    'query'    => $queryParams,
-                    'user'     => $authUserData
-                ];
+                    // Pass params, body, query, authUser
+                    $args = [
+                        'params'   => $matches,
+                        'body'     => $requestBody,
+                        'query'    => $queryParams,
+                        'user'     => $authUserData
+                    ];
 
-                $controller->$methodName($args);
+                    $controller->$methodName($args);
+                } catch (\Throwable $e) {
+                    error_log("Router dispatch error: " . $e->getMessage() . " in " . $e->getFile() . ":" . $e->getLine());
+                    Response::error($e->getMessage(), 500, [
+                        'file' => basename($e->getFile()),
+                        'line' => $e->getLine()
+                    ]);
+                }
                 return;
             }
         }

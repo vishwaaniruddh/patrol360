@@ -346,6 +346,27 @@ class SyncController
             }
         }
 
+        // Explicitly ensure newly required columns exist in ai_alerts
+        try {
+            $cols = $this->db->query("SHOW COLUMNS FROM `ai_alerts`")->fetchAll(PDO::FETCH_COLUMN);
+            if (!empty($cols)) {
+                if (!in_array('acknowledged_by', $cols, true)) {
+                    $this->db->exec("ALTER TABLE `ai_alerts` ADD COLUMN `acknowledged_by` VARCHAR(100) DEFAULT NULL AFTER `scanned_vehicle_numberplate`");
+                    $executed++;
+                }
+                if (!in_array('acknowledged_at', $cols, true)) {
+                    $this->db->exec("ALTER TABLE `ai_alerts` ADD COLUMN `acknowledged_at` DATETIME DEFAULT NULL AFTER `acknowledged_by`");
+                    $executed++;
+                }
+                if (!in_array('action_taken', $cols, true)) {
+                    $this->db->exec("ALTER TABLE `ai_alerts` ADD COLUMN `action_taken` VARCHAR(255) DEFAULT NULL AFTER `acknowledged_at`");
+                    $executed++;
+                }
+            }
+        } catch (\Throwable $e) {
+            error_log('SyncController::migrate column check notice: ' . $e->getMessage());
+        }
+
         // Return refreshed table overview
         $overview = $this->getLocalOverviewData();
 

@@ -47,6 +47,29 @@ class OfficerController
     }
 
     /**
+     * Helper to inspect ai_alerts schema for backward compatibility
+     */
+    private function getAiAlertColumns(): array
+    {
+        static $cols = null;
+        if ($cols === null) {
+            $cols = $this->db->query("SHOW COLUMNS FROM `ai_alerts`")->fetchAll(PDO::FETCH_COLUMN);
+        }
+        $hasAckBy = in_array('acknowledged_by', $cols, true);
+        $hasAckAt = in_array('acknowledged_at', $cols, true);
+        $hasAction = in_array('action_taken', $cols, true);
+
+        return [
+            'has_ack_by' => $hasAckBy,
+            'has_ack_at' => $hasAckAt,
+            'has_action' => $hasAction,
+            'ack_by_col' => $hasAckBy ? "a.`acknowledged_by`" : "NULL AS `acknowledged_by`",
+            'ack_at_col' => $hasAckAt ? "a.`acknowledged_at`" : "NULL AS `acknowledged_at`",
+            'action_col' => $hasAction ? "a.`action_taken`" : "NULL AS `action_taken`",
+        ];
+    }
+
+    /**
      * GET /api/officer/dashboard
      * Operational intelligence dashboard for field / duty officers
      */
@@ -81,6 +104,7 @@ class OfficerController
         $alertsByType = $typesStmt->fetchAll(PDO::FETCH_ASSOC);
 
         // 3. Top urgent alerts needing response (status 'O' or 'A')
+        $colInfo = $this->getAiAlertColumns();
         $urgentStmt = $this->db->query("
             SELECT 
                 a.`id`,
@@ -94,8 +118,8 @@ class OfficerController
                 a.`alerttype`,
                 a.`location`,
                 a.`scanned_vehicle_numberplate`,
-                a.`acknowledged_by`,
-                a.`acknowledged_at`,
+                {$colInfo['ack_by_col']},
+                {$colInfo['ack_at_col']},
                 CASE 
                     WHEN a.`status` = 'O' THEN 'Open'
                     WHEN a.`status` = 'A' THEN 'Acknowledged'
@@ -200,12 +224,20 @@ class OfficerController
             $officerMatch = "%" . ($officer['name'] ?? 'Sharma') . "%";
             $badgeMatch = "%" . ($officer['badge_number'] ?? '402') . "%";
 
-            $where[] = "(a.`vehicle_id` = ? OR a.`acknowledged_by` LIKE ? OR a.`acknowledged_by` LIKE ? OR a.`closedBy` LIKE ? OR a.`closedBy` LIKE ?)";
-            $params[] = $assignedVehId;
-            $params[] = $officerMatch;
-            $params[] = $badgeMatch;
-            $params[] = $officerMatch;
-            $params[] = $badgeMatch;
+            $colInfo = $this->getAiAlertColumns();
+            if ($colInfo['has_ack_by']) {
+                $where[] = "(a.`vehicle_id` = ? OR a.`acknowledged_by` LIKE ? OR a.`acknowledged_by` LIKE ? OR a.`closedBy` LIKE ? OR a.`closedBy` LIKE ?)";
+                $params[] = $assignedVehId;
+                $params[] = $officerMatch;
+                $params[] = $badgeMatch;
+                $params[] = $officerMatch;
+                $params[] = $badgeMatch;
+            } else {
+                $where[] = "(a.`vehicle_id` = ? OR a.`closedBy` LIKE ? OR a.`closedBy` LIKE ?)";
+                $params[] = $assignedVehId;
+                $params[] = $officerMatch;
+                $params[] = $badgeMatch;
+            }
         }
 
         if (!empty($status)) {
@@ -253,6 +285,7 @@ class OfficerController
         $total = (int)$countStmt->fetchColumn();
 
         // Fetch records
+        $colInfo = $this->getAiAlertColumns();
         $sql = "
             SELECT 
                 a.`id`,
@@ -266,9 +299,9 @@ class OfficerController
                 a.`status`,
                 a.`closedBy`,
                 a.`closedtime`,
-                a.`acknowledged_by`,
-                a.`acknowledged_at`,
-                a.`action_taken`,
+                {$colInfo['ack_by_col']},
+                {$colInfo['ack_at_col']},
+                {$colInfo['action_col']},
                 a.`sendip`,
                 a.`alerttype`,
                 a.`location`,
@@ -551,15 +584,26 @@ class OfficerController
         $ackRemark = "[ACKNOWLEDGED by {$ackBy} at {$timestamp}]: {$note}";
         $updatedComment = $existing['comment'] ? "{$existing['comment']} | {$ackRemark}" : $ackRemark;
 
-        $update = $this->db->prepare("
-            UPDATE `ai_alerts`
-            SET `status` = 'A',
-                `acknowledged_by` = ?,
-                `acknowledged_at` = ?,
-                `comment` = ?
-            WHERE `id` = ?
-        ");
-        $update->execute([$ackBy, $timestamp, $updatedComment, $id]);
+        $colInfo = $this->getAiAlertColumns();
+        if ($colInfo['has_ack_by'] && $colInfo['has_ack_at']) {
+            $update = $this->db->prepare("
+                UPDATE `ai_alerts`
+                SET `status` = 'A',
+                    `acknowledged_by` = ?,
+                    `acknowledged_at` = ?,
+                    `comment` = ?
+                WHERE `id` = ?
+            ");
+            $update->execute([$ackBy, $timestamp, $updatedComment, $id]);
+        } else {
+            $update = $this->db->prepare("
+                UPDATE `ai_alerts`
+                SET `status` = 'A',
+                    `comment` = ?
+                WHERE `id` = ?
+            ");
+            $update->execute([$updatedComment, $id]);
+        }
 
         // Audit log
         try {
@@ -622,16 +666,29 @@ class OfficerController
         $resolveRemark = "[RESOLVED: {$actionTaken} by {$closedBy} at {$timestamp}]: {$notes}";
         $updatedComment = $existing['comment'] ? "{$existing['comment']} | {$resolveRemark}" : $resolveRemark;
 
-        $update = $this->db->prepare("
-            UPDATE `ai_alerts`
-            SET `status` = 'C',
-                `closedBy` = ?,
-                `closedtime` = ?,
-                `action_taken` = ?,
-                `comment` = ?
-            WHERE `id` = ?
-        ");
-        $update->execute([$closedBy, $timestamp, $actionTaken, $updatedComment, $id]);
+        $colInfo = $this->getAiAlertColumns();
+        if ($colInfo['has_action']) {
+            $update = $this->db->prepare("
+                UPDATE `ai_alerts`
+                SET `status` = 'C',
+                    `closedBy` = ?,
+                    `closedtime` = ?,
+                    `action_taken` = ?,
+                    `comment` = ?
+                WHERE `id` = ?
+            ");
+            $update->execute([$closedBy, $timestamp, $actionTaken, $updatedComment, $id]);
+        } else {
+            $update = $this->db->prepare("
+                UPDATE `ai_alerts`
+                SET `status` = 'C',
+                    `closedBy` = ?,
+                    `closedtime` = ?,
+                    `comment` = ?
+                WHERE `id` = ?
+            ");
+            $update->execute([$closedBy, $timestamp, $updatedComment, $id]);
+        }
 
         // Audit log
         try {
@@ -1016,9 +1073,13 @@ class OfficerController
         $myAckAlerts = (int)$mvaStmt->fetchColumn();
 
         // Acknowledged by me
-        $ackByMeStmt = $this->db->prepare("SELECT COUNT(*) FROM `ai_alerts` WHERE `acknowledged_by` LIKE ? OR `acknowledged_by` LIKE ?");
-        $ackByMeStmt->execute([$officerMatch, $badgeMatch]);
-        $ackByMe = (int)$ackByMeStmt->fetchColumn();
+        $colInfo = $this->getAiAlertColumns();
+        $ackByMe = 0;
+        if ($colInfo['has_ack_by']) {
+            $ackByMeStmt = $this->db->prepare("SELECT COUNT(*) FROM `ai_alerts` WHERE `acknowledged_by` LIKE ? OR `acknowledged_by` LIKE ?");
+            $ackByMeStmt->execute([$officerMatch, $badgeMatch]);
+            $ackByMe = (int)$ackByMeStmt->fetchColumn();
+        }
 
         // Resolved by me
         $resByMeStmt = $this->db->prepare("SELECT COUNT(*) FROM `ai_alerts` WHERE `closedBy` LIKE ? OR `closedBy` LIKE ?");
@@ -1038,6 +1099,14 @@ class OfficerController
         // 5. My Recent Alerts (detected by my vehicle OR actioned by me)
         $query = $args['query'] ?? [];
         $limit = max(1, min(50, (int)($query['limit'] ?? 15)));
+
+        $whereScope = $colInfo['has_ack_by'] 
+            ? "(a.`vehicle_id` = ? OR a.`acknowledged_by` LIKE ? OR a.`acknowledged_by` LIKE ? OR a.`closedBy` LIKE ? OR a.`closedBy` LIKE ?)"
+            : "(a.`vehicle_id` = ? OR a.`closedBy` LIKE ? OR a.`closedBy` LIKE ?)";
+        $scopeParams = $colInfo['has_ack_by']
+            ? [$vehicleId, $officerMatch, $badgeMatch, $officerMatch, $badgeMatch, $limit]
+            : [$vehicleId, $officerMatch, $badgeMatch, $limit];
+
         $alertsStmt = $this->db->prepare("
             SELECT 
                 a.`id`,
@@ -1051,9 +1120,9 @@ class OfficerController
                 a.`status`,
                 a.`closedBy`,
                 a.`closedtime`,
-                a.`acknowledged_by`,
-                a.`acknowledged_at`,
-                a.`action_taken`,
+                {$colInfo['ack_by_col']},
+                {$colInfo['ack_at_col']},
+                {$colInfo['action_col']},
                 a.`alerttype`,
                 a.`location`,
                 a.`scanned_vehicle_numberplate`,
@@ -1074,11 +1143,11 @@ class OfficerController
                 v.`registration_number` AS `vehicle_registration`
             FROM `ai_alerts` a
             LEFT JOIN `police_vehicles` v ON a.`vehicle_id` = v.`vehicle_id`
-            WHERE (a.`vehicle_id` = ? OR a.`acknowledged_by` LIKE ? OR a.`acknowledged_by` LIKE ? OR a.`closedBy` LIKE ? OR a.`closedBy` LIKE ?)
+            WHERE {$whereScope}
             ORDER BY a.`createtime` DESC, a.`id` DESC
             LIMIT ?
         ");
-        $alertsStmt->execute([$vehicleId, $officerMatch, $badgeMatch, $officerMatch, $badgeMatch, $limit]);
+        $alertsStmt->execute($scopeParams);
         $recentAlerts = $alertsStmt->fetchAll(PDO::FETCH_ASSOC);
 
         foreach ($recentAlerts as &$item) {
@@ -1158,6 +1227,7 @@ class OfficerController
         $hotlistHits= (int)$this->db->query("SELECT COUNT(*) FROM `ai_alerts` WHERE (`alerttype` = 'STOLEN_VEHICLE_MATCH' OR `comment` LIKE '%HOTLIST%') AND DATE(`createtime`) = CURDATE()")->fetchColumn();
 
         // 4. Latest alerts across the entire fleet
+        $colInfo = $this->getAiAlertColumns();
         $limit = max(1, min(50, (int)($args['query']['limit'] ?? 20)));
         $alertsStmt = $this->db->prepare("
             SELECT 
@@ -1170,7 +1240,7 @@ class OfficerController
                 a.`comment`,
                 a.`status`,
                 a.`closedBy`,
-                a.`acknowledged_by`,
+                {$colInfo['ack_by_col']},
                 a.`alerttype`,
                 a.`location`,
                 a.`scanned_vehicle_numberplate`,
