@@ -209,6 +209,11 @@ class CameraController
         Response::success('Camera updated successfully', $updated);
     }
 
+    public function destroy(array $args): void
+    {
+        $this->delete($args);
+    }
+
     public function delete(array $args): void
     {
         $id = $args['params'][0];
