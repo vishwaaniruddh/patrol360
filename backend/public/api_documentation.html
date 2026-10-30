@@ -1918,6 +1918,44 @@
       </div>
 
       <!-- ================================================================= -->
+      <!-- GET /api/cameras/:id/stream -->
+      <div class="endpoint-card" data-category="cameras" data-method="GET" data-path="/api/cameras/:id/stream" data-role="public">
+        <div class="endpoint-summary" onclick="toggleEndpoint(this)">
+          <div class="endpoint-left">
+            <span class="method-badge method-get">GET</span>
+            <span class="endpoint-path">/api/cameras/:id/stream</span>
+            <span class="endpoint-desc">Live MJPEG Video Stream Proxy (HTTPS Safe / No Auth for &lt;img&gt; tags)</span>
+          </div>
+          <div class="endpoint-right">
+            <span class="role-badge" style="background:#dcfce7; color:#15803d; border-color:#bbf7d0;">Public Stream</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="endpoint-details">
+          <div class="details-grid">
+            <div>
+              <div class="detail-section-title">Route & Query Parameters</div>
+              <p style="font-size: 12px; margin-bottom: 8px;"><code>:id</code> - Camera record ID (e.g. <code>1</code>) or hardware camera ID (e.g. <code>CAM_01_FRONT</code>).</p>
+              <div class="detail-section-title">Production HTTPS Live Proxy</div>
+              <p style="font-size: 12px; color: #64748b; line-height: 1.5;">Proxies real-time <code>multipart/x-mixed-replace; boundary=frame</code> MJPEG video frames directly from edge streaming server (<code>http://223.182.122.63:7000</code>). Eliminates Mixed Content blocking and SSL protocol errors (<code>net::ERR_SSL_PROTOCOL_ERROR</code>) on HTTPS production servers. Browser <code>&lt;img&gt;</code> tags can embed this stream URL directly without Authorization headers.</p>
+              <p style="font-size: 12px; margin-top: 8px;">Direct DVR parameter proxy also available: <code>GET /api/cameras/stream?name={user}-{pass}-{ip}-{port}-{dvrname}-{channel}</code></p>
+            </div>
+            <div>
+              <div class="try-runner">
+                <div class="try-header">
+                  <span>Interactive Stream Link</span>
+                  <a href="/backend/public/api/cameras/1/stream" target="_blank" class="execute-btn" style="text-decoration: none; display: inline-block;">Open Stream Feed ↗</a>
+                </div>
+                <div class="code-box"><pre>&lt;!-- Usage in React / HTML --&gt;
+&lt;img src="/backend/public/api/cameras/1/stream"
+     alt="Front Camera Feed"
+     style="width: 100%; height: auto;" /&gt;</pre></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- 4. WATCHLISTS (STOLEN VEHICLES & WANTED PERSONS) -->
       <!-- ================================================================= -->
       <div class="section-title" data-category="watchlist">

@@ -146,7 +146,9 @@ Base URL (Production): `https://sarsspl.com/patrol360/backend/public`
 - `DELETE /api/vehicles/:id` - Remove vehicle *(Admin)*
 - `GET /api/cameras` - List 360 roof IP cameras with DVR credentials and generated `live_view_url` *(User/Admin)*
 - `POST /api/cameras` - Register camera feed with DVR/RTSP credentials (`username`, `password`, `dvrname`, `ip`, `dvr_port`, `rtsp_port`, `channel`) *(Admin)*
-- `GET /api/cameras/:id` - Camera stream details with `live_view_url` *(User/Admin)*
+- `GET /api/cameras/:id` - Camera stream details with `live_view_url` and `stream_url` *(User/Admin)*
+- `GET /api/cameras/:id/stream` - **(Public / No Token Required)** Live MJPEG video stream proxy for camera feeds by numeric ID or hardware code (e.g. `1` or `CAM_01_FRONT`). Proxies stream in real-time from edge gateway `http://223.182.122.63:7000` to eliminate Mixed Content blocking and SSL protocol errors (`ERR_SSL_PROTOCOL_ERROR`) on HTTPS sites *(Public)*
+- `GET /api/cameras/stream?name={user}-{pass}-{ip}-{port}-{dvrname}-{channel}` - **(Public / No Token Required)** Direct live MJPEG video stream proxy by DVR parameter string *(Public)*
 - `PUT /api/cameras/:id` - Update camera resolution/RTSP/DVR config *(Admin)*
 - `DELETE /api/cameras/:id` - Remove camera *(Admin)*
 

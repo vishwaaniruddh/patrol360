@@ -32,11 +32,13 @@ class CameraHelper
     }
 
     /**
-     * Decorate camera array with live_view_url
+     * Decorate camera array with live_view_url and HTTPS proxy stream_url
      */
     public static function formatCamera(array $camera): array
     {
         $camera['live_view_url'] = self::buildLiveViewUrl($camera);
+        $streamId = $camera['id'] ?? ($camera['camera_id'] ?? null);
+        $camera['stream_url'] = !empty($streamId) ? "/api/cameras/{$streamId}/stream" : null;
         return $camera;
     }
 

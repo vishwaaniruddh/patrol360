@@ -230,4 +230,86 @@ class CameraController
 
         Response::success("Camera '{$camera['camera_id']}' removed successfully");
     }
+
+    /**
+     * Live MJPEG video stream proxy for camera feeds
+     * Prevents browser Mixed Content blocking and SSL protocol errors (ERR_SSL_PROTOCOL_ERROR) on HTTPS production servers
+     */
+    public function stream(array $args): void
+    {
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close(); ignore_user_abort(false);
+        }
+
+        if (function_exists('apache_setenv')) {
+            @apache_setenv('no-gzip', '1');
+        }
+        @ini_set('zlib.output_compression', 'Off');
+        @ini_set('output_buffering', 'Off');
+        @ini_set('implicit_flush', '1');
+
+        if (function_exists('set_time_limit')) {
+            @set_time_limit(0);
+        }
+        while (ob_get_level() > 0) {
+            @ob_end_clean();
+        }
+        @ob_implicit_flush(true);
+
+        $id = $args['params'][0] ?? null;
+        $name = $_GET['name'] ?? null;
+        $targetUrl = null;
+
+        if ($name) {
+            $targetUrl = 'http://223.182.122.63:7000/?name=' . $name;
+        } elseif ($id) {
+            $stmt = $this->db->prepare("SELECT * FROM `vehicle_cameras` WHERE id = ? OR camera_id = ? LIMIT 1");
+            $stmt->execute([$id, $id]);
+            $camera = $stmt->fetch();
+            if ($camera) {
+                $targetUrl = CameraHelper::buildLiveViewUrl($camera);
+            }
+        }
+
+        if (!$targetUrl) {
+            http_response_code(404);
+            header('Content-Type: text/plain; charset=utf-8');
+            echo "Camera stream not found or missing credentials.";
+            exit;
+        }
+
+        $ctx = stream_context_create([
+            'http' => [
+                'method' => 'GET',
+                'timeout' => 8,
+                'header' => "User-Agent: Patrol360-Proxy/1.0\r\n"
+            ]
+        ]);
+
+        $fp = @fopen($targetUrl, 'rb', false, $ctx);
+        if (!$fp) {
+            http_response_code(502);
+            header('Content-Type: text/plain; charset=utf-8');
+            echo "Unable to reach live streaming gateway at 223.182.122.63:7000";
+            exit;
+        }
+
+        header('Content-Type: multipart/x-mixed-replace; boundary=frame');
+        header('Cache-Control: no-cache, no-store, must-revalidate');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+        header('Access-Control-Allow-Origin: *');
+        header('Access-Control-Allow-Methods: GET, OPTIONS');
+        header('Access-Control-Allow-Headers: *');
+        header('X-Accel-Buffering: no');
+
+        fpassthru($fp);
+        fclose($fp);
+        exit;
+    }
+
+    public function streamDirect(array $args): void
+    {
+        $this->stream($args);
+    }
 }

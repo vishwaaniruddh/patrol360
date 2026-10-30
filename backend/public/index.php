@@ -87,6 +87,8 @@ $router->delete('/api/vehicles/:id', [VehicleController::class, 'destroy'], [$ad
 // ============================================================================
 $router->get('/api/cameras', [CameraController::class, 'index'], [$auth]);
 $router->post('/api/cameras', [CameraController::class, 'store'], [$admin]);
+$router->get('/api/cameras/stream', [CameraController::class, 'streamDirect'], []); // Live HTTPS streaming proxy (no auth for <img> tags)
+$router->get('/api/cameras/:id/stream', [CameraController::class, 'stream'], []); // Live HTTPS streaming proxy (no auth for <img> tags)
 $router->get('/api/cameras/:id', [CameraController::class, 'show'], [$auth]);
 $router->put('/api/cameras/:id', [CameraController::class, 'update'], [$admin]);
 $router->delete('/api/cameras/:id', [CameraController::class, 'destroy'], [$admin]);

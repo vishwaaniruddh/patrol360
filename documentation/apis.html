@@ -332,11 +332,37 @@
         "dvr_port": "80",
         "rtsp_port": "554",
         "channel": 1,
-        "live_view_url": "http://223.182.122.63:7000/?name=admin-ZTKBEV-223.182.122.63-554-Hikvision-1"
+        "live_view_url": "http://223.182.122.63:7000/?name=admin-ZTKBEV-223.182.122.63-554-Hikvision-1",
+        "stream_url": "/api/cameras/1/stream"
       }
     ]
   }
 }</pre>
+      </div>
+    </div>
+
+    <!-- 5b. LIVE MJPEG VIDEO STREAM PROXY (HTTPS MIXED-CONTENT FIX) -->
+    <div class="card api-card" data-role="both">
+      <div class="card-title">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span class="badge badge-get">GET</span>
+          <span style="font-family: var(--font-mono); font-size: 14px;">/api/cameras/:id/stream</span>
+          <span style="background: #dcfce7; color: #15803d; font-size: 11px; padding: 2px 8px; border-radius: 9999px; font-weight: 600;">Public Live Stream</span>
+        </div>
+        <span style="font-size: 12px; color: var(--muted-foreground);">Live MJPEG Video Stream Proxy (HTTPS Safe / No Auth for &lt;img&gt; tags)</span>
+      </div>
+      <p style="color: #52525b; font-size: 12px; margin-bottom: 0.5rem;">
+        <strong>⚡ Live Stream HTTPS Proxy:</strong> Proxies real-time <code>multipart/x-mixed-replace; boundary=frame</code> MJPEG video streams from edge gateway <code>http://223.182.122.63:7000</code>. Resolves browser Mixed Content blocking and SSL protocol errors (<code>net::ERR_SSL_PROTOCOL_ERROR</code>) on production HTTPS domains (e.g. <code>patrol360.sarsspl.com</code>). Also available as <code>GET /api/cameras/stream?name={user}-{pass}-{ip}-{port}-{dvrname}-{channel}</code>.
+      </p>
+      <div class="code-container">
+        <div class="code-header">
+          <span>HTML / JAVASCRIPT USAGE</span>
+          <button class="btn-sm" onclick="copySnippet(this)">Copy Code</button>
+        </div>
+        <pre class="code-body">&lt;!-- Embed directly in web page on HTTPS without SSL handshake failures --&gt;
+&lt;img src="https://patrol360.sarsspl.com/backend/public/api/cameras/1/stream"
+     alt="Front Camera Live Stream"
+     width="640" height="360" /&gt;</pre>
       </div>
     </div>
 
