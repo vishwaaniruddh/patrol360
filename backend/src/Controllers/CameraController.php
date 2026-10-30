@@ -6,6 +6,7 @@ namespace App\Controllers;
 use App\Database;
 use App\Helpers\Response;
 use App\Helpers\Validator;
+use App\Helpers\CameraHelper;
 use PDO;
 
 class CameraController
@@ -30,6 +31,7 @@ class CameraController
         }
 
         $cameras = $stmt->fetchAll();
+        $cameras = CameraHelper::formatCameras($cameras);
         Response::success('Cameras retrieved successfully', $cameras);
     }
 
@@ -44,6 +46,7 @@ class CameraController
             Response::error('Camera not found.', 404);
         }
 
+        $camera = CameraHelper::formatCamera($camera);
         Response::success('Camera details retrieved', $camera);
     }
 
@@ -52,7 +55,7 @@ class CameraController
         $body = $args['body'];
 
         $validator = Validator::make($body)
-            ->required(['camera_id', 'vehicle_id', 'camera_name', 'mount_position', 'rtsp_url'])
+            ->required(['camera_id', 'vehicle_id', 'camera_name', 'mount_position'])
             ->in('mount_position', ['FRONT', 'REAR', 'LEFT', 'RIGHT']);
 
         if ($validator->fails()) {
@@ -76,17 +79,41 @@ class CameraController
         $res = $body['resolution'] ?? '1920x1080';
         $fps = (int)($body['fps'] ?? 25);
         $streaming = isset($body['is_streaming']) ? (int)(bool)$body['is_streaming'] : 1;
+        $rtspUrl = !empty($body['rtsp_url']) ? trim($body['rtsp_url']) : '';
+
+        // Dynamic DVR & Live Stream Configuration
+        $username = isset($body['username']) ? trim((string)$body['username']) : null;
+        $password = isset($body['password']) ? trim((string)$body['password']) : null;
+        $dvrname  = isset($body['dvrname'])  ? trim((string)$body['dvrname'])  : null;
+        $ip       = isset($body['ip'])       ? trim((string)$body['ip'])       : null;
+        $dvrPort  = isset($body['dvr_port'])  ? trim((string)$body['dvr_port'])  : null;
+        $rtspPort = isset($body['rtsp_port']) ? trim((string)$body['rtsp_port']) : '554';
+        $channel  = isset($body['channel'])   ? (int)$body['channel']           : 1;
+
+        // Auto-generate rtsp_url if missing but IP & credentials exist
+        if (empty($rtspUrl) && !empty($ip)) {
+            $auth = (!empty($username) && !empty($password)) ? "{$username}:{$password}@" : '';
+            $rtspUrl = "rtsp://{$auth}{$ip}:{$rtspPort}/Streaming/Channels/{$channel}01";
+        }
 
         $insert = $this->db->prepare("
-            INSERT INTO `vehicle_cameras` (`camera_id`, `vehicle_id`, `camera_name`, `mount_position`, `rtsp_url`, `resolution`, `fps`, `is_streaming`)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO `vehicle_cameras` (
+                `camera_id`, `vehicle_id`, `camera_name`, `mount_position`, 
+                `rtsp_url`, `resolution`, `fps`, `is_streaming`,
+                `username`, `password`, `dvrname`, `ip`, `dvr_port`, `rtsp_port`, `channel`
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
-        $insert->execute([$body['camera_id'], $body['vehicle_id'], $body['camera_name'], $body['mount_position'], $body['rtsp_url'], $res, $fps, $streaming]);
+        $insert->execute([
+            $body['camera_id'], $body['vehicle_id'], $body['camera_name'], $body['mount_position'],
+            $rtspUrl, $res, $fps, $streaming,
+            $username, $password, $dvrname, $ip, $dvrPort, $rtspPort, $channel
+        ]);
 
         $newId = (int)$this->db->lastInsertId();
         $stmt = $this->db->prepare("SELECT * FROM `vehicle_cameras` WHERE id = ?");
         $stmt->execute([$newId]);
-        $newCam = $stmt->fetch();
+        $newCam = CameraHelper::formatCamera($stmt->fetch());
 
         Response::success('Camera added to vehicle successfully', $newCam, 201);
     }
@@ -137,6 +164,36 @@ class CameraController
             $values[] = (int)(bool)$body['is_streaming'];
         }
 
+        // New DVR / Live View Configuration Fields
+        if (array_key_exists('username', $body)) {
+            $fields[] = "`username` = ?";
+            $values[] = trim((string)$body['username']);
+        }
+        if (array_key_exists('password', $body)) {
+            $fields[] = "`password` = ?";
+            $values[] = trim((string)$body['password']);
+        }
+        if (array_key_exists('dvrname', $body)) {
+            $fields[] = "`dvrname` = ?";
+            $values[] = trim((string)$body['dvrname']);
+        }
+        if (array_key_exists('ip', $body)) {
+            $fields[] = "`ip` = ?";
+            $values[] = trim((string)$body['ip']);
+        }
+        if (array_key_exists('dvr_port', $body)) {
+            $fields[] = "`dvr_port` = ?";
+            $values[] = trim((string)$body['dvr_port']);
+        }
+        if (array_key_exists('rtsp_port', $body)) {
+            $fields[] = "`rtsp_port` = ?";
+            $values[] = trim((string)$body['rtsp_port']);
+        }
+        if (array_key_exists('channel', $body)) {
+            $fields[] = "`channel` = ?";
+            $values[] = (int)$body['channel'];
+        }
+
         if (empty($fields)) {
             Response::error('No fields provided for update.', 400);
         }
@@ -147,7 +204,7 @@ class CameraController
 
         $stmt = $this->db->prepare("SELECT * FROM `vehicle_cameras` WHERE id = ?");
         $stmt->execute([$camera['id']]);
-        $updated = $stmt->fetch();
+        $updated = CameraHelper::formatCamera($stmt->fetch());
 
         Response::success('Camera updated successfully', $updated);
     }

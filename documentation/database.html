@@ -192,8 +192,17 @@ CREATE TABLE IF NOT EXISTS vehicle_cameras (
     rtsp_url TEXT NOT NULL,
     resolution VARCHAR(16) DEFAULT '1920x1080',
     fps INTEGER DEFAULT 25,
-    is_streaming BOOLEAN DEFAULT TRUE
+    is_streaming BOOLEAN DEFAULT TRUE,
+    username VARCHAR(50) DEFAULT NULL, -- DVR / Camera Auth User
+    password VARCHAR(50) DEFAULT NULL, -- DVR / Camera Auth Pass
+    dvrname VARCHAR(50) DEFAULT NULL,  -- e.g. 'Hikvision', 'Dahua'
+    ip VARCHAR(20) DEFAULT NULL,       -- Camera Device IP Address
+    dvr_port VARCHAR(5) DEFAULT NULL,  -- Web/SDK Port (e.g. 80)
+    rtsp_port VARCHAR(5) DEFAULT NULL, -- RTSP Port (e.g. 554)
+    channel INTEGER DEFAULT 1          -- Video Channel Number (1-16)
 );
+-- Live View WebRTC/HTTP URL Generator Pattern:
+-- http://223.182.122.63:7000/?name={user}-{pass}-{ip}-{port}-{dvrname}-{channel}
 
 -- 4. STOLEN / BLACKLISTED VEHICLES DATABASE
 CREATE TABLE IF NOT EXISTS stolen_vehicles_watchlist (

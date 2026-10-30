@@ -40,7 +40,14 @@ CREATE TABLE IF NOT EXISTS vehicle_cameras (
     rtsp_url TEXT NOT NULL,
     resolution VARCHAR(16) DEFAULT '1920x1080',
     fps INTEGER DEFAULT 25,
-    is_streaming BOOLEAN DEFAULT TRUE
+    is_streaming BOOLEAN DEFAULT TRUE,
+    username VARCHAR(50) DEFAULT NULL,
+    password VARCHAR(50) DEFAULT NULL,
+    dvrname VARCHAR(50) DEFAULT NULL,
+    ip VARCHAR(20) DEFAULT NULL,
+    dvr_port VARCHAR(5) DEFAULT NULL,
+    rtsp_port VARCHAR(5) DEFAULT NULL,
+    channel INTEGER DEFAULT 1
 );
 
 -- 4. STOLEN / BLACKLISTED VEHICLES DATABASE
@@ -171,4 +178,13 @@ CREATE INDEX idx_ai_alerts_plate ON ai_alerts(scanned_vehicle_numberplate);
 ALTER TABLE `ai_alerts` ADD COLUMN IF NOT EXISTS `acknowledged_by` VARCHAR(100) DEFAULT NULL AFTER `scanned_vehicle_numberplate`;
 ALTER TABLE `ai_alerts` ADD COLUMN IF NOT EXISTS `acknowledged_at` DATETIME DEFAULT NULL AFTER `acknowledged_by`;
 ALTER TABLE `ai_alerts` ADD COLUMN IF NOT EXISTS `action_taken` VARCHAR(255) DEFAULT NULL AFTER `acknowledged_at`;
+
+ALTER TABLE `vehicle_cameras` ADD COLUMN IF NOT EXISTS `username` VARCHAR(50) DEFAULT NULL;
+ALTER TABLE `vehicle_cameras` ADD COLUMN IF NOT EXISTS `password` VARCHAR(50) DEFAULT NULL;
+ALTER TABLE `vehicle_cameras` ADD COLUMN IF NOT EXISTS `dvrname` VARCHAR(50) DEFAULT NULL;
+ALTER TABLE `vehicle_cameras` ADD COLUMN IF NOT EXISTS `ip` VARCHAR(20) DEFAULT NULL;
+ALTER TABLE `vehicle_cameras` ADD COLUMN IF NOT EXISTS `dvr_port` VARCHAR(5) DEFAULT NULL;
+ALTER TABLE `vehicle_cameras` ADD COLUMN IF NOT EXISTS `rtsp_port` VARCHAR(5) DEFAULT NULL;
+ALTER TABLE `vehicle_cameras` ADD COLUMN IF NOT EXISTS `channel` INT(5) DEFAULT NULL;
+
 

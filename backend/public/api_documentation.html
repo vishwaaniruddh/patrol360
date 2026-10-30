@@ -1460,13 +1460,22 @@
       "camera_count": 4,
       "cameras": [
         {
-          "camera_id": "CAM-01-ROOF-FRONT",
-          "camera_name": "Roof Front 4K ANPR Telephoto",
+          "id": 1,
+          "camera_id": "CAM_01_FRONT",
+          "camera_name": "Front Highway ANPR Cam",
           "mount_position": "FRONT",
-          "rtsp_url": "rtsp://192.168.1.101:554/live/front_ch1",
+          "rtsp_url": "rtsp://admin:12345@192.168.1.101:554/stream1",
           "resolution": "1920x1080",
           "fps": 25,
-          "is_streaming": 1
+          "is_streaming": 1,
+          "username": "admin",
+          "password": "ZTKBEV",
+          "dvrname": "Hikvision",
+          "ip": "223.182.122.63",
+          "dvr_port": "80",
+          "rtsp_port": "554",
+          "channel": 1,
+          "live_view_url": "http://223.182.122.63:7000/?name=admin-ZTKBEV-223.182.122.63-554-Hikvision-1"
         }
       ]
     }
@@ -1483,6 +1492,97 @@
                   <div class="response-status-bar">
                     <span>Status: <span class="status-code-badge status-200">200 OK</span></span>
                     <span class="latency-timer">30 ms</span>
+                  </div>
+                  <div class="code-box"><pre class="response-body"></pre></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GET /api/vehicles/:id -->
+      <div class="endpoint-card" data-category="vehicles" data-method="GET" data-path="/api/vehicles/:id" data-role="both">
+        <div class="endpoint-summary" onclick="toggleEndpoint(this)">
+          <div class="endpoint-left">
+            <span class="method-badge method-get">GET</span>
+            <span class="endpoint-path">/api/vehicles/:id</span>
+            <span class="endpoint-desc">Retrieve single patrol vehicle profile, live telemetry, and mounted 360° cameras with live streaming URLs</span>
+          </div>
+          <div class="endpoint-right">
+            <span class="role-badge role-protected">User / Admin</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="endpoint-details">
+          <div class="details-grid">
+            <div>
+              <div class="detail-section-title">Path Parameters</div>
+              <table class="param-table">
+                <thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+                <tbody>
+                  <tr><td class="param-name">:id</td><td class="param-type">string | int</td><td class="param-req">YES</td><td>Vehicle identifier string (e.g. <code>PATROL_VAN_01</code>) or integer ID (e.g. <code>1</code>)</td></tr>
+                </tbody>
+              </table>
+
+              <div class="detail-section-title">Response Schema Highlights (with Live View URL)</div>
+              <p style="font-size: 12px; margin-bottom: 8px;">Returns vehicle details, latest GPS coordinates, battery voltage, and array of 360° cameras decorated with DVR parameters and the generated <strong>live_view_url</strong> (Port 7000 streaming feed):</p>
+              <div class="code-box"><pre>{
+  "success": true,
+  "message": "Vehicle details retrieved",
+  "data": {
+    "id": 1,
+    "vehicle_id": "PATROL_VAN_01",
+    "registration_number": "GJ-01-G-9999",
+    "vehicle_model": "Mahindra Scorpio",
+    "police_station": "Navrangpura Police Station",
+    "assigned_driver_officer": "Insp. R. Sharma",
+    "jetson_device_serial": "NV-ORIN-16GB-001",
+    "sim_card_phone": "+919876543210",
+    "is_active": 1,
+    "latest_lat": "23.0225050",
+    "latest_lng": "72.5713620",
+    "speed_kmph": "41.50",
+    "heading_degrees": 180,
+    "battery_voltage": "13.40",
+    "jetson_temperature_c": "46.2",
+    "network_signal_dbm": -68,
+    "last_telemetry_at": "2026-10-30 10:49:58",
+    "camera_count": 5,
+    "cameras": [
+      {
+        "id": 1,
+        "camera_id": "CAM_01_FRONT",
+        "vehicle_id": "PATROL_VAN_01",
+        "camera_name": "Front Highway ANPR Cam",
+        "mount_position": "FRONT",
+        "rtsp_url": "rtsp://admin:12345@192.168.1.101:554/stream1",
+        "resolution": "1920x1080",
+        "fps": 25,
+        "is_streaming": 1,
+        "username": "admin",
+        "password": "ZTKBEV",
+        "dvrname": "Hikvision",
+        "ip": "223.182.122.63",
+        "dvr_port": "80",
+        "rtsp_port": "554",
+        "channel": 1,
+        "live_view_url": "http://223.182.122.63:7000/?name=admin-ZTKBEV-223.182.122.63-554-Hikvision-1"
+      }
+    ]
+  }
+}</pre></div>
+            </div>
+            <div>
+              <div class="try-runner">
+                <div class="try-header">
+                  <span>Interactive Test Runner</span>
+                  <button class="execute-btn" onclick="executeApi(this, 'GET', '/api/vehicles/PATROL_VAN_01')">Send Request (/api/vehicles/PATROL_VAN_01)</button>
+                </div>
+                <div class="response-container">
+                  <div class="response-status-bar">
+                    <span>Status: <span class="status-code-badge status-200">200 OK</span></span>
+                    <span class="latency-timer">28 ms</span>
                   </div>
                   <div class="code-box"><pre class="response-body"></pre></div>
                 </div>
@@ -1640,14 +1740,22 @@
   "data": [
     {
       "id": 1,
-      "camera_id": "CAM-01-ROOF-FRONT",
+      "camera_id": "CAM_01_FRONT",
       "vehicle_id": "PATROL_VAN_01",
-      "camera_name": "Roof Front 4K ANPR Telephoto",
+      "camera_name": "Front Highway ANPR Cam",
       "mount_position": "FRONT",
-      "rtsp_url": "rtsp://192.168.1.101:554/live/front_ch1",
+      "rtsp_url": "rtsp://admin:12345@192.168.1.101:554/stream1",
       "resolution": "1920x1080",
       "fps": 25,
-      "is_streaming": 1
+      "is_streaming": 1,
+      "username": "admin",
+      "password": "ZTKBEV",
+      "dvrname": "Hikvision",
+      "ip": "223.182.122.63",
+      "dvr_port": "80",
+      "rtsp_port": "554",
+      "channel": 1,
+      "live_view_url": "http://223.182.122.63:7000/?name=admin-ZTKBEV-223.182.122.63-554-Hikvision-1"
     }
   ]
 }</pre></div>
@@ -1699,6 +1807,13 @@
                   <tr><td class="param-name">resolution</td><td class="param-type">string</td><td class="param-req">NO</td><td>Stream resolution (default: <code>1920x1080</code>)</td></tr>
                   <tr><td class="param-name">fps</td><td class="param-type">integer</td><td class="param-req">NO</td><td>Capture frame rate (default: <code>25</code>)</td></tr>
                   <tr><td class="param-name">is_streaming</td><td class="param-type">integer</td><td class="param-req">NO</td><td>1 for active feed, 0 for inactive</td></tr>
+                  <tr><td class="param-name">username</td><td class="param-type">string</td><td class="param-req">NO</td><td>DVR authentication username (e.g. <code>admin</code>)</td></tr>
+                  <tr><td class="param-name">password</td><td class="param-type">string</td><td class="param-req">NO</td><td>DVR authentication password (e.g. <code>ZTKBEV</code>)</td></tr>
+                  <tr><td class="param-name">dvrname</td><td class="param-type">string</td><td class="param-req">NO</td><td>DVR unit name or manufacturer (e.g. <code>Hikvision</code>)</td></tr>
+                  <tr><td class="param-name">ip</td><td class="param-type">string</td><td class="param-req">NO</td><td>Public / Local IP address of DVR (e.g. <code>223.182.122.63</code>)</td></tr>
+                  <tr><td class="param-name">dvr_port</td><td class="param-type">string|int</td><td class="param-req">NO</td><td>DVR HTTP web interface port (default: <code>80</code>)</td></tr>
+                  <tr><td class="param-name">rtsp_port</td><td class="param-type">string|int</td><td class="param-req">NO</td><td>RTSP streaming port (default: <code>554</code>)</td></tr>
+                  <tr><td class="param-name">channel</td><td class="param-type">integer</td><td class="param-req">NO</td><td>Camera channel number (1-based, e.g. <code>1</code>)</td></tr>
                 </tbody>
               </table>
             </div>
@@ -1721,6 +1836,77 @@
                 <div class="response-container">
                   <div class="response-status-bar">
                     <span>Status: <span class="status-code-badge status-200">201 Created</span></span>
+                    <span class="latency-timer">26 ms</span>
+                  </div>
+                  <div class="code-box"><pre class="response-body"></pre></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PUT /api/cameras/:id -->
+      <div class="endpoint-card" data-category="cameras" data-method="PUT" data-path="/api/cameras/:id" data-role="admin">
+        <div class="endpoint-summary" onclick="toggleEndpoint(this)">
+          <div class="endpoint-left">
+            <span class="method-badge method-put">PUT</span>
+            <span class="endpoint-path">/api/cameras/:id</span>
+            <span class="endpoint-desc">Update camera mount position, RTSP stream URL, or DVR live streaming configuration</span>
+          </div>
+          <div class="endpoint-right">
+            <span class="role-badge role-admin">Admin Only</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="endpoint-details">
+          <div class="details-grid">
+            <div>
+              <div class="detail-section-title">Path & Request Body Parameters</div>
+              <p style="font-size: 12px; margin-bottom: 8px;"><code>:id</code> - Camera record ID (e.g. <code>1</code>) or hardware camera ID (e.g. <code>CAM_01_FRONT</code>).</p>
+              <table class="param-table">
+                <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+                <tbody>
+                  <tr><td class="param-name">camera_name</td><td class="param-type">string</td><td class="param-req">NO</td><td>Descriptive camera label</td></tr>
+                  <tr><td class="param-name">mount_position</td><td class="param-type">string</td><td class="param-req">NO</td><td>Orientation: <code>FRONT</code>, <code>REAR</code>, <code>LEFT</code>, <code>RIGHT</code></td></tr>
+                  <tr><td class="param-name">rtsp_url</td><td class="param-type">string</td><td class="param-req">NO</td><td>RTSP live stream feed endpoint</td></tr>
+                  <tr><td class="param-name">resolution</td><td class="param-type">string</td><td class="param-req">NO</td><td>Stream resolution (e.g. <code>1920x1080</code>)</td></tr>
+                  <tr><td class="param-name">fps</td><td class="param-type">integer</td><td class="param-req">NO</td><td>Capture frame rate (default: <code>25</code>)</td></tr>
+                  <tr><td class="param-name">is_streaming</td><td class="param-type">integer</td><td class="param-req">NO</td><td>1 for active feed, 0 for offline</td></tr>
+                  <tr><td class="param-name">username</td><td class="param-type">string</td><td class="param-req">NO</td><td>DVR login username (e.g. <code>admin</code>)</td></tr>
+                  <tr><td class="param-name">password</td><td class="param-type">string</td><td class="param-req">NO</td><td>DVR login password (e.g. <code>ZTKBEV</code>)</td></tr>
+                  <tr><td class="param-name">dvrname</td><td class="param-type">string</td><td class="param-req">NO</td><td>DVR manufacturer/model (e.g. <code>Hikvision</code>)</td></tr>
+                  <tr><td class="param-name">ip</td><td class="param-type">string</td><td class="param-req">NO</td><td>DVR IP address (e.g. <code>223.182.122.63</code>)</td></tr>
+                  <tr><td class="param-name">dvr_port</td><td class="param-type">string|int</td><td class="param-req">NO</td><td>DVR HTTP web interface port (default: <code>80</code>)</td></tr>
+                  <tr><td class="param-name">rtsp_port</td><td class="param-type">string|int</td><td class="param-req">NO</td><td>RTSP streaming port (default: <code>554</code>)</td></tr>
+                  <tr><td class="param-name">channel</td><td class="param-type">integer</td><td class="param-req">NO</td><td>DVR channel number (e.g. <code>1</code>)</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div>
+              <div class="try-runner">
+                <div class="try-header">
+                  <span>Interactive Test Runner</span>
+                  <button class="execute-btn" onclick="executeApi(this, 'PUT', '/api/cameras/1')">Send Request (/api/cameras/1)</button>
+                </div>
+                <textarea class="textarea-json">{
+  "camera_name": "Front Highway ANPR Cam",
+  "mount_position": "FRONT",
+  "rtsp_url": "rtsp://admin:12345@192.168.1.101:554/stream1",
+  "resolution": "1920x1080",
+  "fps": 25,
+  "is_streaming": 1,
+  "username": "admin",
+  "password": "ZTKBEV",
+  "dvrname": "Hikvision",
+  "ip": "223.182.122.63",
+  "dvr_port": "80",
+  "rtsp_port": "554",
+  "channel": 1
+}</textarea>
+                <div class="response-container">
+                  <div class="response-status-bar">
+                    <span>Status: <span class="status-code-badge status-200">200 OK</span></span>
                     <span class="latency-timer">26 ms</span>
                   </div>
                   <div class="code-box"><pre class="response-body"></pre></div>

@@ -363,6 +363,38 @@ class SyncController
                     $executed++;
                 }
             }
+            // Explicitly ensure newly required columns exist in vehicle_cameras
+            $camCols = $this->db->query("SHOW COLUMNS FROM `vehicle_cameras`")->fetchAll(PDO::FETCH_COLUMN);
+            if (!empty($camCols)) {
+                if (!in_array('username', $camCols, true)) {
+                    $this->db->exec("ALTER TABLE `vehicle_cameras` ADD COLUMN `username` VARCHAR(50) DEFAULT NULL");
+                    $executed++;
+                }
+                if (!in_array('password', $camCols, true)) {
+                    $this->db->exec("ALTER TABLE `vehicle_cameras` ADD COLUMN `password` VARCHAR(50) DEFAULT NULL");
+                    $executed++;
+                }
+                if (!in_array('dvrname', $camCols, true)) {
+                    $this->db->exec("ALTER TABLE `vehicle_cameras` ADD COLUMN `dvrname` VARCHAR(50) DEFAULT NULL");
+                    $executed++;
+                }
+                if (!in_array('ip', $camCols, true)) {
+                    $this->db->exec("ALTER TABLE `vehicle_cameras` ADD COLUMN `ip` VARCHAR(20) DEFAULT NULL");
+                    $executed++;
+                }
+                if (!in_array('dvr_port', $camCols, true)) {
+                    $this->db->exec("ALTER TABLE `vehicle_cameras` ADD COLUMN `dvr_port` VARCHAR(5) DEFAULT NULL");
+                    $executed++;
+                }
+                if (!in_array('rtsp_port', $camCols, true)) {
+                    $this->db->exec("ALTER TABLE `vehicle_cameras` ADD COLUMN `rtsp_port` VARCHAR(5) DEFAULT NULL");
+                    $executed++;
+                }
+                if (!in_array('channel', $camCols, true)) {
+                    $this->db->exec("ALTER TABLE `vehicle_cameras` ADD COLUMN `channel` INT(5) DEFAULT NULL");
+                    $executed++;
+                }
+            }
         } catch (\Throwable $e) {
             error_log('SyncController::migrate column check notice: ' . $e->getMessage());
         }

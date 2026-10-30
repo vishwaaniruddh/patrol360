@@ -141,14 +141,20 @@ Base URL (Production): `https://sarsspl.com/patrol360/backend/public`
 ### C. Police Vehicles & Cameras
 - `GET /api/vehicles` - List patrol vans with latest GPS telemetry *(User/Admin)*
 - `POST /api/vehicles` - Add new patrol vehicle *(Admin)*
-- `GET /api/vehicles/:id` - Vehicle details *(User/Admin)*
+- `GET /api/vehicles/:id` - Vehicle details by numeric ID (e.g. `/api/vehicles/1`) or unique vehicle code (e.g. `/api/vehicles/PATROL_VAN_01`), returning latest GPS telemetry and all mounted cameras with dynamic `live_view_url` *(User/Admin)*
 - `PUT /api/vehicles/:id` - Update vehicle profile *(Admin)*
 - `DELETE /api/vehicles/:id` - Remove vehicle *(Admin)*
-- `GET /api/cameras` - List 360 roof IP cameras *(User/Admin)*
-- `POST /api/cameras` - Register camera feed *(Admin)*
-- `GET /api/cameras/:id` - Camera stream details *(User/Admin)*
-- `PUT /api/cameras/:id` - Update camera resolution/RTSP *(Admin)*
+- `GET /api/cameras` - List 360 roof IP cameras with DVR credentials and generated `live_view_url` *(User/Admin)*
+- `POST /api/cameras` - Register camera feed with DVR/RTSP credentials (`username`, `password`, `dvrname`, `ip`, `dvr_port`, `rtsp_port`, `channel`) *(Admin)*
+- `GET /api/cameras/:id` - Camera stream details with `live_view_url` *(User/Admin)*
+- `PUT /api/cameras/:id` - Update camera resolution/RTSP/DVR config *(Admin)*
 - `DELETE /api/cameras/:id` - Remove camera *(Admin)*
+
+> **Live View Streaming Gateway URL Pattern**:
+> ```text
+> http://223.182.122.63:7000/?name={user}-{pass}-{ip}-{port}-{dvrname}-{channel}
+> ```
+> *Example*: `http://223.182.122.63:7000/?name=admin-ZTKBEV-223.182.122.63-554-Hikvision-1`
 
 ### D. Telemetry & GPS Tracking
 - `GET /api/telemetry` - List vehicle breadcrumbs *(User/Admin)*

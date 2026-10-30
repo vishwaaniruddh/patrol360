@@ -7,6 +7,7 @@ namespace App\Controllers;
 use App\Database;
 use App\Helpers\Response;
 use App\Helpers\Validator;
+use App\Helpers\CameraHelper;
 use PDO;
 use Exception;
 
@@ -861,15 +862,15 @@ class OfficerController
         $telemStmt->execute([$vehicleId]);
         $latestTelemetry = $telemStmt->fetch(PDO::FETCH_ASSOC);
 
-        // Mounted cameras
+        // Mounted cameras with live view URL
         $camStmt = $this->db->prepare("
-            SELECT `id`, `camera_id`, `camera_name`, `mount_position`, `rtsp_url`, `resolution`, `fps`, `is_streaming`
+            SELECT *
             FROM `vehicle_cameras`
             WHERE `vehicle_id` = ?
             ORDER BY `mount_position` ASC
         ");
         $camStmt->execute([$vehicleId]);
-        $cameras = $camStmt->fetchAll(PDO::FETCH_ASSOC);
+        $cameras = CameraHelper::formatCameras($camStmt->fetchAll(PDO::FETCH_ASSOC));
 
         // Alert count today for this vehicle
         $todayAlertsStmt = $this->db->prepare("
@@ -914,7 +915,7 @@ class OfficerController
             ");
         }
 
-        $cameras = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $cameras = CameraHelper::formatCameras($stmt->fetchAll(PDO::FETCH_ASSOC));
         Response::success('Patrol cameras retrieved', $cameras);
     }
 
@@ -1036,13 +1037,13 @@ class OfficerController
 
         // 2. 4 Mounted RTSP Cameras on this vehicle
         $camStmt = $this->db->prepare("
-            SELECT `id`, `camera_id`, `camera_name`, `mount_position`, `rtsp_url`, `resolution`, `fps`, `is_streaming`
+            SELECT *
             FROM `vehicle_cameras`
             WHERE `vehicle_id` = ?
             ORDER BY FIELD(`mount_position`, 'FRONT', 'REAR', 'LEFT', 'RIGHT'), `id` ASC
         ");
         $camStmt->execute([$vehicleId]);
-        $cameras = $camStmt->fetchAll(PDO::FETCH_ASSOC);
+        $cameras = CameraHelper::formatCameras($camStmt->fetchAll(PDO::FETCH_ASSOC));
 
         // 3. Latest Telemetry
         $telemStmt = $this->db->prepare("
@@ -1213,11 +1214,11 @@ class OfficerController
 
         // 2. Fleet streaming cameras
         $camStmt = $this->db->query("
-            SELECT `id`, `camera_id`, `vehicle_id`, `camera_name`, `mount_position`, `rtsp_url`, `resolution`, `fps`, `is_streaming`
+            SELECT *
             FROM `vehicle_cameras`
             ORDER BY `vehicle_id` ASC, FIELD(`mount_position`, 'FRONT', 'REAR', 'LEFT', 'RIGHT')
         ");
-        $cameras = $camStmt->fetchAll(PDO::FETCH_ASSOC);
+        $cameras = CameraHelper::formatCameras($camStmt->fetchAll(PDO::FETCH_ASSOC));
 
         // 3. Fleet-wide summary metrics
         $todayTotal = (int)$this->db->query("SELECT COUNT(*) FROM `ai_alerts` WHERE DATE(`createtime`) = CURDATE()")->fetchColumn();

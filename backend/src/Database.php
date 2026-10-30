@@ -42,7 +42,7 @@ class Database
     }
 
     /**
-     * Self-healing migration: Ensures newly required columns exist in ai_alerts
+     * Self-healing migration: Ensures newly required columns exist in ai_alerts and vehicle_cameras
      */
     public static function ensureAiAlertColumns(PDO $db): void
     {
@@ -51,6 +51,7 @@ class Database
         $checked = true;
 
         try {
+            // 1. ai_alerts table patches
             $cols = $db->query("SHOW COLUMNS FROM `ai_alerts`")->fetchAll(PDO::FETCH_COLUMN);
             if (!empty($cols)) {
                 if (!in_array('acknowledged_by', $cols, true)) {
@@ -61,6 +62,32 @@ class Database
                 }
                 if (!in_array('action_taken', $cols, true)) {
                     $db->exec("ALTER TABLE `ai_alerts` ADD COLUMN `action_taken` VARCHAR(255) DEFAULT NULL AFTER `acknowledged_at`");
+                }
+            }
+
+            // 2. vehicle_cameras table patches (DVR & Live Streaming columns)
+            $camCols = $db->query("SHOW COLUMNS FROM `vehicle_cameras`")->fetchAll(PDO::FETCH_COLUMN);
+            if (!empty($camCols)) {
+                if (!in_array('username', $camCols, true)) {
+                    $db->exec("ALTER TABLE `vehicle_cameras` ADD COLUMN `username` VARCHAR(50) DEFAULT NULL");
+                }
+                if (!in_array('password', $camCols, true)) {
+                    $db->exec("ALTER TABLE `vehicle_cameras` ADD COLUMN `password` VARCHAR(50) DEFAULT NULL");
+                }
+                if (!in_array('dvrname', $camCols, true)) {
+                    $db->exec("ALTER TABLE `vehicle_cameras` ADD COLUMN `dvrname` VARCHAR(50) DEFAULT NULL");
+                }
+                if (!in_array('ip', $camCols, true)) {
+                    $db->exec("ALTER TABLE `vehicle_cameras` ADD COLUMN `ip` VARCHAR(20) DEFAULT NULL");
+                }
+                if (!in_array('dvr_port', $camCols, true)) {
+                    $db->exec("ALTER TABLE `vehicle_cameras` ADD COLUMN `dvr_port` VARCHAR(5) DEFAULT NULL");
+                }
+                if (!in_array('rtsp_port', $camCols, true)) {
+                    $db->exec("ALTER TABLE `vehicle_cameras` ADD COLUMN `rtsp_port` VARCHAR(5) DEFAULT NULL");
+                }
+                if (!in_array('channel', $camCols, true)) {
+                    $db->exec("ALTER TABLE `vehicle_cameras` ADD COLUMN `channel` INT(5) DEFAULT NULL");
                 }
             }
         } catch (\Throwable $e) {

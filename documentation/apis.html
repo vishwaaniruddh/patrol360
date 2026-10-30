@@ -274,8 +274,74 @@
   }
 }</pre>
       </div>
+    </div><!-- end card 4 -->
+
+    <!-- 5. POLICE VEHICLES & 360° CAMERAS LIVE STREAMING -->
+    <div class="card api-card" data-role="both">
+      <div class="card-title">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span class="badge badge-get">GET</span>
+          <span style="font-family: var(--font-mono); font-size: 14px;">/api/vehicles/:id</span>
+          <span style="background: #e0f2fe; color: #0369a1; font-size: 11px; padding: 2px 8px; border-radius: 9999px; font-weight: 600;">Fleet & Cameras</span>
+        </div>
+        <span style="font-size: 12px; color: var(--muted-foreground);">Vehicle Profile, Telemetry & Multi-Camera Live Feeds</span>
+      </div>
+      <p style="color: #52525b; font-size: 12px; margin-bottom: 0.5rem;">
+        Query single patrol vehicle profile, current GPS telemetry, and joined <code>vehicle_cameras</code> array decorated with 7 DVR configuration columns (<code>username</code>, <code>password</code>, <code>dvrname</code>, <code>ip</code>, <code>dvr_port</code>, <code>rtsp_port</code>, <code>channel</code>) and the auto-generated live view streaming URL for Port 7000:<br>
+        <code>http://223.182.122.63:7000/?name={user}-{pass}-{ip}-{port}-{dvrname}-{channel}</code>
+      </p>
+      <div class="code-container">
+        <div class="code-header">
+          <span>SAMPLE JSON RESPONSE (GET /api/vehicles/PATROL_VAN_01)</span>
+          <button class="btn-sm" onclick="copySnippet(this)">Copy JSON</button>
+        </div>
+        <pre class="code-body">{
+  "success": true,
+  "message": "Vehicle details retrieved",
+  "data": {
+    "id": 1,
+    "vehicle_id": "PATROL_VAN_01",
+    "registration_number": "GJ-01-G-9999",
+    "vehicle_model": "Mahindra Scorpio",
+    "police_station": "Navrangpura Police Station",
+    "assigned_driver_officer": "Insp. R. Sharma",
+    "latest_lat": "23.0225050",
+    "latest_lng": "72.5713620",
+    "speed_kmph": "41.50",
+    "heading_degrees": 180,
+    "battery_voltage": "13.40",
+    "jetson_temperature_c": "46.2",
+    "network_signal_dbm": -68,
+    "last_telemetry_at": "2026-10-30 10:49:58",
+    "camera_count": 5,
+    "cameras": [
+      {
+        "id": 1,
+        "camera_id": "CAM_01_FRONT",
+        "vehicle_id": "PATROL_VAN_01",
+        "camera_name": "Front Highway ANPR Cam",
+        "mount_position": "FRONT",
+        "rtsp_url": "rtsp://admin:12345@192.168.1.101:554/stream1",
+        "resolution": "1920x1080",
+        "fps": 25,
+        "is_streaming": 1,
+        "username": "admin",
+        "password": "ZTKBEV",
+        "dvrname": "Hikvision",
+        "ip": "223.182.122.63",
+        "dvr_port": "80",
+        "rtsp_port": "554",
+        "channel": 1,
+        "live_view_url": "http://223.182.122.63:7000/?name=admin-ZTKBEV-223.182.122.63-554-Hikvision-1"
+      }
+    ]
+  }
+}</pre>
+      </div>
+    </div>
+
     <!-- REAL-TIME AI EDGE ALERT (ai_alerts) -->
-    <div class="card">
+    <div class="card api-card" data-role="both">
       <div class="card-title">
         <div style="display: flex; align-items: center; gap: 8px;">
           <span class="badge badge-post">POST</span>

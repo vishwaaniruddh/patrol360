@@ -6,6 +6,7 @@ namespace App\Controllers;
 use App\Database;
 use App\Helpers\Response;
 use App\Helpers\Validator;
+use App\Helpers\CameraHelper;
 use PDO;
 
 class VehicleController
@@ -74,11 +75,13 @@ class VehicleController
 
         // Attach cameras to each vehicle
         foreach ($vehicles as &$veh) {
-            $camStmt = $this->db->prepare("SELECT camera_id, camera_name, mount_position, rtsp_url, resolution, fps, is_streaming FROM `vehicle_cameras` WHERE vehicle_id = ? ORDER BY mount_position ASC");
+            $camStmt = $this->db->prepare("SELECT * FROM `vehicle_cameras` WHERE vehicle_id = ? ORDER BY mount_position ASC");
             $camStmt->execute([$veh['vehicle_id']]);
-            $veh['cameras'] = $camStmt->fetchAll();
+            $cams = $camStmt->fetchAll();
+            $veh['cameras'] = CameraHelper::formatCameras($cams);
             $veh['camera_count'] = count($veh['cameras']);
         }
+        unset($veh);
 
         Response::paginate($vehicles, $total, $page, $limit, 'Police vehicles list retrieved');
     }
@@ -111,10 +114,12 @@ class VehicleController
             Response::error('Vehicle not found.', 404);
         }
 
-        // Get cameras for this vehicle
+        // Get cameras for this vehicle with live_view_url
         $camStmt = $this->db->prepare("SELECT * FROM `vehicle_cameras` WHERE vehicle_id = ? ORDER BY mount_position ASC");
         $camStmt->execute([$vehicle['vehicle_id']]);
-        $vehicle['cameras'] = $camStmt->fetchAll();
+        $cameras = $camStmt->fetchAll();
+        $vehicle['cameras'] = CameraHelper::formatCameras($cameras);
+        $vehicle['camera_count'] = count($vehicle['cameras']);
 
         Response::success('Vehicle details retrieved', $vehicle);
     }
