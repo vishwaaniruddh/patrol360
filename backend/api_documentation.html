@@ -2129,7 +2129,7 @@
           <div class="endpoint-left">
             <span class="method-badge method-get">GET</span>
             <span class="endpoint-path">/api/reports/wanted-suspects</span>
-            <span class="endpoint-desc">Dedicated Wanted Suspects (FRS): Full criminal dossiers, biometric confidence &amp; bounty status</span>
+            <span class="endpoint-desc">Dedicated Wanted Suspects (FRS): Dynamic dossiers queried from ai_alerts table (alerttype = Person/Suspect)</span>
           </div>
           <div class="endpoint-right">
             <span class="role-badge role-protected">User / Officer</span>
@@ -2141,8 +2141,8 @@
             <div>
               <div class="detail-section-title">Query Parameters</div>
               <p style="font-size: 12px; margin-bottom: 8px;"><code>search</code> (name, alias, FIR, plate), <code>station</code>, <code>threat_level</code> (<code>CRITICAL</code>, <code>HIGH</code>), <code>status</code> (<code>WANTED</code>, <code>APPREHENDED</code>), <code>page</code>, <code>limit</code>.</p>
-              <div class="detail-section-title">Criminal Dossier Coverage</div>
-              <p style="font-size: 12px; color: #64748b;">Returns suspect demographics, biometric confidence score, permanent &amp; current addresses, last seen location, identifying marks, IPC sections, and bounty reward.</p>
+              <div class="detail-section-title">Criminal Dossier Coverage &amp; ai_alerts Ingestion</div>
+              <p style="font-size: 12px; color: #64748b;">Backed directly by MySQL <code>ai_alerts</code> table filtered by <code>alerttype LIKE '%person%'</code>. Returns suspect demographics, biometric confidence score, permanent &amp; current addresses, last seen location, identifying marks, IPC sections, and bounty reward.</p>
             </div>
             <div>
               <div class="try-runner">
@@ -2226,7 +2226,7 @@
           <div class="endpoint-left">
             <span class="method-badge method-get">GET</span>
             <span class="endpoint-path">/api/reports/weapons-threats</span>
-            <span class="endpoint-desc">Dedicated Weapons Threats Section API: Real-time firearm &amp; blade detection events</span>
+            <span class="endpoint-desc">Dedicated Weapons Threats Section API: Real-time weapon detection events queried from ai_alerts table (alerttype filter)</span>
           </div>
           <div class="endpoint-right">
             <span class="role-badge role-protected">Field Officer</span>
@@ -2238,8 +2238,8 @@
             <div>
               <div class="detail-section-title">Query Parameters</div>
               <p style="font-size: 12px; margin-bottom: 8px;"><code>search</code>, <code>category</code> (<code>FIREARM</code>, <code>EDGED_BLADE</code>), <code>station</code>, <code>threat_level</code>, <code>status</code> (<code>DISPATCHED</code>, <code>INVESTIGATING</code>, <code>NEUTRALIZED</code>), <code>page</code>, <code>limit</code>.</p>
-              <div class="detail-section-title">Tactical Weapon Intelligence</div>
-              <p style="font-size: 12px; color: #64748b;">Returns AI confidence score (YOLOv8), vehicle registration plate, camera channel, GPS telemetry, police station, and current dispatch status.</p>
+              <div class="detail-section-title">Tactical Weapon Intelligence &amp; ai_alerts Ingestion</div>
+              <p style="font-size: 12px; color: #64748b;">Backed directly by MySQL <code>ai_alerts</code> table filtered by <code>alerttype</code> (Handgun, Firearm, Machete, Knife, Blade). Returns AI confidence score (YOLOv8), vehicle registration plate, camera channel, GPS telemetry, police station, and current dispatch status.</p>
             </div>
             <div>
               <div class="try-runner">

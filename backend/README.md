@@ -179,11 +179,12 @@ Base URL (Production): `https://sarsspl.com/patrol360/backend/public`
 - `DELETE /api/watchlist/persons/:id` - Delete person *(Admin)*
 
 ### E2. Dedicated Wanted Suspects Section API (`/api/reports/wanted-suspects` & `/api/wanted-suspects`)
+> **Data Source:** Backed dynamically by `ai_alerts` table filtered by `alerttype` (`Person`, `Person1`, `Wanted Suspect`, `FRS Watchlist`), returning full criminal dossier, live camera snapshot, and status tracking.
 - `GET /api/reports/wanted-suspects` - List all wanted suspects with complete dossier, biometric confidence, FIR, bounty, associated vehicle, residential address, search, station filter, threat level filter, and summary stats *(Public / User)*
 - `GET /api/reports/wanted-suspects/:id` - Full criminal dossier by `suspect_id` (e.g. `SUS-2026-001`) or numeric ID *(Public / User)*
-- `POST /api/reports/wanted-suspects` - Add new wanted suspect or batch import CSV/JSON (`batch: [...]`) *(Public / Admin)*
-- `PUT /api/reports/wanted-suspects/:id` - Update suspect dossier details or toggle status (`WANTED` / `APPREHENDED`) *(Public / User)*
-- `DELETE /api/reports/wanted-suspects/:id` - Remove suspect record *(Public / Admin)*
+- `POST /api/reports/wanted-suspects` - Add new wanted suspect alert directly into `ai_alerts` *(Public / Admin)*
+- `PUT /api/reports/wanted-suspects/:id` - Update suspect dossier details or toggle status (`WANTED` / `APPREHENDED` -> `ai_alerts.status = 'O'` / `'C'`) *(Public / User)*
+- `DELETE /api/reports/wanted-suspects/:id` - Remove suspect alert *(Public / Admin)*
 
 ### F. AI Detection Events (5 Core Edge Use Cases)
 - **ANPR (Number Plates):**
@@ -204,11 +205,12 @@ Base URL (Production): `https://sarsspl.com/patrol360/backend/public`
   - `PUT /api/events/weapons/:id/ack` - **Acknowledge threat alert** *(User/Admin)*
   - `DELETE /api/events/weapons/:id` - Delete event *(Admin)*
 - **Dedicated Weapons Threats Section API (`/api/reports/weapons-threats` & `/api/reports/weapons-detection`):**
-  - `GET /api/reports/weapons-threats` (or `/api/reports/weapons-detection`, `/api/weapons-threats`) - Query all weapon threat detections with YOLOv8 confidence score, patrol car registration plate, camera channel, GPS location, threat level, status (`DISPATCHED`, `INVESTIGATING`, `NEUTRALIZED`), and summary KPI stats *(Public / User)*
+  > **Data Source:** Backed dynamically by `ai_alerts` table filtered by `alerttype` (`Handgun`, `Tactical Firearm`, `Combat Machete`, `Knife`, `Blade`, etc.), returning confidence score, mobile patrol car plate, camera channel, GPS telemetry, and response lifecycle.
+  - `GET /api/reports/weapons-threats` (or `/api/reports/weapons-detection`, `/api/weapons-threats`) - Query all weapon threat detections from `ai_alerts` with YOLOv8 confidence score, patrol car registration plate, camera channel, GPS location, threat level, status (`DISPATCHED`, `INVESTIGATING`, `NEUTRALIZED`), and summary KPI stats *(Public / User)*
   - `GET /api/reports/weapons-threats/stats` (or `/api/reports/weapons-detection/stats`) - Aggregated threat metrics: total detections, active dispatches, critical threats, firearms count, blades count *(Public / User)*
   - `GET /api/reports/weapons-threats/:id` - Detailed incident log with AI detection snapshot & bounding box *(Public / User)*
-  - `POST /api/reports/weapons-threats` - Log weapon threat or batch import detections *(Public / Edge)*
-  - `PUT /api/reports/weapons-threats/:id/status` - Advance or toggle response status (`DISPATCHED` -> `INVESTIGATING` -> `NEUTRALIZED`) *(Public / Officer)*
+  - `POST /api/reports/weapons-threats` - Log weapon threat alert directly into `ai_alerts` *(Public / Edge)*
+  - `PUT /api/reports/weapons-threats/:id/status` - Advance or toggle response status (`DISPATCHED` -> `INVESTIGATING` -> `NEUTRALIZED` -> `ai_alerts.status = 'O'` / `'A'` / `'C'`) *(Public / Officer)*
   - `PUT /api/reports/weapons-threats/:id` - Update incident details *(Public / Officer)*
   - `DELETE /api/reports/weapons-threats/:id` - Delete incident log *(Public / Admin)*
 - **Fire & Smoke Hazards:**

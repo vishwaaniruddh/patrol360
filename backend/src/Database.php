@@ -185,6 +185,12 @@ class Database
                 self::seedInitialWeaponThreats($db);
             }
 
+            // 5. Ensure ai_alerts has weapon alerts for the dedicated Weapon Threats section
+            $aiWeaponCount = (int)$db->query("SELECT COUNT(*) FROM `ai_alerts` WHERE `alerttype` LIKE '%weapon%' OR `alerttype` LIKE '%gun%' OR `alerttype` LIKE '%knife%' OR `alerttype` LIKE '%blade%' OR `alerttype` LIKE '%pistol%' OR `alerttype` LIKE '%machete%'")->fetchColumn();
+            if ($aiWeaponCount === 0) {
+                self::seedInitialAiAlertWeapons($db);
+            }
+
         } catch (\Throwable $e) {
             // Silently continue so queries can execute safely even if ALTER permission is restricted
             error_log('ensureAiAlertColumns notice: ' . $e->getMessage());
@@ -596,6 +602,74 @@ class Database
                 $w['incident_status'],
                 $w['incident_status'] === 'NEUTRALIZED' ? 1 : 0,
                 $w['assigned_officer'], $w['ai_model']
+            ]);
+        }
+    }
+
+    private static function seedInitialAiAlertWeapons(PDO $db): void
+    {
+        $alerts = [
+            [
+                'vehicle_id' => 'TESTDEMO',
+                'camera_id' => '1',
+                'lat' => '23.022505',
+                'lon' => '72.571362',
+                'createtime' => date('Y-m-d H:i:s', strtotime('-15 minutes')),
+                'comment' => 'Tactical Edge AI: Concealed Pistol brandished in public market zone',
+                'status' => 'O',
+                'alerttype' => 'Handgun (9mm)',
+                'location' => 'Navrangpura Market Corridor',
+                'plate' => 'GJ01AB1234'
+            ],
+            [
+                'vehicle_id' => 'TESTDEMO',
+                'camera_id' => '3',
+                'lat' => '23.033800',
+                'lon' => '72.562900',
+                'createtime' => date('Y-m-d H:i:s', strtotime('-45 minutes')),
+                'comment' => 'Tactical Edge AI: Bladed weapon detected near commercial junction',
+                'status' => 'A',
+                'alerttype' => 'Combat Machete (14-inch)',
+                'location' => 'Ellisbridge Sector',
+                'plate' => 'GJ01CD5678'
+            ],
+            [
+                'vehicle_id' => 'TESTDEMO',
+                'camera_id' => '2',
+                'lat' => '23.045000',
+                'lon' => '72.528000',
+                'createtime' => date('Y-m-d H:i:s', strtotime('-2 hours')),
+                'comment' => 'Tactical Edge AI: High-caliber firearm spotted by patrol unit',
+                'status' => 'O',
+                'alerttype' => 'Assault Rifle (AK-47)',
+                'location' => 'SG Highway Flyover',
+                'plate' => 'GJ27TT9901'
+            ],
+            [
+                'vehicle_id' => 'TESTDEMO',
+                'camera_id' => '1',
+                'lat' => '23.011200',
+                'lon' => '72.585000',
+                'createtime' => date('Y-m-d H:i:s', strtotime('-6 hours')),
+                'comment' => 'Threat neutralized by Rapid Action Patrol intercept unit',
+                'status' => 'C',
+                'alerttype' => 'Concealed Revolver (.38 Special)',
+                'location' => 'Kalupur Central Corridor',
+                'plate' => 'GJ01EF9012'
+            ]
+        ];
+
+        $stmt = $db->prepare("
+            INSERT INTO `ai_alerts` (
+                `vehicle_id`, `camera_id`, `lat`, `lon`, `createtime`, `receivedtime`,
+                `comment`, `status`, `alerttype`, `location`, `ATMCode`, `scanned_vehicle_numberplate`
+            ) VALUES (?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?)
+        ");
+
+        foreach ($alerts as $a) {
+            $stmt->execute([
+                $a['vehicle_id'], $a['camera_id'], $a['lat'], $a['lon'], $a['createtime'],
+                $a['comment'], $a['status'], $a['alerttype'], $a['location'], $a['vehicle_id'], $a['plate']
             ]);
         }
     }

@@ -298,6 +298,10 @@ CREATE TABLE IF NOT EXISTS `audit_logs` (
 ) ENGINE=InnoDB;
 
 -- 14. REAL-TIME AI EDGE ALERTS TABLE
+-- Multi-domain edge alerts table backing:
+--   - Real-Time AI Threat Feed (/api/ai-alerts)
+--   - Wanted Suspects FRS Section (/api/reports/wanted-suspects) via alerttype LIKE '%person%' / '%suspect%'
+--   - Weapons Threats Section (/api/reports/weapons-threats) via alerttype LIKE '%weapon%' / '%gun%' / '%knife%' / '%blade%'
 CREATE TABLE IF NOT EXISTS `ai_alerts` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `vehicle_id` VARCHAR(50) NOT NULL,

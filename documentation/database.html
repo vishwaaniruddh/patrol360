@@ -314,6 +314,10 @@ CREATE TABLE IF NOT EXISTS central_api_dispatch_queue (
 CREATE INDEX idx_queue_status ON central_api_dispatch_queue(delivery_status, retry_count);
 
 -- 10. REAL-TIME AI EDGE ALERTS TABLE (ai_alerts)
+-- Multi-domain edge alerts table backing:
+--   - Real-Time AI Threat Feed (/api/ai-alerts)
+--   - Wanted Suspects FRS Section (/api/reports/wanted-suspects) via alerttype LIKE '%person%' / '%suspect%'
+--   - Weapons Threats Section (/api/reports/weapons-threats) via alerttype LIKE '%weapon%' / '%gun%' / '%knife%' / '%blade%'
 CREATE TABLE IF NOT EXISTS ai_alerts (
     id INT AUTO_INCREMENT PRIMARY KEY,
     vehicle_id VARCHAR(50) NOT NULL,

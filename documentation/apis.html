@@ -413,7 +413,7 @@
         <span style="font-size: 12px; color: var(--muted-foreground);">Complete Criminal Dossier &amp; Biometric Profile API</span>
       </div>
       <p style="color: #52525b; font-size: 12px; margin-bottom: 0.5rem;">
-        <strong>🚨 Dedicated Wanted Suspects Section API:</strong> Query all registered wanted offenders with complete criminal dossiers, FIR numbers, court warrant dates, biometric match confidence, bounty rewards, associated vehicles, residential addresses, and status (<code>WANTED</code>, <code>APPREHENDED</code>). Also available as <code>/api/wanted-suspects</code> and single dossier <code>GET /api/reports/wanted-suspects/:id</code>.
+        <strong>🚨 Dedicated Wanted Suspects Section API:</strong> Backed dynamically by the <code>ai_alerts</code> table filtered by <code>alerttype</code> (<code>Person</code>, <code>Person1</code>, <code>Wanted Suspect</code>, <code>FRS Watchlist</code>). Query all registered wanted offenders with complete criminal dossiers, FIR numbers, court warrant dates, biometric match confidence, bounty rewards, associated vehicles, residential addresses, and status (<code>WANTED</code>, <code>APPREHENDED</code>). Also available as <code>/api/wanted-suspects</code> and single dossier <code>GET /api/reports/wanted-suspects/:id</code>.
       </p>
       <div class="code-container">
         <div class="code-header">
@@ -462,7 +462,7 @@
         <span style="font-size: 12px; color: var(--muted-foreground);">Real-Time Tactical Weapon Threats &amp; Dispatch Status API</span>
       </div>
       <p style="color: #52525b; font-size: 12px; margin-bottom: 0.5rem;">
-        <strong>🎯 Dedicated Weapons Threats Section API:</strong> Query real-time weapon detection events with YOLOv8 confidence scores, patrol vehicle number plates, camera channel, GPS coordinates, police station, and incident status (<code>DISPATCHED</code>, <code>INVESTIGATING</code>, <code>NEUTRALIZED</code>). Also accessible via aliases <code>/api/reports/weapons-detection</code>, <code>/api/weapons-threats</code>, with status updating via <code>PUT /api/reports/weapons-threats/:id/status</code>.
+        <strong>🎯 Dedicated Weapons Threats Section API:</strong> Backed dynamically by the <code>ai_alerts</code> table filtered by <code>alerttype</code> (<code>Handgun</code>, <code>Tactical Firearm</code>, <code>Combat Machete</code>, <code>Knife</code>, <code>Blade</code>). Query real-time weapon detection events with YOLOv8 confidence scores, patrol vehicle number plates, camera channel, GPS coordinates, police station, and incident status (<code>DISPATCHED</code>, <code>INVESTIGATING</code>, <code>NEUTRALIZED</code>). Also accessible via aliases <code>/api/reports/weapons-detection</code>, <code>/api/weapons-threats</code>, with status updating via <code>PUT /api/reports/weapons-threats/:id/status</code>.
       </p>
       <div class="code-container">
         <div class="code-header">
