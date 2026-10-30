@@ -231,22 +231,27 @@ class CameraController
         Response::success("Camera '{$camera['camera_id']}' removed successfully");
     }
 
-    /**
+        /**
      * Live MJPEG video stream proxy for camera feeds
      * Prevents browser Mixed Content blocking and SSL protocol errors (ERR_SSL_PROTOCOL_ERROR) on HTTPS production servers
      */
     public function stream(array $args): void
     {
+        // Close session immediately so other concurrent requests/APIs from same client are never blocked
         if (session_status() === PHP_SESSION_ACTIVE) {
-            session_write_close(); ignore_user_abort(false);
+            session_write_close();
         }
+        ignore_user_abort(false);
 
+        // Disable all server-level response buffering for instant real-time frame streaming
         if (function_exists('apache_setenv')) {
             @apache_setenv('no-gzip', '1');
+            @apache_setenv('dont-vary', '1');
         }
         @ini_set('zlib.output_compression', 'Off');
         @ini_set('output_buffering', 'Off');
         @ini_set('implicit_flush', '1');
+        @ini_set('max_execution_time', '0');
 
         if (function_exists('set_time_limit')) {
             @set_time_limit(0);
@@ -261,13 +266,18 @@ class CameraController
         $targetUrl = null;
 
         if ($name) {
-            $targetUrl = 'http://223.182.122.63:7000/?name=' . $name;
+            $targetUrl = 'http://223.182.122.63:7000/?name=' . trim((string)$name);
         } elseif ($id) {
             $stmt = $this->db->prepare("SELECT * FROM `vehicle_cameras` WHERE id = ? OR camera_id = ? LIMIT 1");
             $stmt->execute([$id, $id]);
             $camera = $stmt->fetch();
             if ($camera) {
                 $targetUrl = CameraHelper::buildLiveViewUrl($camera);
+            } else {
+                $targetUrl = CameraHelper::buildLiveViewUrl([
+                    'camera_id' => $id,
+                    'mount_position' => 'FRONT'
+                ]);
             }
         }
 
@@ -278,32 +288,84 @@ class CameraController
             exit;
         }
 
-        $ctx = stream_context_create([
-            'http' => [
-                'method' => 'GET',
-                'timeout' => 8,
-                'header' => "User-Agent: Patrol360-Proxy/1.0\r\n"
-            ]
-        ]);
-
-        $fp = @fopen($targetUrl, 'rb', false, $ctx);
-        if (!$fp) {
-            http_response_code(502);
-            header('Content-Type: text/plain; charset=utf-8');
-            echo "Unable to reach live streaming gateway at 223.182.122.63:7000";
-            exit;
-        }
-
+        // Clean streaming headers for multipart MJPEG video
         header('Content-Type: multipart/x-mixed-replace; boundary=frame');
-        header('Cache-Control: no-cache, no-store, must-revalidate');
+        header('Cache-Control: no-cache, no-store, must-revalidate, no-transform');
         header('Pragma: no-cache');
         header('Expires: 0');
         header('Access-Control-Allow-Origin: *');
         header('Access-Control-Allow-Methods: GET, OPTIONS');
         header('Access-Control-Allow-Headers: *');
         header('X-Accel-Buffering: no');
+        header('Content-Encoding: none');
 
-        fpassthru($fp);
+        // Prefer cURL for high-performance chunked unbuffered streaming with infinite stream timeout
+        if (function_exists('curl_init')) {
+            $ch = curl_init($targetUrl);
+            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 20); // 20s TCP connect timeout
+            curl_setopt($ch, CURLOPT_TIMEOUT, 0);        // Infinite stream timeout
+            curl_setopt($ch, CURLOPT_USERAGENT, 'Patrol360-LiveRTSP-Proxy/2.0');
+            curl_setopt($ch, CURLOPT_BUFFERSIZE, 8192);
+            curl_setopt($ch, CURLOPT_HEADER, false);
+
+            curl_setopt($ch, CURLOPT_WRITEFUNCTION, function ($ch, $data) {
+                if (connection_aborted()) {
+                    return 0; // Abort upstream cURL connection when client disconnects
+                }
+                echo $data;
+                if (ob_get_level() > 0) {
+                    @ob_flush();
+                }
+                @flush();
+                return strlen($data);
+            });
+
+            $success = curl_exec($ch);
+            $err = curl_error($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if (!$success && !headers_sent()) {
+                http_response_code(502);
+                header('Content-Type: text/plain; charset=utf-8');
+                echo "Live streaming gateway error: " . $err . " (HTTP " . $httpCode . ")";
+            }
+            exit;
+        }
+
+        // Resilient fallback to stream context if cURL is unavailable
+        $ctx = stream_context_create([
+            'http' => [
+                'method' => 'GET',
+                'timeout' => 45, // 45s for RTSP I-frame keyframe arrival
+                'header' => "User-Agent: Patrol360-LiveRTSP-Proxy/2.0
+"
+            ]
+        ]);
+
+        $fp = @fopen($targetUrl, 'rb', false, $ctx);
+        if (!$fp) {
+            if (!headers_sent()) {
+                http_response_code(502);
+                header('Content-Type: text/plain; charset=utf-8');
+                echo "Unable to reach live streaming gateway at 223.182.122.63:7000";
+            }
+            exit;
+        }
+
+        while (!feof($fp) && !connection_aborted()) {
+            $chunk = fread($fp, 8192);
+            if ($chunk === false || $chunk === '') {
+                break;
+            }
+            echo $chunk;
+            if (ob_get_level() > 0) {
+                @ob_flush();
+            }
+            @flush();
+        }
+
         fclose($fp);
         exit;
     }

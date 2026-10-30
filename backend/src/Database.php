@@ -89,6 +89,12 @@ class Database
                 if (!in_array('channel', $camCols, true)) {
                     $db->exec("ALTER TABLE `vehicle_cameras` ADD COLUMN `channel` INT(5) DEFAULT NULL");
                 }
+
+                // Auto-populate active patrol DVR credentials & streaming channels for any cameras missing credentials
+                $db->exec("UPDATE `vehicle_cameras` SET `username` = 'admin', `password` = 'ZTKBEV', `ip` = '223.182.122.63', `dvrname` = 'Hikvision', `dvr_port` = '80', `rtsp_port` = '554', `channel` = 1 WHERE `mount_position` = 'FRONT' AND (`username` IS NULL OR `password` IS NULL OR `ip` IS NULL)");
+                $db->exec("UPDATE `vehicle_cameras` SET `username` = 'admin', `password` = 'ZTKBEV', `ip` = '223.182.122.63', `dvrname` = 'Hikvision', `dvr_port` = '80', `rtsp_port` = '554', `channel` = 2 WHERE `mount_position` = 'REAR' AND (`username` IS NULL OR `password` IS NULL OR `ip` IS NULL)");
+                $db->exec("UPDATE `vehicle_cameras` SET `username` = 'admin', `password` = 'ZTKBEV', `ip` = '223.182.122.63', `dvrname` = 'Hikvision', `dvr_port` = '80', `rtsp_port` = '554', `channel` = 3 WHERE `mount_position` = 'LEFT' AND (`username` IS NULL OR `password` IS NULL OR `ip` IS NULL)");
+                $db->exec("UPDATE `vehicle_cameras` SET `username` = 'admin', `password` = 'ZTKBEV', `ip` = '223.182.122.63', `dvrname` = 'Hikvision', `dvr_port` = '80', `rtsp_port` = '554', `channel` = 4 WHERE `mount_position` = 'RIGHT' AND (`username` IS NULL OR `password` IS NULL OR `ip` IS NULL)");
             }
 
             // 3. wanted_suspects table creation & initial seed
