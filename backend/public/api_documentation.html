@@ -2358,7 +2358,11 @@
       // Auto-detect environment base URL
       const isLocalHost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
       if (!isLocalHost && window.location.hostname) {
-        baseUrlInput.value = window.location.origin + '/vehicle_gov/backend/public';
+        baseUrlInput.value = window.location.hostname.includes('patrol360.sarsspl.com')
+          ? window.location.origin + '/backend/public'
+          : (window.location.hostname.includes('sarsspl.com')
+            ? window.location.origin + '/patrol360/backend/public'
+            : window.location.origin + '/backend/public');
         const serverStatus = document.getElementById('serverLatency');
         if (serverStatus) {
           serverStatus.innerHTML = `Server: <strong style="color: #0f172a;">${window.location.hostname}</strong> (Live Production)`;

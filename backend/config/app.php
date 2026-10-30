@@ -28,9 +28,13 @@ if (getenv('APP_ENV') === 'production') {
     $isLocal = true;
 }
 
+$liveBaseUrl = (!empty($_SERVER['HTTP_HOST']) && str_contains($_SERVER['HTTP_HOST'], 'patrol360.sarsspl.com'))
+    ? 'https://patrol360.sarsspl.com/backend/public'
+    : 'https://sarsspl.com/patrol360/backend/public';
+
 $baseUrl = $isLocal 
     ? 'http://localhost/vehicle_gov/backend/public' 
-    : 'https://sarsspl.com/patrol360/backend/public';
+    : $liveBaseUrl;
 
 $env = $isLocal ? 'development' : 'production';
 
