@@ -236,13 +236,26 @@ CREATE TABLE IF NOT EXISTS anpr_detection_events (
 );
 CREATE INDEX idx_anpr_plate_time ON anpr_detection_events(detected_plate_number, timestamp DESC);
 
--- 6. WEAPON THREAT DETECTIONS LOG
-CREATE TABLE IF NOT EXISTS weapon_threat_detections (
+-- 6. WEAPON THREAT DETECTIONS LOG (weapon_threat_events)
+CREATE TABLE IF NOT EXISTS weapon_threat_events (
     threat_id VARCHAR(64) PRIMARY KEY,
+    event_id VARCHAR(64) UNIQUE,
     vehicle_id VARCHAR(32) REFERENCES police_vehicles(vehicle_id),
     camera_id VARCHAR(32) REFERENCES vehicle_cameras(camera_id),
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     weapon_class VARCHAR(32) NOT NULL, -- 'HANDGUN', 'RIFLE', 'KNIFE'
+    weapon_type VARCHAR(128) DEFAULT 'Tactical Firearm / Weapon',
+    weapon_category VARCHAR(64) DEFAULT 'FIREARM',
+    confidence_score DECIMAL(5, 2) DEFAULT 95.00,
+    registration_number VARCHAR(32) DEFAULT 'GJ-01-G-9999',
+    camera_channel VARCHAR(32) DEFAULT 'CAM_01_FRONT',
+    location_name VARCHAR(255) DEFAULT 'Ahmedabad Metro Patrol Sector',
+    police_station VARCHAR(128) DEFAULT 'Navrangpura Police Station',
+    detected_timestamp VARCHAR(32),
+    threat_level VARCHAR(32) DEFAULT 'CRITICAL',
+    incident_status VARCHAR(32) DEFAULT 'DISPATCHED',
+    assigned_officer VARCHAR(128) DEFAULT 'City Tactical Command Unit',
+    ai_model VARCHAR(64) DEFAULT 'YOLOv8-Tactical-Weapon-v3',
     confidence NUMERIC(5, 2) NOT NULL,
     bounding_box_json TEXT,
     severity_level VARCHAR(16) DEFAULT 'CRITICAL_RED',
@@ -250,6 +263,7 @@ CREATE TABLE IF NOT EXISTS weapon_threat_detections (
     longitude NUMERIC(10, 6),
     snapshot_url TEXT,
     video_clip_url TEXT,
+    is_acknowledged TINYINT(1) DEFAULT 0,
     operator_ack_by VARCHAR(64),
     hq_sync_status VARCHAR(16) DEFAULT 'DELIVERED'
 );
@@ -325,7 +339,43 @@ CREATE TABLE IF NOT EXISTS ai_alerts (
 CREATE INDEX idx_ai_alerts_veh ON ai_alerts(vehicle_id);
 CREATE INDEX idx_ai_alerts_status ON ai_alerts(status);
 CREATE INDEX idx_ai_alerts_type ON ai_alerts(alerttype);
-CREATE INDEX idx_ai_alerts_plate ON ai_alerts(scanned_vehicle_numberplate);</pre>
+CREATE INDEX idx_ai_alerts_plate ON ai_alerts(scanned_vehicle_numberplate);
+
+-- 11. DEDICATED WANTED SUSPECTS INTELLIGENCE (wanted_suspects)
+CREATE TABLE IF NOT EXISTS wanted_suspects (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    suspect_id VARCHAR(64) NOT NULL UNIQUE,
+    full_name VARCHAR(128) NOT NULL,
+    alias VARCHAR(128),
+    photo_url TEXT,
+    age INT,
+    gender VARCHAR(16) DEFAULT 'Male',
+    blood_group VARCHAR(8),
+    height VARCHAR(32),
+    father_name VARCHAR(128),
+    aadhaar_ref VARCHAR(32),
+    fir_number VARCHAR(64),
+    crime_category VARCHAR(128) NOT NULL,
+    threat_level VARCHAR(32) DEFAULT 'CRITICAL',
+    wanted_by_station VARCHAR(128),
+    bounty_reward VARCHAR(32),
+    associated_vehicle VARCHAR(32),
+    associated_vehicle_desc VARCHAR(128),
+    permanent_address TEXT,
+    current_address TEXT,
+    last_seen VARCHAR(255),
+    identifying_marks TEXT,
+    ipc_sections TEXT,
+    investigating_officer VARCHAR(128),
+    court_name VARCHAR(128),
+    warrant_issue_date VARCHAR(32),
+    biometric_confidence VARCHAR(16) DEFAULT '98.5%',
+    status VARCHAR(32) DEFAULT 'WANTED',
+    reported_date VARCHAR(32),
+    is_active TINYINT(1) DEFAULT 1
+);
+CREATE INDEX idx_suspect_id ON wanted_suspects(suspect_id);
+CREATE INDEX idx_suspect_status ON wanted_suspects(status);</pre>
       </div>
     </div>
   </main>

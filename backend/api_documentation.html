@@ -2123,6 +2123,46 @@
         <span class="section-badge">Facial AI</span>
       </div>
 
+      <!-- GET /api/reports/wanted-suspects -->
+      <div class="endpoint-card" data-category="frs" data-method="GET" data-path="/api/reports/wanted-suspects" data-role="both">
+        <div class="endpoint-summary" onclick="toggleEndpoint(this)">
+          <div class="endpoint-left">
+            <span class="method-badge method-get">GET</span>
+            <span class="endpoint-path">/api/reports/wanted-suspects</span>
+            <span class="endpoint-desc">Dedicated Wanted Suspects (FRS): Full criminal dossiers, biometric confidence &amp; bounty status</span>
+          </div>
+          <div class="endpoint-right">
+            <span class="role-badge role-protected">User / Officer</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="endpoint-details">
+          <div class="details-grid">
+            <div>
+              <div class="detail-section-title">Query Parameters</div>
+              <p style="font-size: 12px; margin-bottom: 8px;"><code>search</code> (name, alias, FIR, plate), <code>station</code>, <code>threat_level</code> (<code>CRITICAL</code>, <code>HIGH</code>), <code>status</code> (<code>WANTED</code>, <code>APPREHENDED</code>), <code>page</code>, <code>limit</code>.</p>
+              <div class="detail-section-title">Criminal Dossier Coverage</div>
+              <p style="font-size: 12px; color: #64748b;">Returns suspect demographics, biometric confidence score, permanent &amp; current addresses, last seen location, identifying marks, IPC sections, and bounty reward.</p>
+            </div>
+            <div>
+              <div class="try-runner">
+                <div class="try-header">
+                  <span>Interactive Test Runner</span>
+                  <button class="execute-btn" onclick="executeApi(this, 'GET', '/api/reports/wanted-suspects?limit=5')">Send Request</button>
+                </div>
+                <div class="response-container">
+                  <div class="response-status-bar">
+                    <span>Status: <span class="status-code-badge status-200">200 OK</span></span>
+                    <span class="latency-timer">20 ms</span>
+                  </div>
+                  <div class="code-box"><pre class="response-body"></pre></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- PUT /api/events/frs/:id/verify -->
       <div class="endpoint-card" data-category="frs" data-method="PUT" data-path="/api/events/frs/:id/verify" data-role="both">
         <div class="endpoint-summary" onclick="toggleEndpoint(this)">
@@ -2178,6 +2218,46 @@
       <div class="section-title" data-category="weapons">
         <span>7. Tactical Weapon Threat Detections</span>
         <span class="section-badge">Armed Threats</span>
+      </div>
+
+      <!-- GET /api/reports/weapons-threats -->
+      <div class="endpoint-card" data-category="weapons" data-method="GET" data-path="/api/reports/weapons-threats" data-role="both">
+        <div class="endpoint-summary" onclick="toggleEndpoint(this)">
+          <div class="endpoint-left">
+            <span class="method-badge method-get">GET</span>
+            <span class="endpoint-path">/api/reports/weapons-threats</span>
+            <span class="endpoint-desc">Dedicated Weapons Threats Section API: Real-time firearm &amp; blade detection events</span>
+          </div>
+          <div class="endpoint-right">
+            <span class="role-badge role-protected">Field Officer</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="endpoint-details">
+          <div class="details-grid">
+            <div>
+              <div class="detail-section-title">Query Parameters</div>
+              <p style="font-size: 12px; margin-bottom: 8px;"><code>search</code>, <code>category</code> (<code>FIREARM</code>, <code>EDGED_BLADE</code>), <code>station</code>, <code>threat_level</code>, <code>status</code> (<code>DISPATCHED</code>, <code>INVESTIGATING</code>, <code>NEUTRALIZED</code>), <code>page</code>, <code>limit</code>.</p>
+              <div class="detail-section-title">Tactical Weapon Intelligence</div>
+              <p style="font-size: 12px; color: #64748b;">Returns AI confidence score (YOLOv8), vehicle registration plate, camera channel, GPS telemetry, police station, and current dispatch status.</p>
+            </div>
+            <div>
+              <div class="try-runner">
+                <div class="try-header">
+                  <span>Interactive Test Runner</span>
+                  <button class="execute-btn" onclick="executeApi(this, 'GET', '/api/reports/weapons-threats?limit=5')">Send Request</button>
+                </div>
+                <div class="response-container">
+                  <div class="response-status-bar">
+                    <span>Status: <span class="status-code-badge status-200">200 OK</span></span>
+                    <span class="latency-timer">22 ms</span>
+                  </div>
+                  <div class="code-box"><pre class="response-body"></pre></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- PUT /api/events/weapons/:id/ack -->

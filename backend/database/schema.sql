@@ -111,6 +111,45 @@ CREATE TABLE IF NOT EXISTS `person_watchlist` (
     INDEX `idx_person_name` (`full_name`)
 ) ENGINE=InnoDB;
 
+-- 6b. DEDICATED WANTED SUSPECTS DOSSIER (COMPLETE PROFILE & BIOMETRIC INTELLIGENCE)
+CREATE TABLE IF NOT EXISTS `wanted_suspects` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `suspect_id` VARCHAR(64) NOT NULL UNIQUE,
+    `full_name` VARCHAR(128) NOT NULL,
+    `alias` VARCHAR(128) NULL,
+    `photo_url` TEXT NULL,
+    `age` INT NULL,
+    `gender` VARCHAR(16) DEFAULT 'Male',
+    `blood_group` VARCHAR(8) NULL,
+    `height` VARCHAR(32) NULL,
+    `father_name` VARCHAR(128) NULL,
+    `aadhaar_ref` VARCHAR(32) NULL,
+    `fir_number` VARCHAR(64) NULL,
+    `crime_category` VARCHAR(128) NOT NULL,
+    `threat_level` VARCHAR(32) DEFAULT 'CRITICAL',
+    `wanted_by_station` VARCHAR(128) NULL,
+    `bounty_reward` VARCHAR(32) NULL,
+    `associated_vehicle` VARCHAR(32) NULL,
+    `associated_vehicle_desc` VARCHAR(128) NULL,
+    `permanent_address` TEXT NULL,
+    `current_address` TEXT NULL,
+    `last_seen` VARCHAR(255) NULL,
+    `identifying_marks` TEXT NULL,
+    `ipc_sections` TEXT NULL,
+    `investigating_officer` VARCHAR(128) NULL,
+    `court_name` VARCHAR(128) NULL,
+    `warrant_issue_date` VARCHAR(32) NULL,
+    `biometric_confidence` VARCHAR(16) DEFAULT '98.5%',
+    `status` VARCHAR(32) DEFAULT 'WANTED',
+    `reported_date` VARCHAR(32) NULL,
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX `idx_suspect_id` (`suspect_id`),
+    INDEX `idx_suspect_name` (`full_name`),
+    INDEX `idx_suspect_status` (`status`)
+) ENGINE=InnoDB;
+
 -- 7. ANPR DETECTION EVENTS (PLATES DETECTED IN REAL TIME)
 CREATE TABLE IF NOT EXISTS `anpr_detection_events` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -166,6 +205,18 @@ CREATE TABLE IF NOT EXISTS `weapon_threat_events` (
     `camera_id` VARCHAR(32) NOT NULL,
     `weapon_class` VARCHAR(32) NOT NULL,
     `confidence` DECIMAL(5, 2) NOT NULL,
+    `weapon_type` VARCHAR(128) DEFAULT 'Tactical Firearm / Weapon',
+    `weapon_category` VARCHAR(64) DEFAULT 'FIREARM',
+    `confidence_score` DECIMAL(5, 2) DEFAULT 95.00,
+    `registration_number` VARCHAR(32) DEFAULT 'GJ-01-G-9999',
+    `camera_channel` VARCHAR(32) DEFAULT 'CAM_01_FRONT',
+    `location_name` VARCHAR(255) DEFAULT 'Ahmedabad Metro Patrol Sector',
+    `police_station` VARCHAR(128) DEFAULT 'Navrangpura Police Station',
+    `detected_timestamp` VARCHAR(32) NULL,
+    `threat_level` VARCHAR(32) DEFAULT 'CRITICAL',
+    `incident_status` VARCHAR(32) DEFAULT 'DISPATCHED',
+    `assigned_officer` VARCHAR(128) DEFAULT 'City Tactical Command Unit',
+    `ai_model` VARCHAR(64) DEFAULT 'YOLOv8-Tactical-Weapon-v3',
     `bounding_box_json` TEXT NULL,
     `severity_level` ENUM('LOW', 'MEDIUM', 'HIGH', 'CRITICAL_RED') DEFAULT 'CRITICAL_RED',
     `latitude` DECIMAL(10, 7) NULL,
@@ -177,7 +228,8 @@ CREATE TABLE IF NOT EXISTS `weapon_threat_events` (
     `hq_sync_status` ENUM('PENDING', 'DELIVERED', 'FAILED') DEFAULT 'DELIVERED',
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX `idx_weapon_time` (`created_at` DESC),
-    INDEX `idx_weapon_ack` (`is_acknowledged`)
+    INDEX `idx_weapon_ack` (`is_acknowledged`),
+    INDEX `idx_weapon_status` (`incident_status`)
 ) ENGINE=InnoDB;
 
 -- 10. FIRE & SMOKE HAZARD EVENTS

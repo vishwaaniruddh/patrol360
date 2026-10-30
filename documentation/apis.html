@@ -402,6 +402,103 @@
       </div>
     </div>
 
+    <!-- 5c. DEDICATED WANTED SUSPECTS (FRS) SECTION API -->
+    <div class="card api-card" data-role="both">
+      <div class="card-title">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span class="badge badge-get">GET</span>
+          <span style="font-family: var(--font-mono); font-size: 14px;">/api/reports/wanted-suspects</span>
+          <span style="background: #fee2e2; color: #991b1b; font-size: 11px; padding: 2px 8px; border-radius: 9999px; font-weight: 600;">Wanted Suspects FRS</span>
+        </div>
+        <span style="font-size: 12px; color: var(--muted-foreground);">Complete Criminal Dossier &amp; Biometric Profile API</span>
+      </div>
+      <p style="color: #52525b; font-size: 12px; margin-bottom: 0.5rem;">
+        <strong>🚨 Dedicated Wanted Suspects Section API:</strong> Query all registered wanted offenders with complete criminal dossiers, FIR numbers, court warrant dates, biometric match confidence, bounty rewards, associated vehicles, residential addresses, and status (<code>WANTED</code>, <code>APPREHENDED</code>). Also available as <code>/api/wanted-suspects</code> and single dossier <code>GET /api/reports/wanted-suspects/:id</code>.
+      </p>
+      <div class="code-container">
+        <div class="code-header">
+          <span>SAMPLE RESPONSE (GET /api/reports/wanted-suspects)</span>
+          <button class="btn-sm" onclick="copySnippet(this)">Copy JSON</button>
+        </div>
+        <pre class="code-body">{
+  "success": true,
+  "message": "Wanted suspects retrieved successfully",
+  "data": [
+    {
+      "suspect_id": "SUS-2026-001",
+      "full_name": "Devendra K. Sharma",
+      "alias": "Deva Shooter",
+      "photo_url": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600",
+      "age": 34,
+      "gender": "Male",
+      "fir_number": "FIR-2026-NAV-00492",
+      "crime_category": "Armed Carjacking & Robbery",
+      "threat_level": "CRITICAL",
+      "wanted_by_station": "Navrangpura Police Station",
+      "bounty_reward": "₹1,00,000",
+      "associated_vehicle": "GJ01AB1234",
+      "biometric_confidence": "98.6%",
+      "status": "WANTED"
+    }
+  ],
+  "stats": {
+    "total_wanted": 7,
+    "critical_threats": 5,
+    "active_wanted": 7,
+    "apprehended_count": 0
+  }
+}</pre>
+      </div>
+    </div>
+
+    <!-- 5d. DEDICATED WEAPONS THREATS SECTION API -->
+    <div class="card api-card" data-role="both">
+      <div class="card-title">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span class="badge badge-get">GET</span>
+          <span style="font-family: var(--font-mono); font-size: 14px;">/api/reports/weapons-threats</span>
+          <span style="background: #ffedd5; color: #9a3412; font-size: 11px; padding: 2px 8px; border-radius: 9999px; font-weight: 600;">Weapons Detection</span>
+        </div>
+        <span style="font-size: 12px; color: var(--muted-foreground);">Real-Time Tactical Weapon Threats &amp; Dispatch Status API</span>
+      </div>
+      <p style="color: #52525b; font-size: 12px; margin-bottom: 0.5rem;">
+        <strong>🎯 Dedicated Weapons Threats Section API:</strong> Query real-time weapon detection events with YOLOv8 confidence scores, patrol vehicle number plates, camera channel, GPS coordinates, police station, and incident status (<code>DISPATCHED</code>, <code>INVESTIGATING</code>, <code>NEUTRALIZED</code>). Also accessible via aliases <code>/api/reports/weapons-detection</code>, <code>/api/weapons-threats</code>, with status updating via <code>PUT /api/reports/weapons-threats/:id/status</code>.
+      </p>
+      <div class="code-container">
+        <div class="code-header">
+          <span>SAMPLE RESPONSE (GET /api/reports/weapons-threats)</span>
+          <button class="btn-sm" onclick="copySnippet(this)">Copy JSON</button>
+        </div>
+        <pre class="code-body">{
+  "success": true,
+  "message": "Weapon threats retrieved successfully",
+  "data": [
+    {
+      "event_id": "WPN-2026-001",
+      "weapon_type": "Semi-Automatic Pistol (9mm)",
+      "weapon_category": "FIREARM",
+      "confidence_score": 97.8,
+      "registration_number": "GJ-01-G-9999",
+      "camera_channel": "CAM_01_FRONT",
+      "location_name": "Navrangpura Circle, Near Municipal Market",
+      "police_station": "Navrangpura Police Station",
+      "threat_level": "CRITICAL",
+      "incident_status": "DISPATCHED",
+      "assigned_officer": "Insp. Vikram Solanki (Badge #NP-402)",
+      "ai_model": "YOLOv8-Tactical-Weapon-v3"
+    }
+  ],
+  "stats": {
+    "total_detections": 7,
+    "active_dispatches": 4,
+    "investigating_count": 2,
+    "neutralized_count": 1,
+    "critical_threats": 4
+  }
+}</pre>
+      </div>
+    </div>
+
     <!-- OFFICER & PATROL OPERATOR INTELLIGENCE APIS -->
     <div class="card" style="border-left: 4px solid #10b981;">
       <div class="card-title">

@@ -30,6 +30,8 @@ use App\Controllers\SystemController;
 use App\Controllers\SyncController;
 use App\Controllers\AiAlertController;
 use App\Controllers\OfficerController;
+use App\Controllers\WantedSuspectController;
+use App\Controllers\WeaponThreatController;
 
 // Enable CORS and handle OPTIONS preflight
 CorsMiddleware::handle();
@@ -122,6 +124,22 @@ $router->put('/api/watchlist/persons/:id', [WatchlistPersonController::class, 'u
 $router->delete('/api/watchlist/persons/:id', [WatchlistPersonController::class, 'destroy'], [$admin]);
 
 // ============================================================================
+// 8b. DEDICATED WANTED SUSPECTS SECTION API
+// ============================================================================
+$router->get('/api/reports/wanted-suspects', [WantedSuspectController::class, 'index'], []);
+$router->get('/api/reports/wanted-suspects/:id', [WantedSuspectController::class, 'show'], []);
+$router->post('/api/reports/wanted-suspects', [WantedSuspectController::class, 'store'], []);
+$router->put('/api/reports/wanted-suspects/:id', [WantedSuspectController::class, 'update'], []);
+$router->delete('/api/reports/wanted-suspects/:id', [WantedSuspectController::class, 'destroy'], []);
+
+// Direct aliases
+$router->get('/api/wanted-suspects', [WantedSuspectController::class, 'index'], []);
+$router->get('/api/wanted-suspects/:id', [WantedSuspectController::class, 'show'], []);
+$router->post('/api/wanted-suspects', [WantedSuspectController::class, 'store'], []);
+$router->put('/api/wanted-suspects/:id', [WantedSuspectController::class, 'update'], []);
+$router->delete('/api/wanted-suspects/:id', [WantedSuspectController::class, 'destroy'], []);
+
+// ============================================================================
 // 9. ANPR DETECTION EVENTS
 // ============================================================================
 $router->get('/api/events/anpr/stats', [EventAnprController::class, 'stats'], [$auth]);
@@ -152,6 +170,34 @@ $router->get('/api/events/weapons/:id', [EventWeaponController::class, 'show'], 
 $router->put('/api/events/weapons/:id/ack', [EventWeaponController::class, 'acknowledge'], [$auth]);
 $router->put('/api/events/weapons/:id', [EventWeaponController::class, 'update'], [$auth]);
 $router->delete('/api/events/weapons/:id', [EventWeaponController::class, 'destroy'], [$admin]);
+
+// ============================================================================
+// 11b. DEDICATED WEAPONS THREATS SECTION API
+// ============================================================================
+$router->get('/api/reports/weapons-threats/stats', [WeaponThreatController::class, 'stats'], []);
+$router->get('/api/reports/weapons-threats', [WeaponThreatController::class, 'index'], []);
+$router->get('/api/reports/weapons-threats/:id', [WeaponThreatController::class, 'show'], []);
+$router->post('/api/reports/weapons-threats', [WeaponThreatController::class, 'store'], []);
+$router->put('/api/reports/weapons-threats/:id/status', [WeaponThreatController::class, 'updateStatus'], []);
+$router->put('/api/reports/weapons-threats/:id', [WeaponThreatController::class, 'update'], []);
+$router->delete('/api/reports/weapons-threats/:id', [WeaponThreatController::class, 'destroy'], []);
+
+// Direct aliases matching frontend /api/reports/weapons-detection & /api/weapons-threats
+$router->get('/api/reports/weapons-detection/stats', [WeaponThreatController::class, 'stats'], []);
+$router->get('/api/reports/weapons-detection', [WeaponThreatController::class, 'index'], []);
+$router->get('/api/reports/weapons-detection/:id', [WeaponThreatController::class, 'show'], []);
+$router->post('/api/reports/weapons-detection', [WeaponThreatController::class, 'store'], []);
+$router->put('/api/reports/weapons-detection/:id/status', [WeaponThreatController::class, 'updateStatus'], []);
+$router->put('/api/reports/weapons-detection/:id', [WeaponThreatController::class, 'update'], []);
+$router->delete('/api/reports/weapons-detection/:id', [WeaponThreatController::class, 'destroy'], []);
+
+$router->get('/api/weapons-threats/stats', [WeaponThreatController::class, 'stats'], []);
+$router->get('/api/weapons-threats', [WeaponThreatController::class, 'index'], []);
+$router->get('/api/weapons-threats/:id', [WeaponThreatController::class, 'show'], []);
+$router->post('/api/weapons-threats', [WeaponThreatController::class, 'store'], []);
+$router->put('/api/weapons-threats/:id/status', [WeaponThreatController::class, 'updateStatus'], []);
+$router->put('/api/weapons-threats/:id', [WeaponThreatController::class, 'update'], []);
+$router->delete('/api/weapons-threats/:id', [WeaponThreatController::class, 'destroy'], []);
 
 // ============================================================================
 // 12. FIRE & SMOKE HAZARD EVENTS
