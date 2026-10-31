@@ -269,7 +269,7 @@ CREATE TABLE IF NOT EXISTS `crowd_analytics_events` (
     INDEX `idx_crowd_time` (`created_at` DESC)
 ) ENGINE=InnoDB;
 
--- 12. STORE-AND-FORWARD OFFLINE QUEUE
+-- 12. STORE-AND-FORWARD OFFLINE QUEUE (PATROL360 CENTRAL GOV DISPATCH)
 CREATE TABLE IF NOT EXISTS `central_api_dispatch_queue` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
     `event_id` VARCHAR(64) NOT NULL UNIQUE,
@@ -279,8 +279,13 @@ CREATE TABLE IF NOT EXISTS `central_api_dispatch_queue` (
     `retry_count` INT DEFAULT 0,
     `last_retry_at` TIMESTAMP NULL,
     `delivery_status` ENUM('QUEUED', 'SENT_200', 'FAILED') DEFAULT 'QUEUED',
+    `external_item_id` VARCHAR(128) DEFAULT NULL,
+    `external_received_at` VARCHAR(64) DEFAULT NULL,
+    `http_code` INT DEFAULT NULL,
+    `response_body` TEXT DEFAULT NULL,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX `idx_queue_status` (`delivery_status`, `retry_count`)
+    INDEX `idx_queue_status` (`delivery_status`, `retry_count`),
+    INDEX `idx_queue_ext_item` (`external_item_id`)
 ) ENGINE=InnoDB;
 
 -- 13. AUDIT LOGS FOR POLICE COMPLIANCE
@@ -323,6 +328,9 @@ CREATE TABLE IF NOT EXISTS `ai_alerts` (
     `acknowledged_by` VARCHAR(100) DEFAULT NULL,
     `acknowledged_at` DATETIME DEFAULT NULL,
     `action_taken` VARCHAR(255) DEFAULT NULL,
+    `gov_sync_status` ENUM('NOT_SYNCED', 'QUEUED', 'SYNCED', 'FAILED') DEFAULT 'NOT_SYNCED',
+    `gov_item_id` VARCHAR(128) DEFAULT NULL,
+    `gov_synced_at` DATETIME DEFAULT NULL,
     INDEX `idx_ai_alerts_veh` (`vehicle_id`),
     INDEX `idx_ai_alerts_cam` (`camera_id`),
     INDEX `idx_ai_alerts_status` (`status`),
@@ -337,6 +345,14 @@ CREATE TABLE IF NOT EXISTS `ai_alerts` (
 ALTER TABLE `ai_alerts` ADD COLUMN IF NOT EXISTS `acknowledged_by` VARCHAR(100) DEFAULT NULL AFTER `scanned_vehicle_numberplate`;
 ALTER TABLE `ai_alerts` ADD COLUMN IF NOT EXISTS `acknowledged_at` DATETIME DEFAULT NULL AFTER `acknowledged_by`;
 ALTER TABLE `ai_alerts` ADD COLUMN IF NOT EXISTS `action_taken` VARCHAR(255) DEFAULT NULL AFTER `acknowledged_at`;
+ALTER TABLE `ai_alerts` ADD COLUMN IF NOT EXISTS `gov_sync_status` ENUM('NOT_SYNCED', 'QUEUED', 'SYNCED', 'FAILED') DEFAULT 'NOT_SYNCED' AFTER `action_taken`;
+ALTER TABLE `ai_alerts` ADD COLUMN IF NOT EXISTS `gov_item_id` VARCHAR(128) DEFAULT NULL AFTER `gov_sync_status`;
+ALTER TABLE `ai_alerts` ADD COLUMN IF NOT EXISTS `gov_synced_at` DATETIME DEFAULT NULL AFTER `gov_item_id`;
+
+ALTER TABLE `central_api_dispatch_queue` ADD COLUMN IF NOT EXISTS `external_item_id` VARCHAR(128) DEFAULT NULL AFTER `delivery_status`;
+ALTER TABLE `central_api_dispatch_queue` ADD COLUMN IF NOT EXISTS `external_received_at` VARCHAR(64) DEFAULT NULL AFTER `external_item_id`;
+ALTER TABLE `central_api_dispatch_queue` ADD COLUMN IF NOT EXISTS `http_code` INT DEFAULT NULL AFTER `external_received_at`;
+ALTER TABLE `central_api_dispatch_queue` ADD COLUMN IF NOT EXISTS `response_body` TEXT DEFAULT NULL AFTER `http_code`;
 
 ALTER TABLE `vehicle_cameras` ADD COLUMN IF NOT EXISTS `username` VARCHAR(50) DEFAULT NULL;
 ALTER TABLE `vehicle_cameras` ADD COLUMN IF NOT EXISTS `password` VARCHAR(50) DEFAULT NULL;

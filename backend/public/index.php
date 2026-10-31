@@ -32,6 +32,7 @@ use App\Controllers\AiAlertController;
 use App\Controllers\OfficerController;
 use App\Controllers\WantedSuspectController;
 use App\Controllers\WeaponThreatController;
+use App\Controllers\GovSyncController;
 
 // Enable CORS and handle OPTIONS preflight
 CorsMiddleware::handle();
@@ -283,6 +284,18 @@ $router->get('/api/officer/my-activity', [OfficerController::class, 'myActivity'
 $router->get('/api/officer/fleet-activity', [OfficerController::class, 'fleetActivity'], [$auth]);
 $router->get('/api/officer/cameras', [OfficerController::class, 'cameras'], [$auth]);
 $router->post('/api/officer/report-incident', [OfficerController::class, 'reportIncident'], [$auth]);
+
+// ============================================================================
+// 20. GOVERNMENT WEBHOOK API & STORE-AND-FORWARD ENGINE
+// ============================================================================
+$router->get('/api/gov-sync/status', [GovSyncController::class, 'status'], []);
+$router->get('/api/gov-sync/queue', [GovSyncController::class, 'queue'], []);
+$router->post('/api/gov-sync/dispatch/:id', [GovSyncController::class, 'dispatchAlert'], []);
+$router->post('/api/gov-sync/dispatch-batch', [GovSyncController::class, 'dispatchBatch'], []);
+$router->post('/api/gov-sync/test-connection', [GovSyncController::class, 'testConnection'], []);
+
+// Webhook Receiver (Specification: Patrol360_Webhook_API_Integration_Guide.docx)
+$router->post('/api/webhooks/receiver', [GovSyncController::class, 'receiver'], []);
 
 // Dispatch request through router
 $router->dispatch();

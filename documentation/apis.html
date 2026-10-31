@@ -577,6 +577,69 @@
       </div>
     </div>
 
+    <!-- GOVERNMENT WEBHOOK API & STORE-AND-FORWARD DISPATCH ENGINE -->
+    <div class="card" style="border-left: 4px solid #6366f1;" data-role="both">
+      <div class="card-title">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span class="badge" style="background: #6366f1; color: #fff;">GOV-SYNC</span>
+          <span style="font-family: var(--font-mono); font-size: 14px;">/api/gov-sync/* & /api/webhooks/receiver</span>
+          <span style="background: #ede9fe; color: #5b21b6; font-size: 11px; padding: 2px 8px; border-radius: 9999px; font-weight: 600;">Government Cloud Webhook</span>
+        </div>
+        <span style="font-size: 12px; color: var(--muted-foreground);">External State Police Ingestion (api-patrol.urosgeotechlab.com)</span>
+      </div>
+      <p style="color: #52525b; font-size: 12px; margin-bottom: 0.5rem;">
+        Implements integration with Central Government Ingestion Endpoint per <code>Patrol360_Webhook_API_Integration_Guide.docx</code>. Provides guaranteed delivery via local <code>central_api_dispatch_queue</code>, automated payload formatting, x-api-key / x-api-secret header authentication, and government record ID indexing.
+      </p>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px; margin-bottom: 12px; font-size: 12px;">
+        <div style="background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <strong>📊 Sync Status & Metrics</strong><br>
+          <code>GET /api/gov-sync/status</code><br>
+          <span style="color: #64748b;">Overview of synced vs pending alerts, queue metrics, and endpoint status.</span>
+        </div>
+        <div style="background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <strong>📋 Outbox Queue Inspection</strong><br>
+          <code>GET /api/gov-sync/queue?page=1&limit=20</code><br>
+          <span style="color: #64748b;">Paginated list of dispatched, queued, and failed records with external item IDs.</span>
+        </div>
+        <div style="background: #f5f3ff; padding: 10px; border-radius: 6px; border: 1px solid #c4b5fd;">
+          <strong>🚀 Immediate Alert Dispatch</strong><br>
+          <code>POST /api/gov-sync/dispatch/:id</code><br>
+          <span style="color: #5b21b6;">Immediately pushes a specific alert to the government webhook receiver over HTTPS.</span>
+        </div>
+        <div style="background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <strong>⚡ Batch Retry & Flush</strong><br>
+          <code>POST /api/gov-sync/dispatch-batch</code><br>
+          <span style="color: #64748b;">Processes and uploads queued offline items in batch when connectivity is restored.</span>
+        </div>
+        <div style="background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <strong>🩺 Credential Ping Test</strong><br>
+          <code>POST /api/gov-sync/test-connection</code><br>
+          <span style="color: #64748b;">Sends test heartbeat with x-api-key & x-api-secret to verify authentication.</span>
+        </div>
+        <div style="background: #f0fdf4; padding: 10px; border-radius: 6px; border: 1px solid #86efac;">
+          <strong>📥 Ingestion Webhook Receiver</strong><br>
+          <code>POST /api/webhooks/receiver</code><br>
+          <span style="color: #166534;">Compliant receiver endpoint returning 24-char hex ID & ISO UTC timestamp.</span>
+        </div>
+      </div>
+      <div class="code-container">
+        <div class="code-header">
+          <span>GOVERNMENT WEBHOOK REQUEST SPECIFICATION (cURL)</span>
+          <button class="btn-sm" onclick="copySnippet(this)">Copy cURL</button>
+        </div>
+        <pre class="code-body">curl -X POST "https://api-patrol.urosgeotechlab.com/api/webhooks/receiver" \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: YOUR_API_KEY" \
+  -H "x-api-secret: YOUR_API_SECRET" \
+  -d '{
+    "event": "log.created",
+    "data": {
+      "message": "{\"alert_id\": 112, \"vehicle_id\": \"PATROL-01\", \"alert_type\": \"Handgun (9mm)\"}"
+    }
+  }'</pre>
+      </div>
+    </div>
+
     <!-- OFFLINE BUFFER RULES -->
     <div class="card" style="background: #fafafa; border-left: 4px solid #2563eb;">
       <h3 style="font-size: 14px; color: #1e3a8a; margin-bottom: 4px;">📡 Store-and-Forward Offline Queue Policy</h3>

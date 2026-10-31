@@ -814,6 +814,7 @@
       <button class="filter-pill" onclick="filterCategory('ai-alerts', this)">🚨 AI Edge Alerts (Table)</button>
       <button class="filter-pill" onclick="filterCategory('officer', this)">👮 Officer Tactical APIs</button>
       <button class="filter-pill" onclick="filterCategory('dashboard', this)">Live Dashboard Stats</button>
+      <button class="filter-pill" onclick="filterCategory('gov-sync', this)">🌐 Gov Webhook & Dispatch</button>
     </div>
 
     <!-- Search Input -->
@@ -2633,6 +2634,250 @@
                   <div class="response-status-bar">
                     <span>Status: <span class="status-code-badge status-200">200 OK</span></span>
                     <span class="latency-timer">25 ms</span>
+                  </div>
+                  <div class="code-box"><pre class="response-body"></pre></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================================================================= -->
+      <!-- 11. GOVERNMENT WEBHOOK API & STORE-AND-FORWARD ENGINE -->
+      <!-- ================================================================= -->
+      <div class="section-title" data-category="gov-sync">
+        <span>11. Government Webhook Upload & Offline Dispatch Engine (api-patrol.urosgeotechlab.com)</span>
+        <span class="section-badge">Gov Cloud Sync</span>
+      </div>
+
+      <!-- GET /api/gov-sync/status -->
+      <div class="endpoint-card" data-category="gov-sync" data-method="GET" data-path="/api/gov-sync/status" data-role="both">
+        <div class="endpoint-summary" onclick="toggleEndpoint(this)">
+          <div class="endpoint-left">
+            <span class="method-badge method-get">GET</span>
+            <span class="endpoint-path">/api/gov-sync/status</span>
+            <span class="endpoint-desc">Government Sync Status: Queue totals, synced vs pending counts, and endpoint configuration</span>
+          </div>
+          <div class="endpoint-right">
+            <span class="role-badge role-protected">Gov Sync</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="endpoint-details">
+          <div class="details-grid">
+            <div>
+              <div class="detail-section-title">Government Sync Overview</div>
+              <p style="font-size: 12px; margin-bottom: 8px;">Inspects total queued, delivered (SENT_200), and failed outbox items, plus masked API credentials.</p>
+            </div>
+            <div>
+              <div class="try-runner">
+                <div class="try-header">
+                  <span>Interactive Test Runner</span>
+                  <button class="execute-btn" onclick="executeApi(this, 'GET', '/api/gov-sync/status')">Send Request</button>
+                </div>
+                <div class="response-container">
+                  <div class="response-status-bar">
+                    <span>Status: <span class="status-code-badge status-200">200 OK</span></span>
+                    <span class="latency-timer">-- ms</span>
+                  </div>
+                  <div class="code-box"><pre class="response-body"></pre></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GET /api/gov-sync/queue -->
+      <div class="endpoint-card" data-category="gov-sync" data-method="GET" data-path="/api/gov-sync/queue" data-role="both">
+        <div class="endpoint-summary" onclick="toggleEndpoint(this)">
+          <div class="endpoint-left">
+            <span class="method-badge method-get">GET</span>
+            <span class="endpoint-path">/api/gov-sync/queue</span>
+            <span class="endpoint-desc">Outbox Queue Records: Paginated list of dispatched, queued, and retry items with receipt IDs</span>
+          </div>
+          <div class="endpoint-right">
+            <span class="role-badge role-protected">Gov Queue</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="endpoint-details">
+          <div class="details-grid">
+            <div>
+              <div class="detail-section-title">Store-and-Forward Outbox</div>
+              <p style="font-size: 12px; margin-bottom: 8px;">Supports filtering by status (<code>?status=QUEUED</code>, <code>?status=SENT_200</code>, <code>?status=FAILED</code>), with pagination.</p>
+            </div>
+            <div>
+              <div class="try-runner">
+                <div class="try-header">
+                  <span>Interactive Test Runner</span>
+                  <button class="execute-btn" onclick="executeApi(this, 'GET', '/api/gov-sync/queue?limit=5')">Send Request</button>
+                </div>
+                <div class="response-container">
+                  <div class="response-status-bar">
+                    <span>Status: <span class="status-code-badge status-200">200 OK</span></span>
+                    <span class="latency-timer">-- ms</span>
+                  </div>
+                  <div class="code-box"><pre class="response-body"></pre></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- POST /api/gov-sync/dispatch/:id -->
+      <div class="endpoint-card" data-category="gov-sync" data-method="POST" data-path="/api/gov-sync/dispatch/112" data-role="both">
+        <div class="endpoint-summary" onclick="toggleEndpoint(this)">
+          <div class="endpoint-left">
+            <span class="method-badge method-post">POST</span>
+            <span class="endpoint-path">/api/gov-sync/dispatch/:id</span>
+            <span class="endpoint-desc">Immediate Alert Upload: Enqueues and uploads an ai_alert directly to central government receiver</span>
+          </div>
+          <div class="endpoint-right">
+            <span class="role-badge role-protected">Immediate Dispatch</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="endpoint-details">
+          <div class="details-grid">
+            <div>
+              <div class="detail-section-title">Immediate Push to Government Ingestion</div>
+              <p style="font-size: 12px; margin-bottom: 8px;">Packages alert attributes (vehicle, GPS coordinates, plate, photo link) into <code>event: "log.created"</code> format, dispatches over HTTPS cURL, and stores returned <code>item.id</code>.</p>
+            </div>
+            <div>
+              <div class="try-runner">
+                <div class="try-header">
+                  <span>Interactive Test Runner</span>
+                  <button class="execute-btn" onclick="executeApi(this, 'POST', '/api/gov-sync/dispatch/112')">Send Request</button>
+                </div>
+                <div class="response-container">
+                  <div class="response-status-bar">
+                    <span>Status: <span class="status-code-badge status-200">200 OK</span></span>
+                    <span class="latency-timer">-- ms</span>
+                  </div>
+                  <div class="code-box"><pre class="response-body"></pre></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- POST /api/gov-sync/dispatch-batch -->
+      <div class="endpoint-card" data-category="gov-sync" data-method="POST" data-path="/api/gov-sync/dispatch-batch" data-role="admin">
+        <div class="endpoint-summary" onclick="toggleEndpoint(this)">
+          <div class="endpoint-left">
+            <span class="method-badge method-post">POST</span>
+            <span class="endpoint-path">/api/gov-sync/dispatch-batch</span>
+            <span class="endpoint-desc">Batch Queue Flush: Retries all pending and failed offline items when connectivity resumes</span>
+          </div>
+          <div class="endpoint-right">
+            <span class="role-badge role-admin">Store & Forward</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="endpoint-details">
+          <div class="details-grid">
+            <div>
+              <div class="detail-section-title">Store-and-Forward Batch Processor</div>
+              <p style="font-size: 12px; margin-bottom: 8px;">Pulls up to 50 queued records with <code>retry_count &lt; 5</code> and synchronizes them sequentially.</p>
+            </div>
+            <div>
+              <div class="try-runner">
+                <div class="try-header">
+                  <span>Interactive Test Runner</span>
+                  <button class="execute-btn" onclick="executeApi(this, 'POST', '/api/gov-sync/dispatch-batch')">Send Request</button>
+                </div>
+                <textarea class="textarea-json">{ "limit": 20 }</textarea>
+                <div class="response-container">
+                  <div class="response-status-bar">
+                    <span>Status: <span class="status-code-badge status-200">200 OK</span></span>
+                    <span class="latency-timer">-- ms</span>
+                  </div>
+                  <div class="code-box"><pre class="response-body"></pre></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- POST /api/gov-sync/test-connection -->
+      <div class="endpoint-card" data-category="gov-sync" data-method="POST" data-path="/api/gov-sync/test-connection" data-role="both">
+        <div class="endpoint-summary" onclick="toggleEndpoint(this)">
+          <div class="endpoint-left">
+            <span class="method-badge method-post">POST</span>
+            <span class="endpoint-path">/api/gov-sync/test-connection</span>
+            <span class="endpoint-desc">Government API Ping Test: Verifies HTTPS connectivity, latency, and x-api-key / x-api-secret headers</span>
+          </div>
+          <div class="endpoint-right">
+            <span class="role-badge role-public">Diagnostic</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="endpoint-details">
+          <div class="details-grid">
+            <div>
+              <div class="detail-section-title">Connectivity & Authentication Diagnostic</div>
+              <p style="font-size: 12px; margin-bottom: 8px;">Sends a test heartbeat payload to the receiver. Can optionally override endpoint and API keys for validation.</p>
+            </div>
+            <div>
+              <div class="try-runner">
+                <div class="try-header">
+                  <span>Interactive Test Runner</span>
+                  <button class="execute-btn" onclick="executeApi(this, 'POST', '/api/gov-sync/test-connection')">Send Request</button>
+                </div>
+                <textarea class="textarea-json">{}</textarea>
+                <div class="response-container">
+                  <div class="response-status-bar">
+                    <span>Status: <span class="status-code-badge status-200">200 OK</span></span>
+                    <span class="latency-timer">-- ms</span>
+                  </div>
+                  <div class="code-box"><pre class="response-body"></pre></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- POST /api/webhooks/receiver -->
+      <div class="endpoint-card" data-category="gov-sync" data-method="POST" data-path="/api/webhooks/receiver" data-role="both">
+        <div class="endpoint-summary" onclick="toggleEndpoint(this)">
+          <div class="endpoint-left">
+            <span class="method-badge method-post">POST</span>
+            <span class="endpoint-path">/api/webhooks/receiver</span>
+            <span class="endpoint-desc">Webhook Receiver (Guide Spec): Ingestion endpoint generating 24-character hexadecimal IDs</span>
+          </div>
+          <div class="endpoint-right">
+            <span class="role-badge role-public">Integration Spec</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="endpoint-details">
+          <div class="details-grid">
+            <div>
+              <div class="detail-section-title">Local Webhook Receiver Specification</div>
+              <p style="font-size: 12px; margin-bottom: 8px;">Authenticates via <code>x-api-key</code> and <code>x-api-secret</code> headers. Returns HTTP 200 with <code>item.id</code> and <code>item.receivedAt</code> UTC timestamp per integration documentation.</p>
+            </div>
+            <div>
+              <div class="try-runner">
+                <div class="try-header">
+                  <span>Interactive Test Runner</span>
+                  <button class="execute-btn" onclick="executeApi(this, 'POST', '/api/webhooks/receiver')">Send Request</button>
+                </div>
+                <textarea class="textarea-json">{
+  "event": "log.created",
+  "data": {
+    "message": "{\"alert_id\": 112, \"vehicle_id\": \"PATROL-01\", \"location\": \"Ahmedabad Metro Sector 4\"}"
+  }
+}</textarea>
+                <div class="response-container">
+                  <div class="response-status-bar">
+                    <span>Status: <span class="status-code-badge status-200">200 OK</span></span>
+                    <span class="latency-timer">-- ms</span>
                   </div>
                   <div class="code-box"><pre class="response-body"></pre></div>
                 </div>

@@ -54,7 +54,10 @@ backend/
 │   │   ├── EventCrowdController.php  # Junction Overcrowding & Thresholds
 │   │   ├── ExportController.php      # Dompdf Incident PDF & PhpSpreadsheet XLSX
 │   │   ├── MailerController.php      # PHPMailer Tactical Alerts
+│   │   ├── GovSyncController.php     # Government Webhook API & Store-and-Forward Engine
 │   │   └── DashboardController.php   # Aggregate Metrics & Compliance Audit
+│   ├── Services/
+│   │   └── GovWebhookService.php     # Central Government Ingestion cURL Client & Offline Outbox
 │   ├── Helpers/
 │   │   ├── JWTHandler.php            # Token encoding & verification
 │   │   ├── Response.php              # Standard JSON format & pagination
@@ -267,6 +270,15 @@ Base URL (Production): `https://sarsspl.com/patrol360/backend/public`
 - `POST /api/sync/export-data` - Export table rows as portable JSON payload *(Admin/User)*
 - `POST /api/sync/import-data` - Ingest rows into tables with atomic UPSERT (`ON DUPLICATE KEY UPDATE`) *(Admin)*
 - Web Console: **`db_sync.html`** - Dedicated visual synchronization console with side-by-side comparison matrix and terminal log stream.
+
+### K. Government Webhook Upload & Offline Dispatch Engine
+Implements integration with Central Government Ingestion Endpoint (`https://api-patrol.urosgeotechlab.com/api/webhooks/receiver`) per `Patrol360_Webhook_API_Integration_Guide.docx`:
+- `GET /api/gov-sync/status` - Live status of government webhook synchronization, queue counts, and endpoint health
+- `GET /api/gov-sync/queue` - Paginated inspection of the offline outbox queue (`central_api_dispatch_queue`)
+- `POST /api/gov-sync/dispatch/:id` - Immediately dispatch a specific `ai_alerts` record to the government portal
+- `POST /api/gov-sync/dispatch-batch` - Flush and retry queued/failed offline records in batch *(Store-and-Forward)*
+- `POST /api/gov-sync/test-connection` - Ping government receiver to verify `x-api-key` and `x-api-secret` authentication credentials
+- `POST /api/webhooks/receiver` - Local webhook receiver implementation compliant with integration guide specs, generating 24-char hex IDs and ISO UTC timestamps
 
 ---
 

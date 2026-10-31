@@ -301,17 +301,24 @@ CREATE TABLE IF NOT EXISTS crowd_analytics_events (
     hq_sync_status VARCHAR(16) DEFAULT 'DELIVERED'
 );
 
--- 9. STORE-AND-FORWARD OFFLINE OUTBOX QUEUE
+-- 9. STORE-AND-FORWARD OFFLINE OUTBOX QUEUE (GOV WEBHOOK DISPATCH)
 CREATE TABLE IF NOT EXISTS central_api_dispatch_queue (
-    queue_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
     event_id VARCHAR(64) UNIQUE NOT NULL,
-    event_type VARCHAR(32) NOT NULL, -- 'ANPR', 'FRS', 'WEAPON', 'FIRE', 'CROWD'
+    event_type VARCHAR(32) NOT NULL, -- 'ANPR', 'FRS', 'WEAPON', 'FIRE', 'CROWD', 'AI_ALERT'
     destination_url VARCHAR(255) NOT NULL,
-    payload_json TEXT NOT NULL,
+    payload_json LONGTEXT NOT NULL,
     retry_count INTEGER DEFAULT 0,
-    last_retry_at TIMESTAMP,
-    delivery_status VARCHAR(16) DEFAULT 'QUEUED'
-CREATE INDEX idx_queue_status ON central_api_dispatch_queue(delivery_status, retry_count);
+    last_retry_at TIMESTAMP NULL,
+    delivery_status ENUM('QUEUED', 'SENT_200', 'FAILED') DEFAULT 'QUEUED',
+    external_item_id VARCHAR(128) DEFAULT NULL,
+    external_received_at VARCHAR(64) DEFAULT NULL,
+    http_code INT DEFAULT NULL,
+    response_body TEXT DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_queue_status (delivery_status, retry_count),
+    INDEX idx_queue_ext_item (external_item_id)
+);
 
 -- 10. REAL-TIME AI EDGE ALERTS TABLE (ai_alerts)
 -- Multi-domain edge alerts table backing:
@@ -338,7 +345,10 @@ CREATE TABLE IF NOT EXISTS ai_alerts (
     scanned_vehicle_numberplate VARCHAR(50) DEFAULT NULL,
     acknowledged_by VARCHAR(100) DEFAULT NULL,
     acknowledged_at DATETIME DEFAULT NULL,
-    action_taken VARCHAR(255) DEFAULT NULL
+    action_taken VARCHAR(255) DEFAULT NULL,
+    gov_sync_status ENUM('NOT_SYNCED', 'QUEUED', 'SYNCED', 'FAILED') DEFAULT 'NOT_SYNCED',
+    gov_item_id VARCHAR(128) DEFAULT NULL,
+    gov_synced_at DATETIME DEFAULT NULL
 );
 CREATE INDEX idx_ai_alerts_veh ON ai_alerts(vehicle_id);
 CREATE INDEX idx_ai_alerts_status ON ai_alerts(status);
