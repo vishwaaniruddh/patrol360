@@ -11,7 +11,9 @@ $isLocal = false;
 // 1. Detect from HTTP Host if running through web server (Apache / Nginx / PHP Built-in)
 if (!empty($_SERVER['HTTP_HOST'])) {
     $host = strtolower($_SERVER['HTTP_HOST']);
-    if (str_contains($host, 'localhost') || str_contains($host, '127.0.0.1') || str_starts_with($host, '192.168.') || str_starts_with($host, '10.')) {
+    if (str_contains($host, 'sarsspl.com') || str_contains($host, 'patrol360')) {
+        $isLocal = false;
+    } elseif (str_contains($host, 'localhost') || str_contains($host, '127.0.0.1') || str_starts_with($host, '192.168.') || str_starts_with($host, '10.')) {
         $isLocal = true;
     }
 } else {
@@ -21,11 +23,17 @@ if (!empty($_SERVER['HTTP_HOST'])) {
     }
 }
 
-// Allow explicit environment variable override if defined
-if (getenv('APP_ENV') === 'production') {
+// Never allow APP_ENV=local to override when running under a live public domain like sarsspl.com
+$isLiveDomain = !empty($_SERVER['HTTP_HOST']) && str_contains(strtolower($_SERVER['HTTP_HOST']), 'sarsspl.com');
+
+if (!$isLiveDomain) {
+    if (getenv('APP_ENV') === 'production') {
+        $isLocal = false;
+    } elseif (getenv('APP_ENV') === 'local') {
+        $isLocal = true;
+    }
+} else {
     $isLocal = false;
-} elseif (getenv('APP_ENV') === 'local') {
-    $isLocal = true;
 }
 
 if ($isLocal) {
