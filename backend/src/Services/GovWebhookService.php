@@ -29,6 +29,22 @@ class GovWebhookService
     }
 
     /**
+     * Write structured log line to backend/logs/gov_webhook.log
+     */
+    public function logToFile(string $level, string $message, array $context = []): void
+    {
+        $logDir = __DIR__ . '/../../logs';
+        if (!is_dir($logDir)) {
+            @mkdir($logDir, 0777, true);
+        }
+        $logFile = $logDir . '/gov_webhook.log';
+        $timestamp = date('Y-m-d H:i:s');
+        $contextStr = !empty($context) ? ' ' . json_encode($context, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) : '';
+        $line = "[{$timestamp}] [{$level}] {$message}{$contextStr}\n";
+        @file_put_contents($logFile, $line, FILE_APPEND | LOCK_EX);
+    }
+
+    /**
      * Get webhook service configuration (with masked secret for safety)
      */
     public function getConfig(bool $maskSecret = true): array
@@ -250,6 +266,30 @@ class GovWebhookService
             ");
             $updAlert->execute([$externalId, $now, $alertId]);
 
+            // File log & Police compliance audit_logs
+            $this->logToFile('SUCCESS', "Alert #{$alertId} dispatched to government portal", [
+                'event_id'      => $eventId,
+                'government_id' => $externalId,
+                'http_code'     => $httpCode,
+                'received_at'   => $receivedAt
+            ]);
+            try {
+                $this->db->prepare("
+                    INSERT INTO `audit_logs` 
+                        (`action`, `entity_type`, `entity_id`, `details`, `ip_address`, `created_at`)
+                    VALUES 
+                        ('GOV_WEBHOOK_DISPATCH_SUCCESS', 'ai_alerts', ?, ?, ?, NOW())
+                ")->execute([
+                    (string)$alertId,
+                    json_encode([
+                        'govt_id'     => $externalId,
+                        'http_code'   => $httpCode,
+                        'received_at' => $receivedAt
+                    ]),
+                    $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1'
+                ]);
+            } catch (\Throwable $t) {}
+
             return [
                 'success'          => true,
                 'status'           => 'SYNCED',
@@ -275,6 +315,28 @@ class GovWebhookService
 
             $this->db->prepare("UPDATE `ai_alerts` SET `gov_sync_status` = 'FAILED' WHERE `id` = ?")
                 ->execute([$alertId]);
+
+            // File log & Police compliance audit_logs
+            $this->logToFile('ERROR', "Alert #{$alertId} failed to upload to government portal", [
+                'event_id'  => $eventId,
+                'http_code' => $httpCode,
+                'error'     => $result['error'] ?? 'Failure'
+            ]);
+            try {
+                $this->db->prepare("
+                    INSERT INTO `audit_logs` 
+                        (`action`, `entity_type`, `entity_id`, `details`, `ip_address`, `created_at`)
+                    VALUES 
+                        ('GOV_WEBHOOK_DISPATCH_FAILED', 'ai_alerts', ?, ?, ?, NOW())
+                ")->execute([
+                    (string)$alertId,
+                    json_encode([
+                        'http_code' => $httpCode,
+                        'error'     => $result['error'] ?? 'Unknown'
+                    ]),
+                    $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1'
+                ]);
+            } catch (\Throwable $t) {}
 
             return [
                 'success'       => false,

@@ -140,7 +140,7 @@ class GovSyncController
      */
     public function dispatchAlert(array $args): void
     {
-        $alertId = (int)($args['params']['id'] ?? 0);
+        $alertId = (int)($args['params'][0] ?? ($args['params']['id'] ?? 0));
         if ($alertId <= 0) {
             Response::error('Invalid Alert ID.', 400);
         }

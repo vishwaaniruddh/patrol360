@@ -87,8 +87,8 @@ return [
     'gov_webhook' => [
         'enabled'        => true,
         'endpoint'       => getenv('PATROL_GOV_WEBHOOK_URL') ?: 'https://api-patrol.urosgeotechlab.com/api/webhooks/receiver',
-        'api_key'        => getenv('PATROL_GOV_API_KEY') ?: 'YOUR_API_KEY',
-        'api_secret'     => getenv('PATROL_GOV_API_SECRET') ?: 'YOUR_API_SECRET',
+        'api_key'        => getenv('PATROL_GOV_API_KEY') ?: 'd054da6f1ec6c188266c56d485e1c330',
+        'api_secret'     => getenv('PATROL_GOV_API_SECRET') ?: 'dd33401eecdaf34112a8d6816ddd3103',
         'timeout'        => 10,
         'auto_dispatch'  => false // when true, auto-dispatches ai_alerts on creation
     ],
