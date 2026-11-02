@@ -231,6 +231,7 @@ Base URL (Production): `https://sarsspl.com/patrol360/backend/public`
 - `GET /api/ai-alerts` or `GET /api/alerts/ai` - **(Public / No Token Required)** Query alerts filtered by `status=O`, `alerttype`, `vehicle_id`, `plate`, with pagination *(Public)*
 - `GET /api/ai-alerts/:id` - **(Public / No Token Required)** Single alert details with full base64 frame and decoded public image URL *(Public)*
 - `GET /api/ai-alerts/:id/image` - **(Public / Direct Stream)** Serves decoded binary image (JPEG/PNG) with 24-hour cache headers for direct `<img src="...">` rendering in browsers *(Public)*
+- `GET /api/ai-alerts/:id/video` - **(Public / Direct Video Stream)** Serves stored alert video clip (`.mp4`) or redirects with HTTP 302 to the vehicle's mounted RTSP camera live stream *(Public)*
 - `PUT /api/ai-alerts/:id/acknowledge` - Acknowledge alert (`status='A'`, `acknowledged_by`, `acknowledged_at=NOW()`) *(Public / Officer)*
 - `PUT /api/ai-alerts/:id/close` - **(Public / No Token Required)** Close alert with duty officer name and resolution remarks (`status='C'`, `closedBy`, `closedtime=NOW()`) *(Public / Duty Officer)*
 - `DELETE /api/ai-alerts/:id` - Remove alert record *(Admin)*

@@ -45,7 +45,15 @@ class GovWebhookTest extends TestCase
 
         $this->assertArrayHasKey('event', $payload);
         $this->assertEquals('log.created', $payload['event']);
+        $this->assertArrayHasKey('event_type', $payload);
+        $this->assertEquals('weapon detection', $payload['event_type']);
+        $this->assertArrayHasKey('video_clip_url', $payload);
+        $this->assertStringContainsString('/api/ai-alerts/9999/video', $payload['video_clip_url']);
+
         $this->assertArrayHasKey('data', $payload);
+        $this->assertArrayHasKey('event_type', $payload['data']);
+        $this->assertEquals('weapon detection', $payload['data']['event_type']);
+        $this->assertArrayHasKey('video_clip_url', $payload['data']);
         $this->assertArrayHasKey('message', $payload['data']);
 
         $inner = json_decode($payload['data']['message'], true);
@@ -53,6 +61,40 @@ class GovWebhookTest extends TestCase
         $this->assertEquals(9999, $inner['alert_id']);
         $this->assertEquals('PATROL-UNIT-01', $inner['vehicle_id']);
         $this->assertEquals('GJ-01-AB-1234', $inner['plate_number']);
+        $this->assertEquals('weapon detection', $inner['event_type']);
+        $this->assertContains('weapon detection', $inner['event_types']);
+        $this->assertStringContainsString('/api/ai-alerts/9999/video', $inner['video_clip_url']);
+    }
+
+    public function testNormalizeEventTypeAllCanonicalTypes(): void
+    {
+        // 1. fire
+        $this->assertEquals('fire', GovWebhookService::normalizeEventType('FIRE_ALERT'));
+        $this->assertEquals('fire', GovWebhookService::normalizeEventType('BLAZE_DETECTED'));
+
+        // 2. crowd density
+        $this->assertEquals('crowd density', GovWebhookService::normalizeEventType('CROWD_GATHERING'));
+        $this->assertEquals('crowd density', GovWebhookService::normalizeEventType('overcrowding'));
+
+        // 3. ANPR
+        $this->assertEquals('ANPR', GovWebhookService::normalizeEventType('ANPR_HIT'));
+        $this->assertEquals('ANPR', GovWebhookService::normalizeEventType('STOLEN_VEHICLE', ['scanned_vehicle_numberplate' => 'GJ01AB1234']));
+
+        // 4. smoke
+        $this->assertEquals('smoke', GovWebhookService::normalizeEventType('SMOKE_HAZARD'));
+
+        // 5. face recognition
+        $this->assertEquals('face recognition', GovWebhookService::normalizeEventType('FRS_MATCH'));
+        $this->assertEquals('face recognition', GovWebhookService::normalizeEventType('WANTED_SUSPECT'));
+
+        // 6. vehicle classification
+        $this->assertEquals('vehicle classification', GovWebhookService::normalizeEventType('VEHICLE_CLASSIFICATION'));
+        $this->assertEquals('vehicle classification', GovWebhookService::normalizeEventType('HEAVY_VEHICLE_ALERT'));
+
+        // 7. weapon detection
+        $this->assertEquals('weapon detection', GovWebhookService::normalizeEventType('GUN'));
+        $this->assertEquals('weapon detection', GovWebhookService::normalizeEventType('KNIFE'));
+        $this->assertEquals('weapon detection', GovWebhookService::normalizeEventType('TACTICAL_THREAT'));
     }
 
     public function testEnqueueAlertInsertsIntoDispatchQueue(): void
@@ -81,4 +123,3 @@ class GovWebhookTest extends TestCase
         $db->exec("DELETE FROM `ai_alerts` WHERE `id` = {$testAlertId}");
     }
 }
-

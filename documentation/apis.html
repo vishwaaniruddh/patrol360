@@ -402,6 +402,20 @@
       </div>
     </div>
 
+        <!-- 5b. REAL-TIME AI ALERT MEDIA STREAMING -->
+    <div class="card api-card" data-role="both">
+      <div class="card-title">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span class="badge badge-get">GET</span>
+          <span style="font-family: var(--font-mono); font-size: 14px;">/api/ai-alerts/:id/video</span>
+          <span style="background: #e2e8f0; color: #334155; font-size: 11px; padding: 2px 8px; border-radius: 9999px; font-weight: 600;">Public Video Stream</span>
+        </div>
+        <span style="font-size: 12px; color: var(--muted-foreground);">Alert Incident Video Clip or Live Vehicle Camera Stream</span>
+      </div>
+      <p style="color: #52525b; font-size: 12px; margin-bottom: 0.5rem;">
+        Streams recorded MP4 video evidence of the alert or dynamically redirects with HTTP 302 to the detecting vehicle's mounted RTSP camera feed. Also companion endpoint <code>GET /api/ai-alerts/:id/image</code> streams the binary JPEG/PNG surveillance frame.
+      </p>
+    </div>
     <!-- 5c. DEDICATED WANTED SUSPECTS (FRS) SECTION API -->
     <div class="card api-card" data-role="both">
       <div class="card-title">

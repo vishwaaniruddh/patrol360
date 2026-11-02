@@ -501,6 +501,59 @@ class AiAlertController
         echo $binary;
         exit;
     }
+    /**
+     * GET /api/ai-alerts/:id/video
+     * Serves alert video clip or proxies live camera stream for the detecting vehicle
+     */
+    public function video(array $args): void
+    {
+        $id = $args['params'][0] ?? null;
+        if (!$id) {
+            http_response_code(400);
+            echo "Missing alert ID";
+            exit;
+        }
+
+        $stmt = $this->db->prepare("SELECT `id`, `vehicle_id`, `camera_id` FROM `ai_alerts` WHERE `id` = ?");
+        $stmt->execute([$id]);
+        $alert = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$alert) {
+            http_response_code(404);
+            echo "AI Alert not found";
+            exit;
+        }
+
+        $appConfig = require __DIR__ . '/../../config/app.php';
+        $baseUrl = rtrim($appConfig['base_url'] ?? '', '/');
+
+        // Check if pre-recorded MP4 video clip exists
+        $videoDir = __DIR__ . '/../../public/uploads/videos';
+        $possibleVideo = $videoDir . '/alert_' . $id . '.mp4';
+        if (file_exists($possibleVideo)) {
+            header('Content-Type: video/mp4');
+            header('Content-Length: ' . filesize($possibleVideo));
+            header('Accept-Ranges: bytes');
+            readfile($possibleVideo);
+            exit;
+        }
+
+        // Check if camera RTSP exists for this vehicle to stream
+        $camId = $alert['camera_id'] ?? '1';
+        $vehicleId = $alert['vehicle_id'] ?? '';
+        $camStmt = $this->db->prepare("SELECT `id`, `rtsp_url` FROM `vehicle_cameras` WHERE (`vehicle_id` = ? AND `channel_no` = ?) OR `id` = ? LIMIT 1");
+        $camStmt->execute([$vehicleId, $camId, $camId]);
+        $cam = $camStmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($cam) {
+            header("Location: {$baseUrl}/api/cameras/{$cam['id']}/stream");
+            exit;
+        }
+
+        // Fallback: redirect to alert frame capture image
+        header("Location: {$baseUrl}/api/ai-alerts/{$id}/image");
+        exit;
+    }
 
     /**
      * PUT /api/ai-alerts/:id/acknowledge

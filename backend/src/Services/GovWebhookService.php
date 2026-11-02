@@ -59,6 +59,69 @@ class GovWebhookService
         return $cfg;
     }
 
+        /**
+     * Standardize an incoming alert type or detection event into strictly one of
+     * the 7 canonical government event types requested by the receiving API:
+     * - fire
+     * - crowd density
+     * - ANPR
+     * - smoke
+     * - face recognition
+     * - vehicle classification
+     * - weapon detection
+     */
+    public static function normalizeEventType(?string $rawType, array $context = []): string
+    {
+        $plate = trim((string)($context['scanned_vehicle_numberplate'] ?? $context['plate_number'] ?? ''));
+        $haystack = strtolower(str_replace(['_', '-', '.', '/', ':'], ' ', (string)$rawType . ' ' . ($context['comment'] ?? '')));
+
+        // 1. Weapon Detection (guns, firearms, knives, blades, tactical threats)
+        if (preg_match('/\b(weapon\w*|gun\w*|knife|knives|firearm\w*|pistol\w*|rifle\w*|blade\w*|machete\w*|sword\w*|tactical\s+threat|handgun\w*)\b/i', $haystack)) {
+            return 'weapon detection';
+        }
+
+        // 2. Fire (excluding firearm)
+        if (preg_match('/\b(fire(?!arm)|flame\w*|blaze\w*|conflagrat\w*)\b/i', $haystack)) {
+            return 'fire';
+        }
+
+        // 3. Smoke
+        if (preg_match('/\b(smoke\w*|fume\w*)\b/i', $haystack)) {
+            return 'smoke';
+        }
+
+        // 4. Crowd Density
+        if (preg_match('/\b(crowd\w*|overcrowd\w*|density|gathering\w*|congregat\w*|mob\w*)\b/i', $haystack)) {
+            return 'crowd density';
+        }
+
+        // 5. Face Recognition
+        if (preg_match('/\b(frs|face\w*|facial\w*|suspect\w*|wanted|criminal\w*|person\s+watchlist)\b/i', $haystack)) {
+            return 'face recognition';
+        }
+
+        // 6. Vehicle Classification
+        if (preg_match('/\b(vehicle\s+class\w*|traffic\s+class\w*|heavy\s+vehicle\w*|truck\w*|bus\w*|motorcycle\w*|auto\s+rickshaw|car\s+class\w*)\b/i', $haystack)) {
+            return 'vehicle classification';
+        }
+
+        // 7. ANPR
+        if (
+            preg_match('/\b(anpr|plate\w*|numberplate\w*|number\s+plate|hotlist|stolen\s+vehicle|stolen|license\s+plate)\b/i', $haystack) ||
+            (!empty($plate) && $plate !== 'UNKNOWN' && $plate !== 'NONE')
+        ) {
+            return 'ANPR';
+        }
+
+        // Fallbacks based on presence of vehicle plate
+        if (!empty($plate)) {
+            return 'ANPR';
+        }
+
+        return 'weapon detection';
+    }
+
+
     /**
      * Format an AI alert or detection event into the government webhook payload
      * Schema per Patrol360_Webhook_API_Integration_Guide.docx
@@ -71,7 +134,8 @@ class GovWebhookService
         $alertId = $alert['id'] ?? 0;
         $vehicleId = $alert['vehicle_id'] ?? 'PATROL-01';
         $camera = $alert['camera_id'] ?? 'CAM_01';
-        $type = $alert['alerttype'] ?? 'UNKNOWN_ALERT';
+        $rawType = $alert['alerttype'] ?? 'weapon detection';
+        $normalizedEventType = self::normalizeEventType($rawType, $alert);
         $plate = $alert['scanned_vehicle_numberplate'] ?? null;
         $lat = $alert['lat'] ?? '0.0000';
         $lon = $alert['lon'] ?? '0.0000';
@@ -97,6 +161,16 @@ class GovWebhookService
             $imageUrl = $baseUrl . '/api/ai-alerts/' . $alertId . '/image';
         }
 
+        // Video Clip URL: use stored video clip URL if present, or dedicated streaming endpoint
+        $videoClipUrl = null;
+        if (!empty($alert['video_clip_url'])) {
+            $videoClipUrl = $alert['video_clip_url'];
+        } elseif (!empty($alert['video_clip'])) {
+            $videoClipUrl = $alert['video_clip'];
+        } elseif (!empty($alertId)) {
+            $videoClipUrl = $baseUrl . '/api/ai-alerts/' . $alertId . '/video';
+        }
+
         $statusCode = $alert['status'] ?? 'O';
         $statusLabel = ($statusCode === 'C') ? 'CLOSED' : (($statusCode === 'A') ? 'ACKNOWLEDGED' : 'OPEN');
         $closedBy = $alert['closedBy'] ?? null;
@@ -111,7 +185,10 @@ class GovWebhookService
             'alert_id'         => $alertId,
             'vehicle_id'       => $vehicleId,
             'camera_id'        => $camera,
-            'alert_type'       => $type,
+            'event_type'       => $normalizedEventType,
+            'event_types'      => [$normalizedEventType],
+            'alert_type'       => $normalizedEventType,
+            'raw_alert_type'   => $rawType,
             'status'           => $statusLabel,
             'status_code'      => $statusCode,
             'plate_number'     => $plate,
@@ -120,7 +197,8 @@ class GovWebhookService
             'longitude'        => $lon,
             'image'            => $image,
             'imageurl'         => $imageUrl,
-            'video_clip'       => null,
+            'video_clip_url'   => $videoClipUrl,
+            'video_clip'       => $videoClipUrl,
             'detected_at'      => $createtime,
             'comment'          => $comment,
             'action_taken'     => $actionTaken,
@@ -133,9 +211,13 @@ class GovWebhookService
         $eventName = ($statusCode === 'C') ? 'alert.closed' : (($statusCode === 'A') ? 'alert.acknowledged' : 'log.created');
 
         return [
-            'event' => $eventName,
-            'data'  => [
-                'message' => json_encode($eventDetail, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
+            'event'          => $eventName,
+            'event_type'     => $normalizedEventType,
+            'video_clip_url' => $videoClipUrl,
+            'data'           => [
+                'event_type'     => $normalizedEventType,
+                'video_clip_url' => $videoClipUrl,
+                'message'        => json_encode($eventDetail, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
             ]
         ];
     }

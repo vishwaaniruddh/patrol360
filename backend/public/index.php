@@ -247,6 +247,7 @@ $router->get('/api/audit-logs', [DashboardController::class, 'auditLogs'], [$adm
 $router->get('/api/ai-alerts', [AiAlertController::class, 'index'], []);
 $router->post('/api/ai-alerts', [AiAlertController::class, 'store'], []);
 $router->get('/api/ai-alerts/:id/image', [AiAlertController::class, 'image'], []);
+$router->get('/api/ai-alerts/:id/video', [AiAlertController::class, 'video'], []);
 $router->get('/api/ai-alerts/:id', [AiAlertController::class, 'show'], []);
 $router->put('/api/ai-alerts/:id/acknowledge', [AiAlertController::class, 'acknowledge'], []);
 $router->put('/api/ai-alerts/:id/close', [AiAlertController::class, 'close'], []);
@@ -257,6 +258,7 @@ $router->delete('/api/ai-alerts/:id', [AiAlertController::class, 'destroy'], [])
 $router->get('/api/alerts/ai', [AiAlertController::class, 'index'], []);
 $router->post('/api/alerts/ai', [AiAlertController::class, 'store'], []);
 $router->get('/api/alerts/ai/:id/image', [AiAlertController::class, 'image'], []);
+$router->get('/api/alerts/ai/:id/video', [AiAlertController::class, 'video'], []);
 $router->get('/api/alerts/ai/:id', [AiAlertController::class, 'show'], []);
 $router->put('/api/alerts/ai/:id/close', [AiAlertController::class, 'close'], []);
 
@@ -276,7 +278,8 @@ $router->get('/api/officer/dashboard', [OfficerController::class, 'dashboard'], 
 $router->get('/api/officer/stats', [OfficerController::class, 'dashboard'], [$auth]);
 $router->get('/api/officer/alerts', [OfficerController::class, 'index'], [$auth]);
 $router->get('/api/officer/alerts/live', [OfficerController::class, 'live'], [$auth]);
-$router->get('/api/officer/alerts/:id/image', [OfficerController::class, 'image'], []); // Direct binary image streaming for <img> tags
+$router->get('/api/officer/alerts/:id/image', [OfficerController::class, 'image'], []);
+$router->get('/api/officer/alerts/:id/video', [AiAlertController::class, 'video'], []); // Direct binary image streaming for <img> tags
 $router->get('/api/officer/alerts/:id', [OfficerController::class, 'show'], [$auth]);
 $router->put('/api/officer/alerts/:id/acknowledge', [OfficerController::class, 'acknowledge'], [$auth]);
 $router->put('/api/officer/alerts/:id/resolve', [OfficerController::class, 'resolve'], [$auth]);
