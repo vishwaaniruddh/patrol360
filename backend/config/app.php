@@ -1,6 +1,8 @@
 <?php
 // backend/config/app.php
 
+date_default_timezone_set('Asia/Kolkata');
+
 // Auto-load backend/.env if present
 $envFile = __DIR__ . '/../.env';
 if (file_exists($envFile)) {
@@ -90,7 +92,9 @@ return [
         'api_key'        => getenv('PATROL_GOV_API_KEY') ?: 'd054da6f1ec6c188266c56d485e1c330',
         'api_secret'     => getenv('PATROL_GOV_API_SECRET') ?: 'dd33401eecdaf34112a8d6816ddd3103',
         'timeout'        => 10,
-        'auto_dispatch'  => false // when true, auto-dispatches ai_alerts on creation
+        'auto_dispatch'  => (getenv('PATROL_GOV_AUTO_DISPATCH') !== false) 
+            ? filter_var(getenv('PATROL_GOV_AUTO_DISPATCH'), FILTER_VALIDATE_BOOLEAN) 
+            : true // Enabled by default
     ],
     'cors'       => [
         'allowed_origins' => ['*'],

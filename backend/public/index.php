@@ -3,6 +3,9 @@
 
 declare(strict_types=1);
 
+// Set default timezone to Indian Standard Time (IST)
+date_default_timezone_set('Asia/Kolkata');
+
 require_once __DIR__ . '/../vendor/autoload.php';
 
 use App\Router;

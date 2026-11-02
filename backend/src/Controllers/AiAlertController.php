@@ -343,6 +343,19 @@ class AiAlertController
             // Non-fatal
         }
 
+        // Auto-dispatch to Government Webhook if enabled
+        $appConfig = require __DIR__ . '/../../config/app.php';
+        $govConfig = $appConfig['gov_webhook'] ?? [];
+        if (!empty($govConfig['enabled']) && !empty($govConfig['auto_dispatch'])) {
+            try {
+                $govService = new \App\Services\GovWebhookService($this->db);
+                $govResult = $govService->dispatchAlert($newId);
+                $record['gov_sync'] = $govResult;
+            } catch (\Throwable $t) {
+                error_log("Gov auto-dispatch error for Alert #{$newId}: " . $t->getMessage());
+            }
+        }
+
         Response::success('AI Alert recorded successfully', $record, 201);
     }
 

@@ -65,6 +65,9 @@ class GovWebhookService
      */
     public function formatAlertPayload(array $alert): array
     {
+        $appConfig = require __DIR__ . '/../../config/app.php';
+        $baseUrl = rtrim($appConfig['base_url'] ?? 'http://localhost/vehicle_gov/backend/public', '/');
+
         $alertId = $alert['id'] ?? 0;
         $vehicleId = $alert['vehicle_id'] ?? 'PATROL-01';
         $camera = $alert['camera_id'] ?? 'CAM_01';
@@ -77,7 +80,25 @@ class GovWebhookService
         $comment = $alert['comment'] ?? '';
         $actionTaken = $alert['action_taken'] ?? '';
 
-        // Prepare structured event details
+        // Handle Image & Image URL (supports Base64 payload, local image route, or external URL)
+        $fileLoc = $alert['File_loc'] ?? null;
+        $image = null;
+        $imageUrl = null;
+
+        if (!empty($fileLoc)) {
+            if (str_starts_with($fileLoc, 'http://') || str_starts_with($fileLoc, 'https://')) {
+                $imageUrl = $fileLoc;
+            } else {
+                // If it's a base64 encoded photo or data URL
+                $image = $fileLoc;
+                $imageUrl = $baseUrl . '/api/ai-alerts/' . $alertId . '/image';
+            }
+        } elseif (!empty($alertId)) {
+            $imageUrl = $baseUrl . '/api/ai-alerts/' . $alertId . '/image';
+        }
+
+        // Prepare structured event details per guide specification:
+        // "Event Json ( location,image,imageurl,video clip etc.."
         $eventDetail = [
             'system'           => 'Patrol360 Mobile Police Intelligence',
             'alert_id'         => $alertId,
@@ -85,17 +106,15 @@ class GovWebhookService
             'camera_id'        => $camera,
             'alert_type'       => $type,
             'plate_number'     => $plate,
+            'location'         => !empty($location) ? "{$location} ({$lat}, {$lon})" : "{$lat}, {$lon}",
             'latitude'         => $lat,
             'longitude'        => $lon,
-            'location_name'    => $location,
+            'image'            => $image,
+            'imageurl'         => $imageUrl,
+            'video_clip'       => null,
             'detected_at'      => $createtime,
             'comment'          => $comment,
-            'action_taken'     => $actionTaken,
-            'image_url'        => !empty($alert['File_loc']) ? (
-                str_starts_with($alert['File_loc'], 'http') 
-                    ? $alert['File_loc'] 
-                    : '/api/ai-alerts/' . $alertId . '/image'
-            ) : null
+            'action_taken'     => $actionTaken
         ];
 
         return [
