@@ -131,8 +131,13 @@ class AiAlertController
         $stmt->execute($fetchParams);
         $alerts = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+        $appConfig = require __DIR__ . '/../../config/app.php';
+        $baseUrl = rtrim($appConfig['base_url'] ?? '', '/');
+
         foreach ($alerts as &$alt) {
-            $alt['image_url'] = "/api/ai-alerts/{$alt['id']}/image";
+            $alt['image_url'] = "{$baseUrl}/api/ai-alerts/{$alt['id']}/image";
+            $alt['video_url'] = "{$baseUrl}/api/ai-alerts/{$alt['id']}/video";
+            $alt['snapshot_url'] = $alt['image_url'];
             $alt['maps_url'] = "https://www.google.com/maps?q={$alt['lat']},{$alt['lon']}";
         }
         unset($alt);
