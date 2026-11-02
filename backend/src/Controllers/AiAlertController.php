@@ -541,8 +541,8 @@ class AiAlertController
         // Check if camera RTSP exists for this vehicle to stream
         $camId = $alert['camera_id'] ?? '1';
         $vehicleId = $alert['vehicle_id'] ?? '';
-        $camStmt = $this->db->prepare("SELECT `id`, `rtsp_url` FROM `vehicle_cameras` WHERE (`vehicle_id` = ? AND `channel_no` = ?) OR `id` = ? LIMIT 1");
-        $camStmt->execute([$vehicleId, $camId, $camId]);
+        $camStmt = $this->db->prepare("SELECT `id`, `rtsp_url` FROM `vehicle_cameras` WHERE (`vehicle_id` = ? AND (`channel` = ? OR `camera_id` = ?)) OR `id` = ? OR `camera_id` = ? LIMIT 1");
+        $camStmt->execute([$vehicleId, $camId, $camId, $camId, $camId]);
         $cam = $camStmt->fetch(PDO::FETCH_ASSOC);
 
         if ($cam) {
