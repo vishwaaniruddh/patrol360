@@ -404,6 +404,19 @@ class AiAlertController
         $fetchStmt->execute([$id]);
         $updated = $fetchStmt->fetch(PDO::FETCH_ASSOC);
 
+        // Auto-dispatch closed resolution to government webhook
+        $appConfig = require __DIR__ . '/../../config/app.php';
+        $autoDispatch = $appConfig['gov_webhook']['auto_dispatch'] ?? true;
+        if ($autoDispatch && $id) {
+            try {
+                $govService = new \App\Services\GovWebhookService($this->db);
+                $govResult = $govService->dispatchAlert((int)$id);
+                $updated['gov_sync'] = $govResult;
+            } catch (\Throwable $t) {
+                error_log("Gov auto-dispatch error on close Alert #{$id}: " . $t->getMessage());
+            }
+        }
+
         Response::success('AI Alert closed successfully', $updated);
     }
 
@@ -538,6 +551,19 @@ class AiAlertController
         $fetchStmt = $this->db->prepare("SELECT * FROM `ai_alerts` WHERE `id` = ?");
         $fetchStmt->execute([$id]);
         $updated = $fetchStmt->fetch(PDO::FETCH_ASSOC);
+
+        // Auto-dispatch acknowledged event to government webhook
+        $appConfig = require __DIR__ . '/../../config/app.php';
+        $autoDispatch = $appConfig['gov_webhook']['auto_dispatch'] ?? true;
+        if ($autoDispatch && $id) {
+            try {
+                $govService = new \App\Services\GovWebhookService($this->db);
+                $govResult = $govService->dispatchAlert((int)$id);
+                $updated['gov_sync'] = $govResult;
+            } catch (\Throwable $t) {
+                error_log("Gov auto-dispatch error on ack Alert #{$id}: " . $t->getMessage());
+            }
+        }
 
         Response::success('AI Alert acknowledged successfully', $updated);
     }

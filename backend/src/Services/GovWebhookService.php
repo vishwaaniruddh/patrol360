@@ -97,6 +97,13 @@ class GovWebhookService
             $imageUrl = $baseUrl . '/api/ai-alerts/' . $alertId . '/image';
         }
 
+        $statusCode = $alert['status'] ?? 'O';
+        $statusLabel = ($statusCode === 'C') ? 'CLOSED' : (($statusCode === 'A') ? 'ACKNOWLEDGED' : 'OPEN');
+        $closedBy = $alert['closedBy'] ?? null;
+        $closedTime = $alert['closedtime'] ?? null;
+        $ackBy = $alert['acknowledged_by'] ?? null;
+        $ackAt = $alert['acknowledged_at'] ?? null;
+
         // Prepare structured event details per guide specification:
         // "Event Json ( location,image,imageurl,video clip etc.."
         $eventDetail = [
@@ -105,6 +112,8 @@ class GovWebhookService
             'vehicle_id'       => $vehicleId,
             'camera_id'        => $camera,
             'alert_type'       => $type,
+            'status'           => $statusLabel,
+            'status_code'      => $statusCode,
             'plate_number'     => $plate,
             'location'         => !empty($location) ? "{$location} ({$lat}, {$lon})" : "{$lat}, {$lon}",
             'latitude'         => $lat,
@@ -114,11 +123,17 @@ class GovWebhookService
             'video_clip'       => null,
             'detected_at'      => $createtime,
             'comment'          => $comment,
-            'action_taken'     => $actionTaken
+            'action_taken'     => $actionTaken,
+            'acknowledged_by'  => $ackBy,
+            'acknowledged_at'  => $ackAt,
+            'closed_by'        => $closedBy,
+            'closed_time'      => $closedTime
         ];
 
+        $eventName = ($statusCode === 'C') ? 'alert.closed' : (($statusCode === 'A') ? 'alert.acknowledged' : 'log.created');
+
         return [
-            'event' => 'log.created',
+            'event' => $eventName,
             'data'  => [
                 'message' => json_encode($eventDetail, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
             ]
@@ -208,7 +223,14 @@ class GovWebhookService
             throw new Exception("Alert ID {$alertId} not found.");
         }
 
-        $eventId = 'ALERT-' . $alertId . '-' . substr(md5((string)$alertId . ($alert['createtime'] ?? '')), 0, 8);
+        $statusCode = $alert['status'] ?? 'O';
+        $statusSuffix = ($statusCode === 'C') ? 'CLOSED' : (($statusCode === 'A') ? 'ACK' : 'CREATED');
+        $timeToken = ($statusCode === 'C') 
+            ? ($alert['closedtime'] ?? date('YmdHis')) 
+            : (($statusCode === 'A') ? ($alert['acknowledged_at'] ?? date('YmdHis')) : ($alert['createtime'] ?? date('YmdHis')));
+        $eventId = 'ALERT-' . $alertId . '-' . $statusSuffix . '-' . substr(md5((string)$alertId . (string)$timeToken), 0, 6);
+        $eventType = ($statusCode === 'C') ? 'AI_ALERT_CLOSED' : (($statusCode === 'A') ? 'AI_ALERT_ACK' : 'AI_ALERT');
+
         $payload = $this->formatAlertPayload($alert);
         $payloadJson = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
         $destination = $this->config['endpoint'] ?? '';
@@ -220,19 +242,22 @@ class GovWebhookService
 
         if ($existing) {
             $queueId = (int)$existing['id'];
+            // Re-update payload if refreshed
+            $this->db->prepare("UPDATE `central_api_dispatch_queue` SET `payload_json` = ?, `delivery_status` = 'QUEUED' WHERE `id` = ?")
+                ->execute([$payloadJson, $queueId]);
         } else {
             $insStmt = $this->db->prepare("
                 INSERT INTO `central_api_dispatch_queue` 
                     (`event_id`, `event_type`, `destination_url`, `payload_json`, `delivery_status`, `created_at`) 
                 VALUES 
-                    (?, 'AI_ALERT', ?, ?, 'QUEUED', NOW())
+                    (?, ?, ?, ?, 'QUEUED', NOW())
             ");
-            $insStmt->execute([$eventId, $destination, $payloadJson]);
+            $insStmt->execute([$eventId, $eventType, $destination, $payloadJson]);
             $queueId = (int)$this->db->lastInsertId();
         }
 
-        // Update ai_alerts table state
-        $this->db->prepare("UPDATE `ai_alerts` SET `gov_sync_status` = 'QUEUED' WHERE `id` = ? AND `gov_sync_status` = 'NOT_SYNCED'")
+        // Update ai_alerts table state to QUEUED
+        $this->db->prepare("UPDATE `ai_alerts` SET `gov_sync_status` = 'QUEUED' WHERE `id` = ?")
             ->execute([$alertId]);
 
         return [

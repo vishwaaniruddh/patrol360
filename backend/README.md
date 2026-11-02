@@ -273,6 +273,7 @@ Base URL (Production): `https://sarsspl.com/patrol360/backend/public`
 
 ### K. Government Webhook Upload & Offline Dispatch Engine
 Implements integration with Central Government Ingestion Endpoint (`https://api-patrol.urosgeotechlab.com/api/webhooks/receiver`) per `Patrol360_Webhook_API_Integration_Guide.docx`:
+- **Alert Lifecycle Webhooks**: Automatically dispatches on creation (`log.created`), officer acknowledgment (`alert.acknowledged`), and closure/resolution (`alert.closed` with officer name, closure timestamp, and action taken).
 - `GET /api/gov-sync/status` - Live status of government webhook synchronization, queue counts, and endpoint health
 - `GET /api/gov-sync/queue` - Paginated inspection of the offline outbox queue (`central_api_dispatch_queue`)
 - `POST /api/gov-sync/dispatch/:id` - Immediately dispatch a specific `ai_alerts` record to the government portal

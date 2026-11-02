@@ -625,6 +625,19 @@ class OfficerController
         $updated = $checkStmt->fetch(PDO::FETCH_ASSOC);
         $updated['status_label'] = 'Acknowledged';
 
+        // Auto-dispatch acknowledgment to government webhook
+        $appConfig = require __DIR__ . '/../../config/app.php';
+        $autoDispatch = $appConfig['gov_webhook']['auto_dispatch'] ?? true;
+        if ($autoDispatch && $id) {
+            try {
+                $govService = new \App\Services\GovWebhookService($this->db);
+                $govResult = $govService->dispatchAlert((int)$id);
+                $updated['gov_sync'] = $govResult;
+            } catch (\Throwable $t) {
+                error_log("Gov auto-dispatch error on officer ack Alert #{$id}: " . $t->getMessage());
+            }
+        }
+
         Response::success("Alert #{$id} acknowledged successfully", $updated);
     }
 
@@ -708,6 +721,19 @@ class OfficerController
         $checkStmt->execute([$id]);
         $updated = $checkStmt->fetch(PDO::FETCH_ASSOC);
         $updated['status_label'] = 'Closed';
+
+        // Auto-dispatch resolution to government webhook
+        $appConfig = require __DIR__ . '/../../config/app.php';
+        $autoDispatch = $appConfig['gov_webhook']['auto_dispatch'] ?? true;
+        if ($autoDispatch && $id) {
+            try {
+                $govService = new \App\Services\GovWebhookService($this->db);
+                $govResult = $govService->dispatchAlert((int)$id);
+                $updated['gov_sync'] = $govResult;
+            } catch (\Throwable $t) {
+                error_log("Gov auto-dispatch error on officer resolve Alert #{$id}: " . $t->getMessage());
+            }
+        }
 
         Response::success("Alert #{$id} resolved and closed successfully", $updated);
     }
