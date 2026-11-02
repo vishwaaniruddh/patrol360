@@ -299,74 +299,74 @@ class CameraController
         header('X-Accel-Buffering: no');
         header('Content-Encoding: none');
 
-        // Prefer cURL for high-performance chunked unbuffered streaming with infinite stream timeout
-        if (function_exists('curl_init')) {
-            $ch = curl_init($targetUrl);
-            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 20); // 20s TCP connect timeout
-            curl_setopt($ch, CURLOPT_TIMEOUT, 0);        // Infinite stream timeout
-            curl_setopt($ch, CURLOPT_USERAGENT, 'Patrol360-LiveRTSP-Proxy/2.0');
-            curl_setopt($ch, CURLOPT_BUFFERSIZE, 8192);
-            curl_setopt($ch, CURLOPT_HEADER, false);
+                // Continuous 24/7 streaming loop: automatically re-handshakes upstream before the 120s limit
+        // This prevents the DVR gateway's "Time Exceeded For Live View" timeout and keeps video flowing uninterrupted!
+        $streamCycle = 0;
+        while (!connection_aborted()) {
+            $streamCycle++;
 
-            curl_setopt($ch, CURLOPT_WRITEFUNCTION, function ($ch, $data) {
-                if (connection_aborted()) {
-                    return 0; // Abort upstream cURL connection when client disconnects
+            if (function_exists('curl_init')) {
+                $ch = curl_init($targetUrl);
+                curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+                curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 15);
+                // Re-handshake upstream at 115s to cleanly reset the DVR's 120-second session clock
+                curl_setopt($ch, CURLOPT_TIMEOUT, 115);
+                curl_setopt($ch, CURLOPT_USERAGENT, 'Patrol360-LiveRTSP-Proxy/2.0');
+                curl_setopt($ch, CURLOPT_BUFFERSIZE, 8192);
+                curl_setopt($ch, CURLOPT_HEADER, false);
+
+                curl_setopt($ch, CURLOPT_WRITEFUNCTION, function ($ch, $data) {
+                    if (connection_aborted()) {
+                        return 0; // Abort upstream connection when client disconnects
+                    }
+                    echo $data;
+                    if (ob_get_level() > 0) {
+                        @ob_flush();
+                    }
+                    @flush();
+                    return strlen($data);
+                });
+
+                curl_exec($ch);
+                curl_close($ch);
+            } else {
+                // Stream context fallback with 115s timeout
+                $ctx = stream_context_create([
+                    'http' => [
+                        'method'  => 'GET',
+                        'timeout' => 115,
+                        'header'  => "User-Agent: Patrol360-LiveRTSP-Proxy/2.0\r\n"
+                    ]
+                ]);
+
+                $fp = @fopen($targetUrl, 'rb', false, $ctx);
+                if ($fp) {
+                    $cycleStart = time();
+                    while (!feof($fp) && !connection_aborted()) {
+                        if ((time() - $cycleStart) >= 115) {
+                            break; // Cycle upstream before 120s
+                        }
+                        $chunk = fread($fp, 8192);
+                        if ($chunk === false || $chunk === '') {
+                            break;
+                        }
+                        echo $chunk;
+                        if (ob_get_level() > 0) {
+                            @ob_flush();
+                        }
+                        @flush();
+                    }
+                    @fclose($fp);
                 }
-                echo $data;
-                if (ob_get_level() > 0) {
-                    @ob_flush();
-                }
-                @flush();
-                return strlen($data);
-            });
-
-            $success = curl_exec($ch);
-            $err = curl_error($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
-
-            if (!$success && !headers_sent()) {
-                http_response_code(502);
-                header('Content-Type: text/plain; charset=utf-8');
-                echo "Live streaming gateway error: " . $err . " (HTTP " . $httpCode . ")";
             }
-            exit;
-        }
 
-        // Resilient fallback to stream context if cURL is unavailable
-        $ctx = stream_context_create([
-            'http' => [
-                'method' => 'GET',
-                'timeout' => 45, // 45s for RTSP I-frame keyframe arrival
-                'header' => "User-Agent: Patrol360-LiveRTSP-Proxy/2.0
-"
-            ]
-        ]);
-
-        $fp = @fopen($targetUrl, 'rb', false, $ctx);
-        if (!$fp) {
-            if (!headers_sent()) {
-                http_response_code(502);
-                header('Content-Type: text/plain; charset=utf-8');
-                echo "Unable to reach live streaming gateway at 223.182.122.63:7000";
-            }
-            exit;
-        }
-
-        while (!feof($fp) && !connection_aborted()) {
-            $chunk = fread($fp, 8192);
-            if ($chunk === false || $chunk === '') {
+            if (connection_aborted()) {
                 break;
             }
-            echo $chunk;
-            if (ob_get_level() > 0) {
-                @ob_flush();
-            }
-            @flush();
-        }
 
-        fclose($fp);
+            // Brief pause before smooth upstream re-handshake
+            usleep(50000); // 50ms
+        }
         exit;
     }
 
