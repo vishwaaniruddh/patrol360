@@ -12,6 +12,8 @@ class Database
 
     public static function getConnection(): PDO
     {
+        date_default_timezone_set('Asia/Kolkata');
+
         if (self::$instance === null) {
             $config = require __DIR__ . '/../config/database.php';
             
@@ -25,6 +27,7 @@ class Database
 
             try {
                 self::$instance = new PDO($dsn, $config['username'], $config['password'], $config['options']);
+                self::$instance->exec("SET time_zone = '+05:30'");
                 self::ensureAiAlertColumns(self::$instance);
             } catch (Exception $e) {
                 http_response_code(500);

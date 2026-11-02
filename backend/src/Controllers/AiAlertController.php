@@ -275,6 +275,8 @@ class AiAlertController
             }
         }
 
+        $receivedtime = date('Y-m-d H:i:s');
+
         // Insert into ai_alerts
         $insert = $this->db->prepare("
             INSERT INTO `ai_alerts` (
@@ -292,7 +294,7 @@ class AiAlertController
                 `ATMCode`, 
                 `File_loc`, 
                 `scanned_vehicle_numberplate`
-            ) VALUES (?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
 
         $insert->execute([
@@ -301,6 +303,7 @@ class AiAlertController
             $lat,
             $lon,
             $createtime,
+            $receivedtime,
             $comment,
             $status,
             $sendip,
@@ -390,15 +393,16 @@ class AiAlertController
             $updatedComment = $existing['comment'] ? "{$existing['comment']} | Close Remark: {$comment}" : "Close Remark: {$comment}";
         }
 
+        $closedtime = date('Y-m-d H:i:s');
         $update = $this->db->prepare("
             UPDATE `ai_alerts`
             SET `status` = 'C',
                 `closedBy` = ?,
-                `closedtime` = NOW(),
+                `closedtime` = ?,
                 `comment` = ?
             WHERE `id` = ?
         ");
-        $update->execute([$closedBy, $updatedComment, $id]);
+        $update->execute([$closedBy, $closedtime, $updatedComment, $id]);
 
         $fetchStmt = $this->db->prepare("SELECT * FROM `ai_alerts` WHERE `id` = ?");
         $fetchStmt->execute([$id]);
