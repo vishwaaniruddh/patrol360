@@ -113,6 +113,7 @@ class WeaponThreatController
             'lon'                 => $r['lon'] ?? '',
             'snapshot_url'        => $snapshotUrl,
             'image_url'           => $snapshotUrl,
+            'File_loc'            => $r['File_loc'] ?? null,
             'video_clip_url'      => null,
             'is_acknowledged'     => $isAck,
             'acknowledged_by'     => $r['acknowledged_by'] ?? ($r['closedBy'] ?? null),
