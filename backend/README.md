@@ -274,6 +274,17 @@ Base URL (Production): `https://sarsspl.com/patrol360/backend/public`
 
 ### K. Government Webhook Upload & Offline Dispatch Engine
 Implements integration with Central Government Ingestion Endpoint (`https://api-patrol.urosgeotechlab.com/api/webhooks/receiver`) per `Patrol360_Webhook_API_Integration_Guide.docx`:
+- **7 Canonical Government Event Types**: Standardized into `fire`, `crowd density`, `ANPR`, `smoke`, `face recognition`, `vehicle classification`, `weapon detection`.
+- **Extended Edge Payload Fields**:
+  - `VanID`: Police patrol unit (e.g. `"Van1"`)
+  - `VanCameraID`: Camera channel integer (`1` to `4`)
+  - `snapshot_image_url`: Full HTTPS URL to the captured evidence frame
+  - `video_clip_url`: Dedicated MP4 or live RTSP streaming proxy URL
+  - `bitrate`: Video bitrate (e.g. `"4096 kbps"`)
+  - `FPS`: Frame rate (e.g. `25`)
+  - `Resolutions`: Camera resolution (e.g. `"1920x1080"`)
+  - `event_description`: Detailed incident description
+  - `color_of_detection`: Threat classification color (`red` = weapon/fire, `pink` = smoke/crowd, `blue` = face recognition/suspect, `green` = ANPR/vehicle)
 - **Alert Lifecycle Webhooks**: Automatically dispatches on creation (`log.created`), officer acknowledgment (`alert.acknowledged`), and closure/resolution (`alert.closed` with officer name, closure timestamp, and action taken).
 - `GET /api/gov-sync/status` - Live status of government webhook synchronization, queue counts, and endpoint health
 - `GET /api/gov-sync/queue` - Paginated inspection of the offline outbox queue (`central_api_dispatch_queue`)

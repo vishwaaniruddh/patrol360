@@ -123,6 +123,56 @@ class GovWebhookService
 
 
     /**
+     * Map canonical event type to detection indicator color:
+     * - red: weapon detection, fire
+     * - pink: smoke, crowd density
+     * - blue: face recognition
+     * - green: ANPR, vehicle classification
+     */
+    public static function resolveDetectionColor(string $canonicalEventType): string
+    {
+        return match (strtolower(trim($canonicalEventType))) {
+            'weapon detection', 'fire'            => 'red',
+            'smoke', 'crowd density'              => 'pink',
+            'face recognition'                    => 'blue',
+            'anpr', 'vehicle classification'      => 'green',
+            default                               => 'red'
+        };
+    }
+
+    /**
+     * Format Patrol Vehicle Identifier into VanID (e.g. "Van1", "Van2")
+     */
+    public static function formatVanId(?string $vehicleId): string
+    {
+        $raw = trim((string)$vehicleId);
+        if (empty($raw)) return 'Van1';
+        if (preg_match('/(?:van|unit|patrol)[-_]?0*(\d+)/i', $raw, $m)) {
+            return 'Van' . (int)$m[1];
+        }
+        if (preg_match('/(\d+)/', $raw, $m)) {
+            return 'Van' . (int)$m[1];
+        }
+        return $raw;
+    }
+
+    /**
+     * Resolve Camera Channel number (1 to 4)
+     */
+    public static function resolveVanCameraId($camera): int
+    {
+        $raw = trim((string)$camera);
+        if (preg_match('/(?:cam|channel)[-_]?0*(\d+)/i', $raw, $m)) {
+            $num = (int)$m[1];
+            return max(1, min(4, $num));
+        }
+        if (is_numeric($raw)) {
+            $num = (int)$raw;
+            return max(1, min(4, $num));
+        }
+        return 1;
+    }
+    /**
      * Format an AI alert or detection event into the government webhook payload
      * Schema per Patrol360_Webhook_API_Integration_Guide.docx
      */
@@ -178,46 +228,107 @@ class GovWebhookService
         $ackBy = $alert['acknowledged_by'] ?? null;
         $ackAt = $alert['acknowledged_at'] ?? null;
 
-        // Prepare structured event details per guide specification:
-        // "Event Json ( location,image,imageurl,video clip etc.."
+        // Additional Client Specification Fields
+        $vanId = self::formatVanId($vehicleId);
+        $vanCameraId = self::resolveVanCameraId($camera);
+        $detectionColor = self::resolveDetectionColor($normalizedEventType);
+        $eventDescription = !empty($comment) 
+            ? $comment 
+            : ucfirst($normalizedEventType) . ' alert identified on ' . $vanId . ' camera ' . $vanCameraId;
+
+        $fps = 25;
+        $resolution = '1920x1080';
+        $bitrate = '4096 kbps';
+
+        if (!empty($this->db)) {
+            try {
+                $camStmt = $this->db->prepare("SELECT `fps`, `resolution` FROM `vehicle_cameras` WHERE (`vehicle_id` = ? AND (`channel` = ? OR `camera_id` = ?)) OR `id` = ? OR `camera_id` = ? LIMIT 1");
+                $camStmt->execute([$vehicleId, $vanCameraId, $camera, $camera, $camera]);
+                $camRow = $camStmt->fetch(PDO::FETCH_ASSOC);
+                if ($camRow) {
+                    if (!empty($camRow['fps'])) $fps = (int)$camRow['fps'];
+                    if (!empty($camRow['resolution'])) $resolution = $camRow['resolution'];
+                }
+            } catch (\Throwable $t) {}
+        }
+
+        // Prepare structured event details
         $eventDetail = [
-            'system'           => 'Patrol360 Mobile Police Intelligence',
-            'alert_id'         => $alertId,
-            'vehicle_id'       => $vehicleId,
-            'camera_id'        => $camera,
-            'event_type'       => $normalizedEventType,
-            'event_types'      => [$normalizedEventType],
-            'alert_type'       => $normalizedEventType,
-            'raw_alert_type'   => $rawType,
-            'status'           => $statusLabel,
-            'status_code'      => $statusCode,
-            'plate_number'     => $plate,
-            'location'         => !empty($location) ? "{$location} ({$lat}, {$lon})" : "{$lat}, {$lon}",
-            'latitude'         => $lat,
-            'longitude'        => $lon,
-            'image'            => $image,
-            'imageurl'         => $imageUrl,
-            'video_clip_url'   => $videoClipUrl,
-            'video_clip'       => $videoClipUrl,
-            'detected_at'      => $createtime,
-            'comment'          => $comment,
-            'action_taken'     => $actionTaken,
-            'acknowledged_by'  => $ackBy,
-            'acknowledged_at'  => $ackAt,
-            'closed_by'        => $closedBy,
-            'closed_time'      => $closedTime
+            'system'                   => 'Patrol360 Mobile Police Intelligence',
+            'alert_id'                 => $alertId,
+            'vehicle_id'               => $vehicleId,
+            'VanID'                    => $vanId,
+            'van_id'                   => $vanId,
+            'camera_id'                => $camera,
+            'VanCameraID'              => $vanCameraId,
+            'van_camera_id'            => $vanCameraId,
+            'event_type'               => $normalizedEventType,
+            'event_types'              => [$normalizedEventType],
+            'alert_type'               => $normalizedEventType,
+            'raw_alert_type'           => $rawType,
+            'status'                   => $statusLabel,
+            'status_code'              => $statusCode,
+            'plate_number'             => $plate,
+            'location'                 => !empty($location) ? "{$location} ({$lat}, {$lon})" : "{$lat}, {$lon}",
+            'latitude'                 => $lat,
+            'longitude'                => $lon,
+            'image'                    => $image,
+            'imageurl'                 => $imageUrl,
+            'snapshot_image_url'       => $imageUrl,
+            'snapshot_url'             => $imageUrl,
+            'SnapshotImageUrl'         => $imageUrl,
+            'video_clip_url'           => $videoClipUrl,
+            'video_clip'               => $videoClipUrl,
+            'bitrate'                  => $bitrate,
+            'Bitrate'                  => $bitrate,
+            'FPS'                      => $fps,
+            'fps'                      => $fps,
+            'Resolutions'              => $resolution,
+            'resolution'               => $resolution,
+            'event_description'        => $eventDescription,
+            'EventDescription'         => $eventDescription,
+            'color_of_detection'       => $detectionColor,
+            'ColorOfDetection'         => $detectionColor,
+            'detection_color'          => $detectionColor,
+            'detected_at'              => $createtime,
+            'comment'                  => $comment,
+            'action_taken'             => $actionTaken,
+            'acknowledged_by'          => $ackBy,
+            'acknowledged_at'          => $ackAt,
+            'closed_by'                => $closedBy,
+            'closed_time'              => $closedTime
         ];
 
         $eventName = ($statusCode === 'C') ? 'alert.closed' : (($statusCode === 'A') ? 'alert.acknowledged' : 'log.created');
 
         return [
-            'event'          => $eventName,
-            'event_type'     => $normalizedEventType,
-            'video_clip_url' => $videoClipUrl,
-            'data'           => [
-                'event_type'     => $normalizedEventType,
-                'video_clip_url' => $videoClipUrl,
-                'message'        => json_encode($eventDetail, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
+            'event'               => $eventName,
+            'event_type'          => $normalizedEventType,
+            'video_clip_url'      => $videoClipUrl,
+            'VanID'               => $vanId,
+            'van_id'              => $vanId,
+            'VanCameraID'         => $vanCameraId,
+            'van_camera_id'       => $vanCameraId,
+            'snapshot_image_url'  => $imageUrl,
+            'bitrate'             => $bitrate,
+            'FPS'                 => $fps,
+            'Resolutions'         => $resolution,
+            'event_description'   => $eventDescription,
+            'color_of_detection'  => $detectionColor,
+            'data'                => [
+                'event_type'          => $normalizedEventType,
+                'video_clip_url'      => $videoClipUrl,
+                'VanID'               => $vanId,
+                'van_id'              => $vanId,
+                'VanCameraID'         => $vanCameraId,
+                'van_camera_id'       => $vanCameraId,
+                'snapshot_image_url'  => $imageUrl,
+                'bitrate'             => $bitrate,
+                'FPS'                 => $fps,
+                'Resolutions'         => $resolution,
+                'event_description'   => $eventDescription,
+                'color_of_detection'  => $detectionColor,
+                'message'             => json_encode($eventDetail, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
             ]
         ];
     }

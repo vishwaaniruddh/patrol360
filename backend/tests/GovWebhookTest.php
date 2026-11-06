@@ -50,20 +50,48 @@ class GovWebhookTest extends TestCase
         $this->assertArrayHasKey('video_clip_url', $payload);
         $this->assertStringContainsString('/api/ai-alerts/9999/video', $payload['video_clip_url']);
 
+        // Extra client fields at root
+        $this->assertEquals('Van1', $payload['VanID']);
+        $this->assertEquals(1, $payload['VanCameraID']);
+        $this->assertArrayHasKey('snapshot_image_url', $payload);
+        $this->assertEquals('4096 kbps', $payload['bitrate']);
+        $this->assertEquals(25, $payload['FPS']);
+        $this->assertEquals('1920x1080', $payload['Resolutions']);
+        $this->assertEquals('High-threat firearm detected', $payload['event_description']);
+        $this->assertEquals('red', $payload['color_of_detection']);
+
+        // Data level
         $this->assertArrayHasKey('data', $payload);
-        $this->assertArrayHasKey('event_type', $payload['data']);
         $this->assertEquals('weapon detection', $payload['data']['event_type']);
-        $this->assertArrayHasKey('video_clip_url', $payload['data']);
+        $this->assertEquals('Van1', $payload['data']['VanID']);
+        $this->assertEquals(1, $payload['data']['VanCameraID']);
+        $this->assertEquals('red', $payload['data']['color_of_detection']);
         $this->assertArrayHasKey('message', $payload['data']);
 
+        // Inner message level
         $inner = json_decode($payload['data']['message'], true);
         $this->assertIsArray($inner);
         $this->assertEquals(9999, $inner['alert_id']);
         $this->assertEquals('PATROL-UNIT-01', $inner['vehicle_id']);
+        $this->assertEquals('Van1', $inner['VanID']);
+        $this->assertEquals(1, $inner['VanCameraID']);
         $this->assertEquals('GJ-01-AB-1234', $inner['plate_number']);
         $this->assertEquals('weapon detection', $inner['event_type']);
-        $this->assertContains('weapon detection', $inner['event_types']);
-        $this->assertStringContainsString('/api/ai-alerts/9999/video', $inner['video_clip_url']);
+        $this->assertEquals('red', $inner['color_of_detection']);
+        $this->assertEquals('4096 kbps', $inner['bitrate']);
+        $this->assertEquals(25, $inner['FPS']);
+        $this->assertEquals('1920x1080', $inner['Resolutions']);
+    }
+
+    public function testDetectionColorMappings(): void
+    {
+        $this->assertEquals('red', GovWebhookService::resolveDetectionColor('weapon detection'));
+        $this->assertEquals('red', GovWebhookService::resolveDetectionColor('fire'));
+        $this->assertEquals('pink', GovWebhookService::resolveDetectionColor('smoke'));
+        $this->assertEquals('pink', GovWebhookService::resolveDetectionColor('crowd density'));
+        $this->assertEquals('blue', GovWebhookService::resolveDetectionColor('face recognition'));
+        $this->assertEquals('green', GovWebhookService::resolveDetectionColor('ANPR'));
+        $this->assertEquals('green', GovWebhookService::resolveDetectionColor('vehicle classification'));
     }
 
     public function testNormalizeEventTypeAllCanonicalTypes(): void
