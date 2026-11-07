@@ -17,6 +17,20 @@ class UserController
         $this->db = Database::getConnection();
     }
 
+    private function getOfficerPhotoUrl(int $userId): ?string
+    {
+        $uploadDir = dirname(__DIR__, 2) . '/public/uploads/officers';
+        if (!is_dir($uploadDir)) {
+            return null;
+        }
+        $files = glob($uploadDir . '/officer_' . $userId . '_*.*');
+        if (!empty($files)) {
+            usort($files, fn($a, $b) => filemtime($b) <=> filemtime($a));
+            return '/uploads/officers/' . basename($files[0]);
+        }
+        return null;
+    }
+
     public function index(array $args): void
     {
         $query = $args['query'];
@@ -50,7 +64,9 @@ class UserController
         $total = (int)$countStmt->fetchColumn();
 
         // Data query
-        $sql = "SELECT id, name, email, role, badge_number, police_station, is_active, created_at, updated_at 
+        $sql = "SELECT id, name, email, role, badge_number, police_station, is_active, 
+                       (CASE WHEN `faceEncoding` IS NOT NULL AND LENGTH(`faceEncoding`) > 0 THEN 1 ELSE 0 END) AS has_face_encoding,
+                       created_at, updated_at 
                 FROM `users` {$whereClause} 
                 ORDER BY id DESC 
                 LIMIT {$limit} OFFSET {$offset}";
@@ -58,19 +74,31 @@ class UserController
         $stmt->execute($params);
         $users = $stmt->fetchAll();
 
+        foreach ($users as &$u) {
+            $u['has_face_encoding'] = (int)($u['has_face_encoding'] ?? 0);
+            $u['photo_url'] = $this->getOfficerPhotoUrl((int)$u['id']);
+        }
+        unset($u);
+
         Response::paginate($users, $total, $page, $limit, 'Users list retrieved');
     }
 
     public function show(array $args): void
     {
         $id = (int)$args['params'][0];
-        $stmt = $this->db->prepare("SELECT id, name, email, role, badge_number, police_station, is_active, created_at, updated_at FROM `users` WHERE id = ?");
+        $stmt = $this->db->prepare("SELECT id, name, email, role, badge_number, police_station, is_active, 
+                                           (CASE WHEN `faceEncoding` IS NOT NULL AND LENGTH(`faceEncoding`) > 0 THEN 1 ELSE 0 END) AS has_face_encoding,
+                                           created_at, updated_at 
+                                    FROM `users` WHERE id = ?");
         $stmt->execute([$id]);
         $user = $stmt->fetch();
 
         if (!$user) {
             Response::error('User not found.', 404);
         }
+
+        $user['has_face_encoding'] = (int)($user['has_face_encoding'] ?? 0);
+        $user['photo_url'] = $this->getOfficerPhotoUrl($id);
 
         Response::success('User details retrieved', $user);
     }
@@ -193,24 +221,157 @@ class UserController
         Response::success('User updated successfully', $updated);
     }
 
-    public function delete(array $args): void
+    public function destroy(array $args): void
     {
-        $id = (int)$args['params'][0];
-        $authUser = $args['user'];
+        $this->delete($args);
+    }
 
-        if ($authUser['id'] === $id) {
-            Response::error('You cannot delete your own admin account.', 400);
-        }
-
-        $stmt = $this->db->prepare("SELECT id FROM `users` WHERE id = ?");
+    /**
+     * POST /api/users/:id/face-encoding
+     * POST /api/users/:id/photo
+     * Uploads officer face photo and calls Python service (195.35.7.83:5051) to generate face encoding in DB
+     */
+    public function uploadFaceEncoding(array $args): void
+    {
+        $id = (int)($args['params'][0] ?? 0);
+        $stmt = $this->db->prepare("SELECT id, name, badge_number FROM `users` WHERE id = ?");
         $stmt->execute([$id]);
-        if (!$stmt->fetch()) {
+        $user = $stmt->fetch();
+
+        if (!$user) {
             Response::error('User not found.', 404);
         }
 
-        $del = $this->db->prepare("DELETE FROM `users` WHERE id = ?");
-        $del->execute([$id]);
+        $tmpFilePath = null;
+        $originalExt = 'jpg';
+        $isTempGenerated = false;
 
-        Response::success("User ID {$id} deleted successfully");
+        if (!empty($_FILES['image']['tmp_name']) && is_uploaded_file($_FILES['image']['tmp_name'])) {
+            $tmpFilePath = $_FILES['image']['tmp_name'];
+            $origName = $_FILES['image']['name'] ?? 'face.jpg';
+            $ext = strtolower(pathinfo($origName, PATHINFO_EXTENSION));
+            if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp'])) {
+                $originalExt = $ext;
+            }
+        } elseif (!empty($_FILES['photo']['tmp_name']) && is_uploaded_file($_FILES['photo']['tmp_name'])) {
+            $tmpFilePath = $_FILES['photo']['tmp_name'];
+            $origName = $_FILES['photo']['name'] ?? 'face.jpg';
+            $ext = strtolower(pathinfo($origName, PATHINFO_EXTENSION));
+            if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp'])) {
+                $originalExt = $ext;
+            }
+        } elseif (!empty($args['body']['image']) || !empty($args['body']['photo'])) {
+            $base64Data = (string)($args['body']['image'] ?? $args['body']['photo']);
+            if (preg_match('/^data:image\/(\w+);base64,/', $base64Data, $typeMatch)) {
+                $originalExt = strtolower($typeMatch[1]);
+                $base64Data = substr($base64Data, strpos($base64Data, ',') + 1);
+            }
+            $decoded = base64_decode($base64Data);
+            if ($decoded !== false) {
+                $tmpFilePath = tempnam(sys_get_temp_dir(), 'officer_face_');
+                file_put_contents($tmpFilePath, $decoded);
+                $isTempGenerated = true;
+            }
+        }
+
+        if (!$tmpFilePath || !file_exists($tmpFilePath)) {
+            Response::error('No face image provided. Please select or capture an image file.', 400);
+        }
+
+        // Save persistent copy in public/uploads/officers/
+        $uploadDir = dirname(__DIR__, 2) . '/public/uploads/officers';
+        if (!is_dir($uploadDir)) {
+            @mkdir($uploadDir, 0777, true);
+        }
+
+        $savedFilename = 'officer_' . $id . '_' . time() . '.' . ($originalExt === 'jpeg' ? 'jpg' : $originalExt);
+        $savedPath = $uploadDir . '/' . $savedFilename;
+        copy($tmpFilePath, $savedPath);
+
+        if ($isTempGenerated) {
+            @unlink($tmpFilePath);
+        }
+
+        $publicPhotoUrl = '/uploads/officers/' . $savedFilename;
+
+        // Forward to Python AI microservice: http://195.35.7.83:5051/generatefaceencoding_file
+        $pythonApiUrl = 'http://195.35.7.83:5051/generatefaceencoding_file';
+        $ch = curl_init();
+        $mime = ($originalExt === 'png') ? 'image/png' : 'image/jpeg';
+        $cfile = new \CURLFile($savedPath, $mime, basename($savedPath));
+
+        curl_setopt_array($ch, [
+            CURLOPT_URL            => $pythonApiUrl,
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => [
+                'emp_id' => (string)$id,
+                'image'  => $cfile
+            ],
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => 30,
+            CURLOPT_CONNECTTIMEOUT => 10,
+        ]);
+
+        $responseRaw = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
+        curl_close($ch);
+
+        $pythonResponse = !empty($responseRaw) ? json_decode($responseRaw, true) : null;
+
+        // Python service returns {"Code": 200, "msg": "Face embedding generated successfully", "emp_id": "..."}
+        if ($httpCode === 200 && is_array($pythonResponse) && ($pythonResponse['Code'] ?? 0) === 200) {
+            Response::success('Face embedding generated successfully', [
+                'user_id'         => $id,
+                'emp_id'          => (string)$id,
+                'officer_name'    => $user['name'],
+                'photo_url'       => $publicPhotoUrl,
+                'has_face_encoding' => 1,
+                'python_response' => $pythonResponse
+            ], 200);
+        } elseif ($httpCode === 422 || ($pythonResponse['Code'] ?? 0) === 422) {
+            Response::error($pythonResponse['msg'] ?? 'No face detected in the uploaded photo. Please upload a clear frontal face image.', 422, [
+                'user_id'         => $id,
+                'photo_url'       => $publicPhotoUrl,
+                'python_response' => $pythonResponse
+            ]);
+        } else {
+            $msg = $pythonResponse['msg'] ?? ($curlError ?: 'Python face encoding microservice connection error');
+            Response::error('Face encoding generation failed: ' . $msg, ($httpCode >= 400 && $httpCode < 600) ? $httpCode : 502, [
+                'user_id'         => $id,
+                'photo_url'       => $publicPhotoUrl,
+                'python_response' => $pythonResponse,
+                'curl_error'      => $curlError
+            ]);
+        }
+    }
+
+    /**
+     * GET /api/users/:id/photo
+     * Serves officer photo binary
+     */
+    public function photo(array $args): void
+    {
+        $id = (int)($args['params'][0] ?? 0);
+        $uploadDir = dirname(__DIR__, 2) . '/public/uploads/officers';
+        if (!is_dir($uploadDir)) {
+            Response::error('Photo not found', 404);
+        }
+
+        $files = glob($uploadDir . '/officer_' . $id . '_*.*');
+        if (empty($files)) {
+            Response::error('No photo registered for this officer', 404);
+        }
+
+        usort($files, fn($a, $b) => filemtime($b) <=> filemtime($a));
+        $latest = $files[0];
+        $ext = strtolower(pathinfo($latest, PATHINFO_EXTENSION));
+        $contentType = ($ext === 'png') ? 'image/png' : 'image/jpeg';
+
+        header('Content-Type: ' . $contentType);
+        header('Content-Length: ' . filesize($latest));
+        header('Cache-Control: public, max-age=86400');
+        readfile($latest);
+        exit;
     }
 }

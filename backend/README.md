@@ -136,10 +136,12 @@ Base URL (Production): `https://sarsspl.com/patrol360/backend/public`
 
 ### B. User Management *(Admin Only)*
 - `GET /api/users` - Paginated list of users
-- `POST /api/users` - Create officer account
+- `POST /api/users` - Create officer account (Step 1: Save officer credentials & details)
 - `GET /api/users/:id` - Fetch single user
 - `PUT /api/users/:id` - Update user role, station, status
 - `DELETE /api/users/:id` - Delete user account
+- `POST /api/users/:id/face-encoding` - Upload officer face photo & call Python AI microservice (`http://195.35.7.83:5051/generatefaceencoding_file`) to generate 512-D neural biometric face encoding in database (Step 2)
+- `GET /api/users/:id/photo` - Fetch officer profile photo binary image
 
 ### C. Police Vehicles & Cameras
 - `GET /api/vehicles` - List patrol vans with latest GPS telemetry *(User/Admin)*

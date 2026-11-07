@@ -1421,6 +1421,102 @@
         </div>
       </div>
 
+      <!-- POST /api/users -->
+      <div class="endpoint-card" data-category="auth" data-method="POST" data-path="/api/users" data-role="admin">
+        <div class="endpoint-summary" onclick="toggleEndpoint(this)">
+          <div class="endpoint-left">
+            <span class="method-badge method-post">POST</span>
+            <span class="endpoint-path">/api/users</span>
+            <span class="endpoint-desc">Step 1: Register new police officer record (returns userId for Step 2)</span>
+          </div>
+          <div class="endpoint-right">
+            <span class="role-badge role-admin">Admin Only</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="endpoint-details">
+          <div class="details-grid">
+            <div>
+              <div class="detail-section-title">Request Body (JSON)</div>
+              <pre class="code-box"><code>{
+  "name": "Vikram Solanki",
+  "email": "officer@police.gov.in",
+  "password": "SecurePassword123!",
+  "role": "user",
+  "badge_number": "GJ-NP-402",
+  "police_station": "Navrangpura Police Station"
+}</code></pre>
+            </div>
+            <div>
+              <div class="detail-section-title">Response (201 Created)</div>
+              <pre class="code-box"><code>{
+  "success": true,
+  "message": "User created successfully",
+  "data": {
+    "id": 6,
+    "name": "Vikram Solanki",
+    "email": "officer@police.gov.in",
+    "role": "user",
+    "badge_number": "GJ-NP-402",
+    "police_station": "Navrangpura Police Station"
+  }
+}</code></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- POST /api/users/{id}/face-encoding -->
+      <div class="endpoint-card" data-category="auth" data-method="POST" data-path="/api/users/:id/face-encoding" data-role="admin">
+        <div class="endpoint-summary" onclick="toggleEndpoint(this)">
+          <div class="endpoint-left">
+            <span class="method-badge method-post">POST</span>
+            <span class="endpoint-path">/api/users/:id/face-encoding</span>
+            <span class="endpoint-desc">Step 2: Upload officer face photo & generate 512-D neural face encoding via Python AI</span>
+          </div>
+          <div class="endpoint-right">
+            <span class="role-badge role-admin">Admin / Officer</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="endpoint-details">
+          <div class="details-grid">
+            <div>
+              <div class="detail-section-title">Form-Data / Multipart Payload</div>
+              <table class="param-table">
+                <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+                <tbody>
+                  <tr><td class="param-name">image</td><td class="param-type">File / base64</td><td>Officer frontal face photo (.jpg, .jpeg, .png)</td></tr>
+                  <tr><td class="param-name">emp_id</td><td class="param-type">string</td><td>Officer user ID (auto-mapped from :id URL parameter)</td></tr>
+                </tbody>
+              </table>
+              <div class="small text-muted mt-2">
+                ⚡ Proxies upstream to Python AI Face Recognition microservice (<code>http://195.35.7.83:5051/generatefaceencoding_file</code>).
+              </div>
+            </div>
+            <div>
+              <div class="detail-section-title">Response (200 OK)</div>
+              <pre class="code-box"><code>{
+  "success": true,
+  "message": "Face embedding generated successfully",
+  "data": {
+    "user_id": 6,
+    "emp_id": "6",
+    "officer_name": "Vikram Solanki",
+    "photo_url": "/uploads/officers/officer_6_1794038779.jpg",
+    "has_face_encoding": 1,
+    "python_response": {
+      "Code": 200,
+      "msg": "Face embedding generated successfully",
+      "emp_id": "6"
+    }
+  }
+}</code></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- ================================================================= -->
       <!-- 3. POLICE VEHICLES & TELEMETRY -->
       <!-- ================================================================= -->

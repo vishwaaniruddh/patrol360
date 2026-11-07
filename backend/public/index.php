@@ -78,6 +78,9 @@ $router->post('/api/users', [UserController::class, 'store'], [$admin]);
 $router->get('/api/users/:id', [UserController::class, 'show'], [$admin]);
 $router->put('/api/users/:id', [UserController::class, 'update'], [$admin]);
 $router->delete('/api/users/:id', [UserController::class, 'destroy'], [$admin]);
+$router->post('/api/users/:id/face-encoding', [UserController::class, 'uploadFaceEncoding'], [$auth]);
+$router->post('/api/users/:id/photo', [UserController::class, 'uploadFaceEncoding'], [$auth]);
+$router->get('/api/users/:id/photo', [UserController::class, 'photo'], []);
 
 // ============================================================================
 // 4. POLICE VEHICLES FLEET

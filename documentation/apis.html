@@ -591,6 +591,60 @@
       </div>
     </div>
 
+    <!-- OFFICER BIOMETRICS & FACE RECOGNITION ENCODING API -->
+    <div class="card" style="border-left: 4px solid #7c3aed;" data-role="both">
+      <div class="card-title">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span class="badge" style="background: #7c3aed; color: #fff;">BIOMETRICS</span>
+          <span style="font-family: var(--font-mono); font-size: 14px;">/api/users/:id/face-encoding & /api/users</span>
+          <span style="background: #f5f3ff; color: #6d28d9; font-size: 11px; padding: 2px 8px; border-radius: 9999px; font-weight: 600;">Python Face AI Integration</span>
+        </div>
+        <span style="font-size: 12px; color: var(--muted-foreground);">2-Step Officer Onboarding & 512-D Neural Facial Encoding</span>
+      </div>
+      <p style="color: #52525b; font-size: 12px; margin-bottom: 0.5rem;">
+        End-to-end 2-step officer provisioning workflow. Step 1 saves the officer record into MySQL <code>users</code> table, generating their <code>userId</code>. Step 2 uploads a frontal face photo to the Python AI service (<code>http://195.35.7.83:5051/generatefaceencoding_file</code>), which generates the 512-D neural biometric face encoding and saves it directly into the <code>users.faceEncoding</code> BLOB column.
+      </p>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px; margin-bottom: 12px; font-size: 12px;">
+        <div style="background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <strong>📝 Step 1: Officer Record Creation</strong><br>
+          <code>POST /api/users</code><br>
+          <span style="color: #64748b;">Registers officer name, email, badge, station, role, returns <code>userId</code>.</span>
+        </div>
+        <div style="background: #f5f3ff; padding: 10px; border-radius: 6px; border: 1px solid #c4b5fd;">
+          <strong>📸 Step 2: Face Biometric Enrollment</strong><br>
+          <code>POST /api/users/:id/face-encoding</code><br>
+          <span style="color: #6d28d9;">Uploads officer photo, calls Python AI (195.35.7.83:5051) with <code>emp_id</code> and <code>image</code>, stores 512-D embedding in DB.</span>
+        </div>
+        <div style="background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <strong>🖼️ Officer Photo Serving</strong><br>
+          <code>GET /api/users/:id/photo</code><br>
+          <span style="color: #64748b;">Direct binary stream of officer portrait for badges and profiles.</span>
+        </div>
+      </div>
+      <div class="code-container">
+        <div class="code-header">
+          <span>STEP 2 PYTHON AI EMBEDDING SUCCESS RESPONSE</span>
+          <button class="btn-sm" onclick="copySnippet(this)">Copy JSON</button>
+        </div>
+        <pre class="code-body">{
+  "success": true,
+  "message": "Face embedding generated successfully",
+  "data": {
+    "user_id": 2,
+    "emp_id": "2",
+    "officer_name": "Inspector Rajesh Sharma",
+    "photo_url": "/uploads/officers/officer_2_1794038779.jpg",
+    "has_face_encoding": 1,
+    "python_response": {
+      "Code": 200,
+      "msg": "Face embedding generated successfully",
+      "emp_id": "2"
+    }
+  }
+}</pre>
+      </div>
+    </div>
+
     <!-- GOVERNMENT WEBHOOK API & STORE-AND-FORWARD DISPATCH ENGINE -->
     <div class="card" style="border-left: 4px solid #6366f1;" data-role="both">
       <div class="card-title">
