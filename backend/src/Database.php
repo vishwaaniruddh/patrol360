@@ -68,6 +68,12 @@ class Database
                 }
             }
 
+            // 1.1 users table patches (Face ID Biometric Encoding BLOB)
+            $userCols = $db->query("SHOW COLUMNS FROM `users`")->fetchAll(PDO::FETCH_COLUMN);
+            if (!empty($userCols) && !in_array('faceEncoding', $userCols, true)) {
+                $db->exec("ALTER TABLE `users` ADD COLUMN `faceEncoding` BLOB DEFAULT NULL");
+            }
+
             // 2. vehicle_cameras table patches (DVR & Live Streaming columns)
             $camCols = $db->query("SHOW COLUMNS FROM `vehicle_cameras`")->fetchAll(PDO::FETCH_COLUMN);
             if (!empty($camCols)) {
