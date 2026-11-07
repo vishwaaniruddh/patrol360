@@ -194,4 +194,9 @@ class WatchlistPersonController
 
         Response::success("Person '{$record['full_name']}' deleted from watchlist");
     }
+
+    public function destroy(array $args): void
+    {
+        $this->delete($args);
+    }
 }

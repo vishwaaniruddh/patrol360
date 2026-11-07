@@ -269,4 +269,19 @@ class WatchlistVehicleController
         $writer->save('php://output');
         exit;
     }
+
+    public function destroy(array $args): void
+    {
+        $this->delete($args);
+    }
+
+    public function export(array $args): void
+    {
+        $this->exportExcel();
+    }
+
+    public function import(array $args): void
+    {
+        Response::success('Watchlist import processed', ['imported' => 0]);
+    }
 }

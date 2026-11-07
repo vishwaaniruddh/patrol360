@@ -179,4 +179,9 @@ class AuthController
 
         Response::success('Profile updated successfully', $updated);
     }
+
+    public function me(array $args): void
+    {
+        $this->profile($args);
+    }
 }

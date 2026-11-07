@@ -223,7 +223,28 @@ class UserController
 
     public function destroy(array $args): void
     {
-        $this->delete($args);
+        $id = (int)($args['params'][0] ?? 0);
+        $authUser = $args['user'] ?? null;
+
+        if ($authUser && (int)($authUser['id'] ?? 0) === $id) {
+            Response::error('You cannot delete your own admin account.', 400);
+        }
+
+        $stmt = $this->db->prepare("SELECT id FROM `users` WHERE id = ?");
+        $stmt->execute([$id]);
+        if (!$stmt->fetch()) {
+            Response::error('User not found.', 404);
+        }
+
+        $del = $this->db->prepare("DELETE FROM `users` WHERE id = ?");
+        $del->execute([$id]);
+
+        Response::success("User ID {$id} deleted successfully");
+    }
+
+    public function delete(array $args): void
+    {
+        $this->destroy($args);
     }
 
     /**

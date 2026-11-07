@@ -251,4 +251,9 @@ class VehicleController
 
         Response::success("Vehicle '{$vehicle['vehicle_id']}' and associated sensors deleted successfully");
     }
+
+    public function destroy(array $args): void
+    {
+        $this->delete($args);
+    }
 }
