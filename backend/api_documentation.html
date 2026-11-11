@@ -2110,6 +2110,47 @@
         </div>
       </div>
 
+      <!-- POST /api/watchlist/persons/:id/photo -->
+      <div class="endpoint-card" data-category="watchlist" data-method="POST" data-path="/api/watchlist/persons/:id/photo" data-role="both">
+        <div class="endpoint-summary" onclick="toggleEndpoint(this)">
+          <div class="endpoint-left">
+            <span class="method-badge method-post">POST</span>
+            <span class="endpoint-path">/api/watchlist/persons/:id/photo</span>
+            <span class="endpoint-desc">Upload &amp; store face photo for a blacklisted/wanted person</span>
+          </div>
+          <div class="endpoint-right">
+            <span class="role-badge role-protected">User / Admin</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="endpoint-details">
+          <div class="details-grid">
+            <div>
+              <div class="detail-section-title">Multipart / JSON Parameters</div>
+              <table class="param-table">
+                <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+                <tbody>
+                  <tr><td class="param-name">id</td><td>string/int</td><td>Watchlist row <code>id</code> or <code>person_id</code></td></tr>
+                  <tr><td class="param-name">image / photo</td><td>file / base64</td><td>Face image (<code>jpg</code>, <code>jpeg</code>, <code>png</code>, <code>webp</code>)</td></tr>
+                </tbody>
+              </table>
+              <p style="font-size: 12px; margin-top: 8px;">Also serves uploaded images via public <code>GET /api/watchlist/persons/:id/photo</code>.</p>
+            </div>
+            <div>
+              <div class="detail-section-title">Sample Response</div>
+              <div class="code-box"><pre>{
+  "success": true,
+  "message": "Watchlist person photo uploaded successfully",
+  "data": {
+    "photo_url": "/uploads/watchlist/person_1_1794355000.jpg",
+    "person": { "id": 1, "person_id": "PER-2026-001", "has_embedding": 0 }
+  }
+}</pre></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- ================================================================= -->
       <!-- 5. ANPR DETECTION EVENTS -->
       <!-- ================================================================= -->

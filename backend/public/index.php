@@ -126,6 +126,8 @@ $router->delete('/api/watchlist/vehicles/:id', [WatchlistVehicleController::clas
 // ============================================================================
 $router->get('/api/watchlist/persons', [WatchlistPersonController::class, 'index'], [$auth]);
 $router->post('/api/watchlist/persons', [WatchlistPersonController::class, 'store'], [$auth]);
+$router->post('/api/watchlist/persons/:id/photo', [WatchlistPersonController::class, 'uploadPhoto'], [$auth]);
+$router->get('/api/watchlist/persons/:id/photo', [WatchlistPersonController::class, 'photo'], []);
 $router->get('/api/watchlist/persons/:id', [WatchlistPersonController::class, 'show'], [$auth]);
 $router->put('/api/watchlist/persons/:id', [WatchlistPersonController::class, 'update'], [$auth]);
 $router->delete('/api/watchlist/persons/:id', [WatchlistPersonController::class, 'destroy'], [$admin]);

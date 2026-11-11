@@ -427,7 +427,8 @@
         <span style="font-size: 12px; color: var(--muted-foreground);">Complete Criminal Dossier &amp; Biometric Profile API</span>
       </div>
       <p style="color: #52525b; font-size: 12px; margin-bottom: 0.5rem;">
-        <strong>🚨 Dedicated Wanted Suspects Section API:</strong> Backed dynamically by the <code>ai_alerts</code> table filtered by <code>alerttype</code> (<code>Person</code>, <code>Person1</code>, <code>Wanted Suspect</code>, <code>FRS Watchlist</code>). Query all registered wanted offenders with complete criminal dossiers, FIR numbers, court warrant dates, biometric match confidence, bounty rewards, associated vehicles, residential addresses, and status (<code>WANTED</code>, <code>APPREHENDED</code>). Also available as <code>/api/wanted-suspects</code> and single dossier <code>GET /api/reports/wanted-suspects/:id</code>.
+        <strong>🚨 Dedicated Wanted Suspects Section API:</strong> Backed dynamically by the <code>ai_alerts</code> table filtered by <code>alerttype</code> (<code>Person</code>, <code>Person1</code>, <code>Wanted Suspect</code>, <code>FRS Watchlist</code>). Query all registered wanted offenders with complete criminal dossiers, FIR numbers, court warrant dates, biometric match confidence, bounty rewards, associated vehicles, residential addresses, and status (<code>WANTED</code>, <code>APPREHENDED</code>). Also available as <code>/api/wanted-suspects</code> and single dossier <code>GET /api/reports/wanted-suspects/:id</code>.<br>
+        <strong>👤 Person Watchlist Registry &amp; Photo Upload:</strong> Manage blacklisted persons in <code>person_watchlist</code> via <code>GET/POST /api/watchlist/persons</code>, <code>PUT/DELETE /api/watchlist/persons/:id</code>, upload face images via <code>POST /api/watchlist/persons/:id/photo</code>, and serve images via public <code>GET /api/watchlist/persons/:id/photo</code>.
       </p>
       <div class="code-container">
         <div class="code-header">

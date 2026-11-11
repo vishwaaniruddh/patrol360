@@ -177,8 +177,10 @@ Base URL (Production): `https://sarsspl.com/patrol360/backend/public`
 - `GET /api/watchlist/vehicles/:id` - Single stolen vehicle record *(User/Admin)*
 - `PUT /api/watchlist/vehicles/:id` - Update stolen vehicle *(User/Admin)*
 - `DELETE /api/watchlist/vehicles/:id` - Delete stolen vehicle *(Admin)*
-- `GET /api/watchlist/persons` - Wanted persons FRS watchlist *(User/Admin)*
+- `GET /api/watchlist/persons` - Wanted persons FRS watchlist (includes `has_embedding` flag) *(User/Admin)*
 - `POST /api/watchlist/persons` - Register wanted person *(User/Admin)*
+- `POST /api/watchlist/persons/:id/photo` - Upload & store watchlist person face photo (`image` / `photo` file or base64) *(User/Admin)*
+- `GET /api/watchlist/persons/:id/photo` - Serve watchlist person photo binary *(Public)*
 - `GET /api/watchlist/persons/:id` - Single wanted person *(User/Admin)*
 - `PUT /api/watchlist/persons/:id` - Update person *(User/Admin)*
 - `DELETE /api/watchlist/persons/:id` - Delete person *(Admin)*

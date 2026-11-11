@@ -66,3 +66,4 @@ final class UserManagementTest extends TestCase
         $this->assertFalse($checkAfter->fetch());
     }
 }
+
