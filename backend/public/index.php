@@ -234,6 +234,7 @@ $router->delete('/api/events/crowd/:id', [EventCrowdController::class, 'destroy'
 // ============================================================================
 $router->get('/api/export/pdf/incident/:type/:id', [ExportController::class, 'incidentPdf'], [$auth]);
 $router->get('/api/export/excel/events', [ExportController::class, 'excelEvents'], [$auth]);
+$router->get('/api/export/excel/gov-sync', [GovSyncController::class, 'exportExcel'], []);
 
 // ============================================================================
 // 15. LAW ENFORCEMENT ALERTS (PHPMAILER)
@@ -301,6 +302,8 @@ $router->post('/api/officer/report-incident', [OfficerController::class, 'report
 // ============================================================================
 $router->get('/api/gov-sync/status', [GovSyncController::class, 'status'], []);
 $router->get('/api/gov-sync/queue', [GovSyncController::class, 'queue'], []);
+$router->get('/api/gov-sync/synced', [GovSyncController::class, 'synced'], []);
+$router->get('/api/gov-sync/export/excel', [GovSyncController::class, 'exportExcel'], []);
 $router->post('/api/gov-sync/dispatch/:id', [GovSyncController::class, 'dispatchAlert'], []);
 $router->post('/api/gov-sync/dispatch-batch', [GovSyncController::class, 'dispatchBatch'], []);
 $router->post('/api/gov-sync/test-connection', [GovSyncController::class, 'testConnection'], []);

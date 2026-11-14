@@ -260,6 +260,7 @@ Base URL (Production): `https://sarsspl.com/patrol360/backend/public`
 ### G. Exports (Dompdf & PhpSpreadsheet)
 - `GET /api/export/pdf/incident/:type/:id` - Printable Police Incident Dossier PDF *(Dompdf)*
 - `GET /api/export/excel/events` - Complete multi-sheet AI detection logs Excel `.xlsx` *(PhpSpreadsheet)*
+- `GET /api/export/excel/gov-sync` - Official audit report (.xlsx) of all events & alerts synchronized with Central Government API *(PhpSpreadsheet)*
 
 ### H. Law Enforcement Email Alerts (PHPMailer)
 - `POST /api/alerts/email` - Dispatch critical incident alert to command email *(PHPMailer)*
@@ -292,6 +293,8 @@ Implements integration with Central Government Ingestion Endpoint (`https://api-
 - **Alert Lifecycle Webhooks**: Automatically dispatches on creation (`log.created`), officer acknowledgment (`alert.acknowledged`), and closure/resolution (`alert.closed` with officer name, closure timestamp, and action taken).
 - `GET /api/gov-sync/status` - Live status of government webhook synchronization, queue counts, and endpoint health
 - `GET /api/gov-sync/queue` - Paginated inspection of the offline outbox queue (`central_api_dispatch_queue`)
+- `GET /api/gov-sync/synced` - JSON list of all events & alerts synchronized with Government API
+- `GET /api/gov-sync/export/excel` - Generate and download styled Excel audit report (.xlsx) of all records synced to Government API
 - `POST /api/gov-sync/dispatch/:id` - Immediately dispatch a specific `ai_alerts` record to the government portal
 - `POST /api/gov-sync/dispatch-batch` - Flush and retry queued/failed offline records in batch *(Store-and-Forward)*
 - `POST /api/gov-sync/test-connection` - Ping government receiver to verify `x-api-key` and `x-api-secret` authentication credentials

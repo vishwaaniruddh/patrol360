@@ -2893,6 +2893,75 @@
         </div>
       </div>
 
+      <!-- GET /api/gov-sync/synced -->
+      <div class="endpoint-card" data-category="gov-sync" data-method="GET" data-path="/api/gov-sync/synced" data-role="both">
+        <div class="endpoint-summary" onclick="toggleEndpoint(this)">
+          <div class="endpoint-left">
+            <span class="method-badge method-get">GET</span>
+            <span class="endpoint-path">/api/gov-sync/synced</span>
+            <span class="endpoint-desc">Government Synced Dataset: Returns complete JSON array of events synchronized to Government Portal</span>
+          </div>
+          <div class="endpoint-right">
+            <span class="role-badge role-protected">Gov Synced</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="endpoint-details">
+          <div class="details-grid">
+            <div>
+              <div class="detail-section-title">Government Synced Dataset</div>
+              <p style="font-size: 12px; margin-bottom: 8px;">Returns all records marked as SENT_200 in outbox queue or SYNCED in ai_alerts with government receipt ID, van ID, camera, plate, GPS coordinates, and sync timestamp.</p>
+            </div>
+            <div>
+              <div class="try-runner">
+                <div class="try-header">
+                  <span>Interactive Test Runner</span>
+                  <button class="execute-btn" onclick="executeApi(this, 'GET', '/api/gov-sync/synced')">Send Request</button>
+                </div>
+                <div class="response-container">
+                  <div class="response-status-bar">
+                    <span>Status: <span class="status-code-badge status-200">200 OK</span></span>
+                    <span class="latency-timer">-- ms</span>
+                  </div>
+                  <div class="code-box"><pre class="response-body"></pre></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GET /api/gov-sync/export/excel -->
+      <div class="endpoint-card" data-category="gov-sync" data-method="GET" data-path="/api/gov-sync/export/excel" data-role="both">
+        <div class="endpoint-summary" onclick="toggleEndpoint(this)">
+          <div class="endpoint-left">
+            <span class="method-badge method-get">GET</span>
+            <span class="endpoint-path">/api/gov-sync/export/excel</span>
+            <span class="endpoint-desc">Download Government Synced Excel Dossier: Generates formatted multi-sheet .xlsx spreadsheet</span>
+          </div>
+          <div class="endpoint-right">
+            <span class="role-badge role-protected">Excel Report</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="endpoint-details">
+          <div class="details-grid">
+            <div>
+              <div class="detail-section-title">Government Sync Excel Report</div>
+              <p style="font-size: 12px; margin-bottom: 8px;">Generates official multi-sheet Excel workbook (Sheet 1: Synced Events Dossier with receipt IDs, plate, GPS, status; Sheet 2: Integration Telemetry & Metadata). Alias: <code>/api/export/excel/gov-sync</code>.</p>
+            </div>
+            <div>
+              <div class="try-runner">
+                <div class="try-header">
+                  <span>Direct Download Link</span>
+                  <a href="/backend/public/api/gov-sync/export/excel" target="_blank" class="execute-btn" style="text-decoration: none; display: inline-block;">Download .xlsx</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- POST /api/gov-sync/dispatch/:id -->
       <div class="endpoint-card" data-category="gov-sync" data-method="POST" data-path="/api/gov-sync/dispatch/112" data-role="both">
         <div class="endpoint-summary" onclick="toggleEndpoint(this)">

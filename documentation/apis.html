@@ -670,6 +670,16 @@
           <code>GET /api/gov-sync/queue?page=1&limit=20</code><br>
           <span style="color: #64748b;">Paginated list of dispatched, queued, and failed records with external item IDs.</span>
         </div>
+        <div style="background: #eff6ff; padding: 10px; border-radius: 6px; border: 1px solid #bfdbfe;">
+          <strong>📊 Gov Synced Dataset</strong><br>
+          <code>GET /api/gov-sync/synced</code><br>
+          <span style="color: #1e40af;">Full JSON array of all alerts & events successfully synchronized with government portal.</span>
+        </div>
+        <div style="background: #eff6ff; padding: 10px; border-radius: 6px; border: 1px solid #bfdbfe;">
+          <strong>📑 Download Gov Synced Excel (.xlsx)</strong><br>
+          <code>GET /api/gov-sync/export/excel</code><br>
+          <span style="color: #1e40af;">Generates and downloads formal Excel audit dossier with receipt IDs, plate, GPS & status. (Alias: <code>/api/export/excel/gov-sync</code>)</span>
+        </div>
         <div style="background: #f5f3ff; padding: 10px; border-radius: 6px; border: 1px solid #c4b5fd;">
           <strong>🚀 Immediate Alert Dispatch</strong><br>
           <code>POST /api/gov-sync/dispatch/:id</code><br>
