@@ -300,6 +300,7 @@ class GovSyncController
     {
         @ini_set('memory_limit', '512M');
         @set_time_limit(180);
+        @ini_set('display_errors', '0');
 
         $format = strtolower($args['query']['format'] ?? 'csv');
 
@@ -353,7 +354,7 @@ class GovSyncController
             'Destination Endpoint',
             'Officer Remarks'
         ];
-        fputcsv($out, $headers);
+        fputcsv($out, $headers, ',', '"', "\\");
 
         $sr = 1;
         foreach ($records as $r) {
@@ -376,7 +377,7 @@ class GovSyncController
                 $r['delivery_status'] ?? 'SENT_200',
                 $r['destination_url'] ?? 'N/A',
                 $r['remarks'] ?? '-'
-            ]);
+            ], ',', '"', "\\");
         }
 
         fclose($out);
@@ -562,7 +563,7 @@ class GovSyncController
             if (preg_match('/^ALERT-(\d+)/i', (string)$r['event_id'], $m)) {
                 $alertId = (int)$m[1];
             }
-            $alert = ($alertId && isset($alertsMap[$alertId])) ? $alertsMap[$alertId] : ($r['alert_id'] ? $r : null);
+            $alert = ($alertId && isset($alertsMap[$alertId])) ? $alertsMap[$alertId] : (!empty($r['alert_id']) ? $r : null);
 
             $payload = !empty($r['payload_json']) ? json_decode($r['payload_json'], true) : [];
             $innerMsg = [];
