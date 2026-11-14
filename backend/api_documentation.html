@@ -2937,7 +2937,7 @@
           <div class="endpoint-left">
             <span class="method-badge method-get">GET</span>
             <span class="endpoint-path">/api/gov-sync/export/excel</span>
-            <span class="endpoint-desc">Download Government Synced Excel Dossier: Generates formatted multi-sheet .xlsx spreadsheet</span>
+            <span class="endpoint-desc">Download Government Synced Excel Dossier: High-speed streaming Excel report (CSV with UTF-8 BOM / optional ?format=xlsx)</span>
           </div>
           <div class="endpoint-right">
             <span class="role-badge role-protected">Excel Report</span>
@@ -2948,13 +2948,13 @@
           <div class="details-grid">
             <div>
               <div class="detail-section-title">Government Sync Excel Report</div>
-              <p style="font-size: 12px; margin-bottom: 8px;">Generates official multi-sheet Excel workbook (Sheet 1: Synced Events Dossier with receipt IDs, plate, GPS, status; Sheet 2: Integration Telemetry & Metadata). Alias: <code>/api/export/excel/gov-sync</code>.</p>
+              <p style="font-size: 12px; margin-bottom: 8px;">Streams official Excel-compatible dataset with UTF-8 BOM, receipt IDs, patrol van ID, plate, GPS coordinates, status, detection and sync timestamps. Supports query parameter <code>?format=csv</code> (default, instant stream &lt;0.05s) and <code>?format=xlsx</code>. Alias: <code>/api/export/excel/gov-sync</code>.</p>
             </div>
             <div>
               <div class="try-runner">
                 <div class="try-header">
                   <span>Direct Download Link</span>
-                  <a href="/backend/public/api/gov-sync/export/excel" target="_blank" class="execute-btn" style="text-decoration: none; display: inline-block;">Download .xlsx</a>
+                  <a href="/backend/public/api/gov-sync/export/excel" target="_blank" class="execute-btn" style="text-decoration: none; display: inline-block;">Download Excel Report</a>
                 </div>
               </div>
             </div>
