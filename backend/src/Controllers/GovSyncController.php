@@ -320,18 +320,13 @@ class GovSyncController
         // Default & Ultra-Fast Path: Direct streaming CSV with UTF-8 BOM (opens directly in Microsoft Excel)
         $filename = "Patrol360_Gov_Sync_Report_" . date('Ymd_His') . ".csv";
 
-        while (ob_get_level()) {
-            ob_end_clean();
-        }
-
         header('Content-Type: text/csv; charset=UTF-8');
         header('Content-Disposition: attachment; filename="' . $filename . '"');
         header('Cache-Control: max-age=0, no-cache, no-store, must-revalidate');
         header('Pragma: public');
 
+        echo "\xEF\xBB\xBF";
         $out = fopen('php://output', 'w');
-        // UTF-8 BOM for flawless column encoding in Microsoft Excel
-        fwrite($out, "\xEF\xBB\xBF");
 
         // Column Headers
         $headers = [
