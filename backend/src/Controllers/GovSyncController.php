@@ -296,6 +296,9 @@ class GovSyncController
      */
     public function exportExcel(array $args): void
     {
+        @ini_set('memory_limit', '512M');
+        @set_time_limit(180);
+
         $records = $this->getSyncedRecords();
 
         $spreadsheet = new Spreadsheet();
@@ -392,27 +395,17 @@ class GovSyncController
             $sheet->fromArray($dataRows, null, 'A5');
             $lastRow = 4 + count($dataRows);
 
-            // Row styling and borders
+            // Row styling and borders applied in bulk
             $dataStyle = [
                 'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'CBD5E1']]],
                 'alignment' => ['vertical' => Alignment::VERTICAL_CENTER]
             ];
             $sheet->getStyle("A5:R{$lastRow}")->applyFromArray($dataStyle);
 
-            // Center align specific columns
+            // Center align specific columns in bulk
             foreach (['A', 'D', 'E', 'F', 'G', 'H', 'L', 'M', 'N', 'O', 'P'] as $col) {
                 $sheet->getStyle("{$col}5:{$col}{$lastRow}")
                     ->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-            }
-
-            // Alternating zebra fill
-            for ($row = 5; $row <= $lastRow; $row++) {
-                $sheet->getRowDimension($row)->setRowHeight(20);
-                if ($row % 2 === 0) {
-                    $sheet->getStyle("A{$row}:R{$row}")->getFill()
-                        ->setFillType(Fill::FILL_SOLID)
-                        ->getStartColor()->setRGB('F8FAFC');
-                }
             }
         } else {
             $sheet->mergeCells('A5:R5');
@@ -423,9 +416,29 @@ class GovSyncController
             ]);
         }
 
-        // Auto size columns
-        foreach (range('A', 'R') as $col) {
-            $sheet->getColumnDimension($col)->setAutoSize(true);
+        // Fast explicit column widths (avoids font-metric calculation overhead on thousands of rows)
+        $colWidths = [
+            'A' => 6,   // Sr
+            'B' => 28,  // Gov Receipt ID
+            'C' => 28,  // Event ID
+            'D' => 22,  // Gov Event Category
+            'E' => 22,  // Raw Alert Type
+            'F' => 18,  // Patrol Van ID
+            'G' => 16,  // Camera Channel
+            'H' => 16,  // Scanned Plate
+            'I' => 26,  // Incident Location
+            'J' => 14,  // Latitude
+            'K' => 14,  // Longitude
+            'L' => 14,  // Incident Status
+            'M' => 20,  // Detection Time
+            'N' => 24,  // Gov Synced Time
+            'O' => 12,  // HTTP Code
+            'P' => 20,  // Delivery Status
+            'Q' => 32,  // Destination Endpoint
+            'R' => 28   // Officer Remarks
+        ];
+        foreach ($colWidths as $col => $w) {
+            $sheet->getColumnDimension($col)->setWidth($w);
         }
 
         // Sheet 2: Government Integration Overview & Metadata
@@ -466,8 +479,8 @@ class GovSyncController
         $metaSheet->getStyle("A1:B{$metaLastRow}")->applyFromArray([
             'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'CBD5E1']]]
         ]);
-        $metaSheet->getColumnDimension('A')->setAutoSize(true);
-        $metaSheet->getColumnDimension('B')->setAutoSize(true);
+        $metaSheet->getColumnDimension('A')->setWidth(38);
+        $metaSheet->getColumnDimension('B')->setWidth(50);
 
         // Reset active sheet to first
         $spreadsheet->setActiveSheetIndex(0);
@@ -481,7 +494,7 @@ class GovSyncController
 
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         header('Content-Disposition: attachment; filename="' . $filename . '"');
-        header('Cache-Control: max-age=0');
+        header('Cache-Control: max-age=0, no-cache, no-store, must-revalidate');
         header('Pragma: public');
 
         $writer = new Xlsx($spreadsheet);
