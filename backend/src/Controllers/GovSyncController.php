@@ -320,13 +320,18 @@ class GovSyncController
         // Default & Ultra-Fast Path: Direct streaming CSV with UTF-8 BOM (opens directly in Microsoft Excel)
         $filename = "Patrol360_Gov_Sync_Report_" . date('Ymd_His') . ".csv";
 
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+
         header('Content-Type: text/csv; charset=UTF-8');
         header('Content-Disposition: attachment; filename="' . $filename . '"');
         header('Cache-Control: max-age=0, no-cache, no-store, must-revalidate');
         header('Pragma: public');
 
-        echo "\xEF\xBB\xBF";
         $out = fopen('php://output', 'w');
+        // UTF-8 BOM for flawless column encoding in Microsoft Excel
+        fwrite($out, "\xEF\xBB\xBF");
 
         // Column Headers
         $headers = [
@@ -571,7 +576,9 @@ class GovSyncController
             $cameraId = !empty($alert['camera_id']) ? $alert['camera_id'] : ($innerMsg['camera_id'] ?? ($eventDetail['VanCameraID'] ?? ($eventDetail['van_camera_id'] ?? 'CAM-01')));
             $rawType = !empty($alert['alerttype']) ? $alert['alerttype'] : ($innerMsg['alert_type'] ?? ($r['event_type'] ?? 'AI Detection'));
             $plate = !empty($alert['scanned_vehicle_numberplate']) ? $alert['scanned_vehicle_numberplate'] : ($innerMsg['plate_number'] ?? ($eventDetail['plate_number'] ?? '-'));
-            $comment = !empty($alert['comment']) ? $alert['comment'] : ($innerMsg['comment'] ?? ($eventDetail['remarks'] ?? 'Transmitted to Central Gov API'));
+            $comment = !empty($alert['comment']) 
+                ? $alert['comment'] 
+                : ($innerMsg['event_description'] ?? ($innerMsg['description'] ?? ($innerMsg['comment'] ?? ($eventDetail['remarks'] ?? 'Transmitted to Central Gov API'))));
 
             $canonicalType = GovWebhookService::normalizeEventType($rawType, [
                 'scanned_vehicle_numberplate' => $plate,

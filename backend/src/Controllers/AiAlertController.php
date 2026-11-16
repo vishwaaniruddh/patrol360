@@ -201,8 +201,27 @@ class AiAlertController
         // Status (default 'O' for Open)
         $status = !empty($body['status']) ? strtoupper(substr(trim($body['status']), 0, 1)) : 'O';
 
-        // Comment
-        $comment = !empty($body['comment']) ? trim($body['comment']) : null;
+        // Comment / Event Description (accept all standard naming variants)
+        $comment = null;
+        if (!empty($body['comment'])) {
+            $comment = trim($body['comment']);
+        } elseif (!empty($body['event_description'])) {
+            $comment = trim($body['event_description']);
+        } elseif (!empty($body['eventDescription'])) {
+            $comment = trim($body['eventDescription']);
+        } elseif (!empty($body['EventDescription'])) {
+            $comment = trim($body['EventDescription']);
+        } elseif (!empty($body['description'])) {
+            $comment = trim($body['description']);
+        } elseif (!empty($body['Description'])) {
+            $comment = trim($body['Description']);
+        } elseif (!empty($body['event_desc'])) {
+            $comment = trim($body['event_desc']);
+        } elseif (!empty($body['details'])) {
+            $comment = trim($body['details']);
+        } elseif (!empty($body['remarks'])) {
+            $comment = trim($body['remarks']);
+        }
 
         // Send IP (auto-detect if missing)
         $sendip = !empty($body['sendip']) ? trim($body['sendip']) : ($_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1');

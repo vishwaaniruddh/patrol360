@@ -11,12 +11,22 @@ use Exception;
 
 class GovWebhookService
 {
-    private PDO $db;
+    private ?PDO $db;
     private array $config;
 
     public function __construct(?PDO $db = null)
     {
-        $this->db = $db ?? Database::getConnection();
+        if ($db !== null) {
+            $this->db = $db;
+        } else {
+            $fp = @fsockopen('127.0.0.1', 3306, $errno, $errstr, 0.05);
+            if ($fp) {
+                fclose($fp);
+                $this->db = Database::getConnection();
+            } else {
+                $this->db = null;
+            }
+        }
         $appConfig = require __DIR__ . '/../../config/app.php';
         $this->config = $appConfig['gov_webhook'] ?? [
             'enabled'       => true,
@@ -232,9 +242,37 @@ class GovWebhookService
         $vanId = self::formatVanId($vehicleId);
         $vanCameraId = self::resolveVanCameraId($camera);
         $detectionColor = self::resolveDetectionColor($normalizedEventType);
-        $eventDescription = !empty($comment) 
-            ? $comment 
-            : ucfirst($normalizedEventType) . ' alert identified on ' . $vanId . ' camera ' . $vanCameraId;
+
+        // Resolve raw description from any available field
+        $rawDescription = trim(
+            (string)(
+                $alert['event_description'] ??
+                $alert['eventDescription'] ??
+                $alert['EventDescription'] ??
+                $alert['description'] ??
+                $alert['Description'] ??
+                $alert['comment'] ??
+                $alert['details'] ??
+                $alert['remarks'] ??
+                ''
+            )
+        );
+
+        if (!empty($rawDescription)) {
+            $eventDescription = $rawDescription;
+        } else {
+            $typeLabel = ucfirst($normalizedEventType);
+            $locStr = (!empty($location) && $location !== 'Patrol Sector Coordinates') ? " at {$location}" : '';
+            $coordStr = ($lat !== '0.0000' && $lon !== '0.0000') ? " ({$lat}, {$lon})" : '';
+
+            if ($plate && $normalizedEventType === 'ANPR') {
+                $eventDescription = "ANPR Plate Scan: License plate [{$plate}] detected{$locStr}{$coordStr} by {$vanId} (Camera {$vanCameraId})";
+            } elseif ($plate) {
+                $eventDescription = "{$typeLabel} Incident: Vehicle [{$plate}]{$locStr}{$coordStr} identified by {$vanId} (Camera {$vanCameraId})";
+            } else {
+                $eventDescription = "{$typeLabel} Threat Incident identified{$locStr}{$coordStr} by {$vanId} (Camera {$vanCameraId})";
+            }
+        }
 
         $fps = 25;
         $resolution = '1920x1080';
@@ -287,11 +325,17 @@ class GovWebhookService
             'resolution'               => $resolution,
             'event_description'        => $eventDescription,
             'EventDescription'         => $eventDescription,
+            'eventDescription'         => $eventDescription,
+            'description'              => $eventDescription,
+            'Description'              => $eventDescription,
+            'event_desc'               => $eventDescription,
+            'eventDesc'                => $eventDescription,
+            'details'                  => $eventDescription,
             'color_of_detection'       => $detectionColor,
             'ColorOfDetection'         => $detectionColor,
             'detection_color'          => $detectionColor,
             'detected_at'              => $createtime,
-            'comment'                  => $comment,
+            'comment'                  => $comment ?: $eventDescription,
             'action_taken'             => $actionTaken,
             'acknowledged_by'          => $ackBy,
             'acknowledged_at'          => $ackAt,
@@ -311,10 +355,22 @@ class GovWebhookService
             'van_camera_id'       => $vanCameraId,
             'snapshot_image_url'  => $imageUrl,
             'bitrate'             => $bitrate,
+            'Bitrate'             => $bitrate,
             'FPS'                 => $fps,
+            'fps'                 => $fps,
             'Resolutions'         => $resolution,
+            'resolution'          => $resolution,
             'event_description'   => $eventDescription,
+            'EventDescription'    => $eventDescription,
+            'eventDescription'    => $eventDescription,
+            'description'         => $eventDescription,
+            'Description'         => $eventDescription,
+            'event_desc'          => $eventDescription,
+            'eventDesc'           => $eventDescription,
+            'details'             => $eventDescription,
+            'comment'             => $comment ?: $eventDescription,
             'color_of_detection'  => $detectionColor,
+            'ColorOfDetection'    => $detectionColor,
             'data'                => [
                 'event_type'          => $normalizedEventType,
                 'video_clip_url'      => $videoClipUrl,
@@ -324,11 +380,24 @@ class GovWebhookService
                 'van_camera_id'       => $vanCameraId,
                 'snapshot_image_url'  => $imageUrl,
                 'bitrate'             => $bitrate,
+                'Bitrate'             => $bitrate,
                 'FPS'                 => $fps,
+                'fps'                 => $fps,
                 'Resolutions'         => $resolution,
+                'resolution'          => $resolution,
                 'event_description'   => $eventDescription,
+                'EventDescription'    => $eventDescription,
+                'eventDescription'    => $eventDescription,
+                'description'         => $eventDescription,
+                'Description'         => $eventDescription,
+                'event_desc'          => $eventDescription,
+                'eventDesc'           => $eventDescription,
+                'details'             => $eventDescription,
+                'comment'             => $comment ?: $eventDescription,
                 'color_of_detection'  => $detectionColor,
-                'message'             => json_encode($eventDetail, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
+                'ColorOfDetection'    => $detectionColor,
+                'message'             => json_encode($eventDetail, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+                'event_detail'        => $eventDetail
             ]
         ];
     }

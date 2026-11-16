@@ -11,7 +11,12 @@ class GovWebhookTest extends TestCase
 
     protected function setUp(): void
     {
-        $db = Database::getConnection();
+        $db = null;
+        $fp = @fsockopen('127.0.0.1', 3306, $errno, $errstr, 0.1);
+        if ($fp) {
+            fclose($fp);
+            $db = Database::getConnection();
+        }
         $this->service = new GovWebhookService($db);
     }
 
@@ -58,6 +63,10 @@ class GovWebhookTest extends TestCase
         $this->assertEquals(25, $payload['FPS']);
         $this->assertEquals('1920x1080', $payload['Resolutions']);
         $this->assertEquals('High-threat firearm detected', $payload['event_description']);
+        $this->assertEquals('High-threat firearm detected', $payload['EventDescription']);
+        $this->assertEquals('High-threat firearm detected', $payload['eventDescription']);
+        $this->assertEquals('High-threat firearm detected', $payload['description']);
+        $this->assertEquals('High-threat firearm detected', $payload['Description']);
         $this->assertEquals('red', $payload['color_of_detection']);
 
         // Data level
@@ -127,6 +136,13 @@ class GovWebhookTest extends TestCase
 
     public function testEnqueueAlertInsertsIntoDispatchQueue(): void
     {
+        $fp = @fsockopen('127.0.0.1', 3306, $errno, $errstr, 0.1);
+        if (!$fp) {
+            $this->markTestSkipped('Local MySQL database is not active.');
+            return;
+        }
+        fclose($fp);
+
         $db = Database::getConnection();
         // Insert temporary alert
         $stmt = $db->prepare("
