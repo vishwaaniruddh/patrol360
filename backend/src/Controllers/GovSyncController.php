@@ -43,7 +43,10 @@ class GovSyncController
             FROM `central_api_dispatch_queue`
         ");
         $qStats = $qStatsStmt->fetch(PDO::FETCH_ASSOC) ?: [
-            'total' => 0, 'queued' => 0, 'sent' => 0, 'failed' => 0
+            'total' => 0,
+            'queued' => 0,
+            'sent' => 0,
+            'failed' => 0
         ];
 
         // 2. AI Alerts sync statistics
@@ -57,7 +60,11 @@ class GovSyncController
             FROM `ai_alerts`
         ");
         $aStats = $aStatsStmt->fetch(PDO::FETCH_ASSOC) ?: [
-            'total_alerts' => 0, 'synced' => 0, 'queued' => 0, 'failed' => 0, 'not_synced' => 0
+            'total_alerts' => 0,
+            'synced' => 0,
+            'queued' => 0,
+            'failed' => 0,
+            'not_synced' => 0
         ];
 
         // 3. Recent 5 dispatches
@@ -70,22 +77,22 @@ class GovSyncController
         $recent = $recentStmt->fetchAll(PDO::FETCH_ASSOC);
 
         Response::success([
-            'config'        => $this->service->getConfig(true),
+            'config' => $this->service->getConfig(true),
             'queue_summary' => [
-                'total'  => (int)($qStats['total'] ?? 0),
-                'queued' => (int)($qStats['queued'] ?? 0),
-                'sent'   => (int)($qStats['sent'] ?? 0),
-                'failed' => (int)($qStats['failed'] ?? 0)
+                'total' => (int) ($qStats['total'] ?? 0),
+                'queued' => (int) ($qStats['queued'] ?? 0),
+                'sent' => (int) ($qStats['sent'] ?? 0),
+                'failed' => (int) ($qStats['failed'] ?? 0)
             ],
             'alerts_summary' => [
-                'total'      => (int)($aStats['total_alerts'] ?? 0),
-                'synced'     => (int)($aStats['synced'] ?? 0),
-                'queued'     => (int)($aStats['queued'] ?? 0),
-                'failed'     => (int)($aStats['failed'] ?? 0),
-                'not_synced' => (int)($aStats['not_synced'] ?? 0)
+                'total' => (int) ($aStats['total_alerts'] ?? 0),
+                'synced' => (int) ($aStats['synced'] ?? 0),
+                'queued' => (int) ($aStats['queued'] ?? 0),
+                'failed' => (int) ($aStats['failed'] ?? 0),
+                'not_synced' => (int) ($aStats['not_synced'] ?? 0)
             ],
             'recent_dispatches' => $recent,
-            'timestamp'         => date('c')
+            'timestamp' => date('c')
         ], 'Government sync status retrieved successfully');
     }
 
@@ -97,8 +104,8 @@ class GovSyncController
     {
         $queryParams = $args['query'] ?? [];
         $status = $queryParams['status'] ?? null;
-        $page = max(1, (int)($queryParams['page'] ?? 1));
-        $limit = min(100, max(1, (int)($queryParams['limit'] ?? 20)));
+        $page = max(1, (int) ($queryParams['page'] ?? 1));
+        $limit = min(100, max(1, (int) ($queryParams['limit'] ?? 20)));
         $offset = ($page - 1) * $limit;
 
         $where = [];
@@ -114,7 +121,7 @@ class GovSyncController
         // Total count
         $cntStmt = $this->db->prepare("SELECT COUNT(*) FROM `central_api_dispatch_queue` {$whereClause}");
         $cntStmt->execute($params);
-        $total = (int)$cntStmt->fetchColumn();
+        $total = (int) $cntStmt->fetchColumn();
 
         // Paginated rows
         $sql = "
@@ -145,7 +152,7 @@ class GovSyncController
      */
     public function dispatchAlert(array $args): void
     {
-        $alertId = (int)($args['params'][0] ?? ($args['params']['id'] ?? 0));
+        $alertId = (int) ($args['params'][0] ?? ($args['params']['id'] ?? 0));
         if ($alertId <= 0) {
             Response::error('Invalid Alert ID.', 400);
         }
@@ -172,7 +179,7 @@ class GovSyncController
      */
     public function dispatchBatch(array $args): void
     {
-        $limit = (int)($args['body']['limit'] ?? 20);
+        $limit = (int) ($args['body']['limit'] ?? 20);
         $limit = max(1, min(50, $limit));
 
         $results = $this->service->dispatchBatch($limit);
@@ -186,9 +193,9 @@ class GovSyncController
     public function testConnection(array $args): void
     {
         $body = $args['body'] ?? [];
-        $endpoint = !empty($body['endpoint']) ? (string)$body['endpoint'] : null;
-        $key      = !empty($body['api_key']) ? (string)$body['api_key'] : null;
-        $secret   = !empty($body['api_secret']) ? (string)$body['api_secret'] : null;
+        $endpoint = !empty($body['endpoint']) ? (string) $body['endpoint'] : null;
+        $key = !empty($body['api_key']) ? (string) $body['api_key'] : null;
+        $secret = !empty($body['api_secret']) ? (string) $body['api_secret'] : null;
 
         $res = $this->service->testConnection($key, $secret, $endpoint);
 
@@ -227,8 +234,8 @@ class GovSyncController
             http_response_code(401);
             echo json_encode([
                 'success' => false,
-                'msg'     => 'API Key or Secret is invalid.',
-                'param'   => empty($apiKey) ? 'x-api-key' : 'x-api-secret'
+                'msg' => 'API Key or Secret is invalid.',
+                'param' => empty($apiKey) ? 'x-api-key' : 'x-api-secret'
             ]);
             exit;
         }
@@ -266,9 +273,9 @@ class GovSyncController
         http_response_code(200);
         echo json_encode([
             'success' => true,
-            'msg'     => 'Data has been received.',
-            'item'    => [
-                'id'         => $randomHexId,
+            'msg' => 'Data has been received.',
+            'item' => [
+                'id' => $randomHexId,
                 'receivedAt' => $receivedAt
             ]
         ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
@@ -283,8 +290,8 @@ class GovSyncController
     {
         $records = $this->getSyncedRecords();
         Response::success([
-            'total'     => count($records),
-            'records'   => $records,
+            'total' => count($records),
+            'records' => $records,
             'timestamp' => date('c')
         ], 'Government synced records retrieved successfully');
     }
@@ -394,10 +401,24 @@ class GovSyncController
         $sheet->setTitle('Gov Synced Events');
 
         $headers = [
-            'Sr', 'Gov Receipt ID', 'Event ID', 'Gov Event Category', 'Raw Alert Type',
-            'Patrol Van ID', 'Camera Channel', 'Scanned Plate', 'Incident Location',
-            'Latitude', 'Longitude', 'Incident Status', 'Detection Time', 'Gov Synced Time',
-            'HTTP Code', 'Delivery Status', 'Destination Endpoint', 'Officer Remarks'
+            'Sr',
+            'Gov Receipt ID',
+            'Event ID',
+            'Gov Event Category',
+            'Raw Alert Type',
+            'Patrol Van ID',
+            'Camera Channel',
+            'Scanned Plate',
+            'Incident Location',
+            'Latitude',
+            'Longitude',
+            'Incident Status',
+            'Detection Time',
+            'Gov Synced Time',
+            'HTTP Code',
+            'Delivery Status',
+            'Destination Endpoint',
+            'Officer Remarks'
         ];
         $sheet->fromArray($headers, null, 'A1');
 
@@ -476,8 +497,8 @@ class GovSyncController
         // 2. Extract alert IDs from event_id (e.g. ALERT-2664-CREATED-...)
         $alertIds = [];
         foreach ($queueRows as $q) {
-            if (preg_match('/^ALERT-(\d+)/i', (string)$q['event_id'], $m)) {
-                $alertIds[] = (int)$m[1];
+            if (preg_match('/^ALERT-(\d+)/i', (string) $q['event_id'], $m)) {
+                $alertIds[] = (int) $m[1];
             }
         }
         $alertIds = array_unique(array_filter($alertIds));
@@ -507,7 +528,7 @@ class GovSyncController
             ");
             if ($aStmt) {
                 while ($aRow = $aStmt->fetch(PDO::FETCH_ASSOC)) {
-                    $alertsMap[(int)$aRow['alert_id']] = $aRow;
+                    $alertsMap[(int) $aRow['alert_id']] = $aRow;
                 }
             }
         }
@@ -548,7 +569,7 @@ class GovSyncController
         $extraAlerts = $extraStmt ? $extraStmt->fetchAll(PDO::FETCH_ASSOC) : [];
 
         foreach ($extraAlerts as $ea) {
-            $eId = (int)$ea['alert_id'];
+            $eId = (int) $ea['alert_id'];
             $extId = $ea['external_item_id'];
             if (in_array($eId, $alertIds, true) || (!empty($extId) && in_array($extId, $matchedExtIds, true))) {
                 continue;
@@ -560,8 +581,8 @@ class GovSyncController
         $formatted = [];
         foreach ($queueRows as $r) {
             $alertId = null;
-            if (preg_match('/^ALERT-(\d+)/i', (string)$r['event_id'], $m)) {
-                $alertId = (int)$m[1];
+            if (preg_match('/^ALERT-(\d+)/i', (string) $r['event_id'], $m)) {
+                $alertId = (int) $m[1];
             }
             $alert = ($alertId && isset($alertsMap[$alertId])) ? $alertsMap[$alertId] : (!empty($r['alert_id']) ? $r : null);
 
@@ -594,7 +615,7 @@ class GovSyncController
 
             $receiptId = !empty($r['external_item_id'])
                 ? $r['external_item_id']
-                : (!empty($alert['gov_item_id']) ? $alert['gov_item_id'] : '6adb' . substr(md5((string)($r['queue_id'] ?? $alertId ?? microtime())), 0, 20));
+                : (!empty($alert['gov_item_id']) ? $alert['gov_item_id'] : '6adb' . substr(md5((string) ($r['queue_id'] ?? $alertId ?? microtime())), 0, 20));
 
             $syncTime = !empty($r['external_received_at'])
                 ? $r['external_received_at']
@@ -603,25 +624,25 @@ class GovSyncController
             $detectTime = !empty($alert['alert_time']) ? $alert['alert_time'] : ($innerMsg['detected_at'] ?? ($r['queue_created_at'] ?? date('Y-m-d H:i:s')));
 
             $formatted[] = [
-                'queue_id'         => $r['queue_id'] ? (int)$r['queue_id'] : null,
-                'alert_id'         => $alertId,
-                'event_id'         => $r['event_id'],
-                'gov_receipt_id'   => $receiptId,
-                'gov_event_type'   => $canonicalType,
-                'raw_alert_type'   => $rawType,
-                'van_id'           => $vanId,
-                'camera_id'        => $cameraId,
-                'plate_number'     => $plate ?: '-',
-                'location'         => $location,
-                'latitude'         => (string)$lat,
-                'longitude'        => (string)$lon,
-                'status'           => $statusLabel,
-                'detection_time'   => $detectTime,
-                'gov_synced_time'  => $syncTime,
-                'http_code'        => (int)($r['http_code'] ?: 200),
-                'delivery_status'  => 'SENT_200 (SYNCED)',
-                'destination_url'  => $r['destination_url'] ?: 'https://api-patrol.urosgeotechlab.com/api/webhooks/receiver',
-                'remarks'          => $comment
+                'queue_id' => $r['queue_id'] ? (int) $r['queue_id'] : null,
+                'alert_id' => $alertId,
+                'event_id' => $r['event_id'],
+                'gov_receipt_id' => $receiptId,
+                'gov_event_type' => $canonicalType,
+                'raw_alert_type' => $rawType,
+                'van_id' => $vanId,
+                'camera_id' => $cameraId,
+                'plate_number' => $plate ?: '-',
+                'location' => $location,
+                'latitude' => (string) $lat,
+                'longitude' => (string) $lon,
+                'status' => $statusLabel,
+                'detection_time' => $detectTime,
+                'gov_synced_time' => $syncTime,
+                'http_code' => (int) ($r['http_code'] ?: 200),
+                'delivery_status' => 'SENT_200 (SYNCED)',
+                'destination_url' => $r['destination_url'] ?: 'https://api-patrol.urosgeotechlab.com/api/webhooks/receiver',
+                'remarks' => $comment
             ];
         }
 

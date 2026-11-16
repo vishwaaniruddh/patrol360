@@ -63,10 +63,8 @@ class GovWebhookTest extends TestCase
         $this->assertEquals(25, $payload['FPS']);
         $this->assertEquals('1920x1080', $payload['Resolutions']);
         $this->assertEquals('High-threat firearm detected', $payload['event_description']);
-        $this->assertEquals('High-threat firearm detected', $payload['EventDescription']);
-        $this->assertEquals('High-threat firearm detected', $payload['eventDescription']);
-        $this->assertEquals('High-threat firearm detected', $payload['description']);
-        $this->assertEquals('High-threat firearm detected', $payload['Description']);
+        $this->assertArrayNotHasKey('EventDescription', $payload);
+        $this->assertArrayNotHasKey('description', $payload);
         $this->assertEquals('red', $payload['color_of_detection']);
 
         // Data level
