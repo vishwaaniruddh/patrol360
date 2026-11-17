@@ -47,9 +47,13 @@ class AuthController
         // Sanitize user object: remove password, binary blobs (e.g. faceEncoding), and private data
         unset($user['password'], $user['faceEncoding'], $user['face_encoding']);
 
-        // Log audit
-        $audit = $this->db->prepare("INSERT INTO `audit_logs` (`user_id`, `user_email`, `action`, `entity_type`, `entity_id`, `details`, `ip_address`) VALUES (?, ?, 'LOGIN', 'USER', ?, 'Successful login', ?)");
-        $audit->execute([$user['id'], $user['email'], (string)$user['id'], $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1']);
+        // Log audit (non-fatal so audit table permission/quota issues never block valid login)
+        try {
+            $audit = $this->db->prepare("INSERT INTO `audit_logs` (`user_id`, `user_email`, `action`, `entity_type`, `entity_id`, `details`, `ip_address`) VALUES (?, ?, 'LOGIN', 'USER', ?, 'Successful login', ?)");
+            $audit->execute([$user['id'], $user['email'], (string)$user['id'], $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1']);
+        } catch (\Throwable $e) {
+            error_log("Non-fatal: Failed to record login audit log: " . $e->getMessage());
+        }
 
         Response::success('Login successful', [
             'token' => $token,

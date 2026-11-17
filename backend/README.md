@@ -288,7 +288,7 @@ Implements integration with Central Government Ingestion Endpoint (`https://api-
   - `bitrate`: Video bitrate (e.g. `"4096 kbps"`)
   - `FPS`: Frame rate (e.g. `25`)
   - `Resolutions`: Camera resolution (e.g. `"1920x1080"`)
-  - `event_description`: Detailed incident description (rich text including threat category, vehicle, camera channel, and location)
+  - `event_description`: Detailed incident description (also mirrored as `EventDescription`, `eventDescription`, `description`, `Description`, and `details` for universal client ingestion compatibility)
   - `color_of_detection`: Threat classification color (`red` = weapon/fire, `pink` = smoke/crowd, `blue` = face recognition/suspect, `green` = ANPR/vehicle)
 - **Alert Lifecycle Webhooks**: Automatically dispatches on creation (`log.created`), officer acknowledgment (`alert.acknowledged`), and closure/resolution (`alert.closed` with officer name, closure timestamp, and action taken).
 - `GET /api/gov-sync/status` - Live status of government webhook synchronization, queue counts, and endpoint health
