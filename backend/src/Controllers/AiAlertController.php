@@ -122,7 +122,7 @@ class AiAlertController
             FROM `ai_alerts` a
             LEFT JOIN `police_vehicles` v ON a.`vehicle_id` = v.`vehicle_id`
             {$whereSql}
-            ORDER BY a.`createtime` DESC, a.`id` DESC
+            ORDER BY a.`id` DESC
             LIMIT ? OFFSET ?
         ";
 
