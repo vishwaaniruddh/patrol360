@@ -42,6 +42,7 @@ class GovWebhookTest extends TestCase
             'lon'                         => '72.5714',
             'location'                    => 'Sector 5 Patrol Beat',
             'createtime'                  => '2026-10-31 12:00:00',
+            'confidence'                  => 96.5,
             'comment'                     => 'High-threat firearm detected',
             'action_taken'                => 'Unit Dispatched'
         ];
@@ -68,6 +69,7 @@ class GovWebhookTest extends TestCase
         $this->assertEquals('High-threat firearm detected', $payload['description']);
         $this->assertEquals('High-threat firearm detected', $payload['Description']);
         $this->assertEquals('red', $payload['color_of_detection']);
+        $this->assertEquals(96.5, $payload['confidence']);
 
         // Data level
         $this->assertArrayHasKey('data', $payload);
@@ -75,6 +77,7 @@ class GovWebhookTest extends TestCase
         $this->assertEquals('Van1', $payload['data']['VanID']);
         $this->assertEquals(1, $payload['data']['VanCameraID']);
         $this->assertEquals('red', $payload['data']['color_of_detection']);
+        $this->assertEquals(96.5, $payload['data']['confidence']);
         $this->assertArrayHasKey('message', $payload['data']);
 
         // Inner message level
@@ -87,6 +90,7 @@ class GovWebhookTest extends TestCase
         $this->assertEquals('GJ-01-AB-1234', $inner['plate_number']);
         $this->assertEquals('weapon detection', $inner['event_type']);
         $this->assertEquals('red', $inner['color_of_detection']);
+        $this->assertEquals(96.5, $inner['confidence']);
         $this->assertEquals('4096 kbps', $inner['bitrate']);
         $this->assertEquals(25, $inner['FPS']);
         $this->assertEquals('1920x1080', $inner['Resolutions']);

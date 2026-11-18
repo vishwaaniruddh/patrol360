@@ -2607,6 +2607,7 @@
                   <tr><td class="param-name">createtime</td><td class="param-type">datetime</td><td class="param-req">NO</td><td>Edge detection time (defaults to <code>NOW()</code>)</td></tr>
                   <tr><td class="param-name">alerttype</td><td class="param-type">string</td><td class="param-req">NO</td><td>Classification (e.g. <code>ANPR</code>, <code>WEAPON</code>, <code>HOTLIST_MATCH</code>)</td></tr>
                   <tr><td class="param-name">scanned_vehicle_numberplate</td><td class="param-type">string</td><td class="param-req">NO</td><td>Recognized license plate (Auto-matches stolen database!)</td></tr>
+                  <tr><td class="param-name">confidence</td><td class="param-type">decimal</td><td class="param-req">NO</td><td>AI model confidence score (e.g. <code>95.50</code>, synced to Gov API)</td></tr>
                   <tr><td class="param-name">File_loc</td><td class="param-type">mediumtext</td><td class="param-req">NO</td><td>Relative file path (/uploads/alerts/...) or Base64 JPEG/PNG image frame (auto-saved to disk)</td></tr>
                   <tr><td class="param-name">location</td><td class="param-type">string</td><td class="param-req">NO</td><td>Physical landmark or zone (e.g. <code>Navrangpura Circle</code>)</td></tr>
                   <tr><td class="param-name">ATMCode</td><td class="param-type">string</td><td class="param-req">NO</td><td>Associated ATM or junction code</td></tr>
@@ -2628,6 +2629,7 @@
   "lon": "72.571432",
   "createtime": "2026-10-27 16:30:00",
   "alerttype": "ANPR_HOTLIST_MATCH",
+  "confidence": 95.50,
   "scanned_vehicle_numberplate": "MH12DE1432",
   "ATMCode": "ATM-SBI-001",
   "location": "Navrangpura Circle",

@@ -84,6 +84,7 @@ class AiAlertController
         $ackByCol = in_array('acknowledged_by', $cols, true) ? "a.`acknowledged_by`" : "NULL AS `acknowledged_by`";
         $ackAtCol = in_array('acknowledged_at', $cols, true) ? "a.`acknowledged_at`" : "NULL AS `acknowledged_at`";
         $actTakenCol = in_array('action_taken', $cols, true) ? "a.`action_taken`" : "NULL AS `action_taken`";
+        $confCol = in_array('confidence', $cols, true) ? "a.`confidence`" : "NULL AS `confidence`";
 
         // Fetch records
         $sql = "
@@ -107,6 +108,7 @@ class AiAlertController
                 a.`location`,
                 a.`ATMCode`,
                 a.`scanned_vehicle_numberplate`,
+                {$confCol},
                 CASE 
                     WHEN a.`status` = 'O' THEN 'Open'
                     WHEN a.`status` = 'A' THEN 'Acknowledged'
@@ -122,7 +124,7 @@ class AiAlertController
             FROM `ai_alerts` a
             LEFT JOIN `police_vehicles` v ON a.`vehicle_id` = v.`vehicle_id`
             {$whereSql}
-            ORDER BY a.`createtime` DESC, a.`id` DESC
+            ORDER BY a.`id` DESC
             LIMIT ? OFFSET ?
         ";
 
@@ -270,48 +272,100 @@ class AiAlertController
             }
         }
 
+        // Confidence score
+        $confidence = null;
+        if (isset($body['confidence']) && $body['confidence'] !== '' && $body['confidence'] !== null) {
+            $confidence = is_numeric($body['confidence']) ? (float)$body['confidence'] : (float)preg_replace('/[^0-9.]/', '', (string)$body['confidence']);
+        } elseif (isset($body['confidence_score']) && $body['confidence_score'] !== '' && $body['confidence_score'] !== null) {
+            $confidence = is_numeric($body['confidence_score']) ? (float)$body['confidence_score'] : (float)preg_replace('/[^0-9.]/', '', (string)$body['confidence_score']);
+        }
+
         // Optional: save base64 image copy to public/uploads/alerts/ for direct browser display
         $savedFileUrl = self::saveAlertImage($fileLoc, $vehicleId);
         $fileLocToSave = $savedFileUrl; // Store relative image path (/uploads/alerts/...) instead of multi-megabyte base64!
 
         $receivedtime = date('Y-m-d H:i:s');
 
-        // Insert into ai_alerts
-        $insert = $this->db->prepare("
-            INSERT INTO `ai_alerts` (
-                `vehicle_id`, 
-                `camera_id`, 
-                `lat`, 
-                `lon`, 
-                `createtime`, 
-                `receivedtime`, 
-                `comment`, 
-                `status`, 
-                `sendip`, 
-                `alerttype`, 
-                `location`, 
-                `ATMCode`, 
-                `File_loc`, 
-                `scanned_vehicle_numberplate`
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ");
+        // Check if confidence column is present in table
+        $cols = $this->db->query("SHOW COLUMNS FROM `ai_alerts`")->fetchAll(PDO::FETCH_COLUMN);
+        $hasConfidence = in_array('confidence', $cols, true);
 
-        $insert->execute([
-            $vehicleId,
-            $cameraId,
-            $lat,
-            $lon,
-            $createtime,
-            $receivedtime,
-            $comment,
-            $status,
-            $sendip,
-            $alerttype,
-            $location,
-            $atmCode,
-            $fileLocToSave,
-            $plate
-        ]);
+        // Insert into ai_alerts
+        if ($hasConfidence) {
+            $insert = $this->db->prepare("
+                INSERT INTO `ai_alerts` (
+                    `vehicle_id`, 
+                    `camera_id`, 
+                    `lat`, 
+                    `lon`, 
+                    `createtime`, 
+                    `receivedtime`, 
+                    `comment`, 
+                    `status`, 
+                    `sendip`, 
+                    `alerttype`, 
+                    `location`, 
+                    `ATMCode`, 
+                    `File_loc`, 
+                    `scanned_vehicle_numberplate`,
+                    `confidence`
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ");
+
+            $insert->execute([
+                $vehicleId,
+                $cameraId,
+                $lat,
+                $lon,
+                $createtime,
+                $receivedtime,
+                $comment,
+                $status,
+                $sendip,
+                $alerttype,
+                $location,
+                $atmCode,
+                $fileLocToSave,
+                $plate,
+                $confidence
+            ]);
+        } else {
+            $insert = $this->db->prepare("
+                INSERT INTO `ai_alerts` (
+                    `vehicle_id`, 
+                    `camera_id`, 
+                    `lat`, 
+                    `lon`, 
+                    `createtime`, 
+                    `receivedtime`, 
+                    `comment`, 
+                    `status`, 
+                    `sendip`, 
+                    `alerttype`, 
+                    `location`, 
+                    `ATMCode`, 
+                    `File_loc`, 
+                    `scanned_vehicle_numberplate`
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ");
+
+            $insert->execute([
+                $vehicleId,
+                $cameraId,
+                $lat,
+                $lon,
+                $createtime,
+                $receivedtime,
+                $comment,
+                $status,
+                $sendip,
+                $alerttype,
+                $location,
+                $atmCode,
+                $fileLocToSave,
+                $plate
+            ]);
+        }
 
         $newId = (int)$this->db->lastInsertId();
 

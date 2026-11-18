@@ -243,6 +243,14 @@ class GovWebhookService
         $vanCameraId = self::resolveVanCameraId($camera);
         $detectionColor = self::resolveDetectionColor($normalizedEventType);
 
+        // Resolve detection confidence score
+        $confidence = null;
+        if (isset($alert['confidence']) && $alert['confidence'] !== null && $alert['confidence'] !== '') {
+            $confidence = is_numeric($alert['confidence']) ? (float)$alert['confidence'] : (float)preg_replace('/[^0-9.]/', '', (string)$alert['confidence']);
+        } elseif (isset($alert['confidence_score']) && $alert['confidence_score'] !== null && $alert['confidence_score'] !== '') {
+            $confidence = is_numeric($alert['confidence_score']) ? (float)$alert['confidence_score'] : (float)preg_replace('/[^0-9.]/', '', (string)$alert['confidence_score']);
+        }
+
         // Resolve raw description from any available field
         $rawDescription = trim(
             (string)(
@@ -333,6 +341,9 @@ class GovWebhookService
             'event_desc'               => $eventDescription,
             'eventDesc'                => $eventDescription,
             'details'                  => $eventDescription,
+            'confidence'               => $confidence,
+            'confidence_score'         => $confidence,
+            'Confidence'               => $confidence,
             'color_of_detection'       => $detectionColor,
             'ColorOfDetection'         => $detectionColor,
             'detection_color'          => $detectionColor,
@@ -373,6 +384,9 @@ class GovWebhookService
             'event_desc'          => $eventDescription,
             'eventDesc'           => $eventDescription,
             'details'             => $eventDescription,
+            'confidence'          => $confidence,
+            'confidence_score'    => $confidence,
+            'Confidence'          => $confidence,
             'comment'             => $comment ?: $eventDescription,
             'color_of_detection'  => $detectionColor,
             'ColorOfDetection'    => $detectionColor,
@@ -401,6 +415,9 @@ class GovWebhookService
                 'event_desc'          => $eventDescription,
                 'eventDesc'           => $eventDescription,
                 'details'             => $eventDescription,
+                'confidence'          => $confidence,
+                'confidence_score'    => $confidence,
+                'Confidence'          => $confidence,
                 'comment'             => $comment ?: $eventDescription,
                 'color_of_detection'  => $detectionColor,
                 'ColorOfDetection'    => $detectionColor,

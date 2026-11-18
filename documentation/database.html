@@ -358,6 +358,7 @@ CREATE TABLE IF NOT EXISTS ai_alerts (
     ATMCode VARCHAR(50) DEFAULT NULL,
     File_loc MEDIUMTEXT DEFAULT NULL, -- Relative file path (/uploads/alerts/...) or Base64 frame
     scanned_vehicle_numberplate VARCHAR(50) DEFAULT NULL,
+    confidence DECIMAL(5, 2) DEFAULT NULL, -- AI detection model confidence score (e.g. 95.50)
     acknowledged_by VARCHAR(100) DEFAULT NULL,
     acknowledged_at DATETIME DEFAULT NULL,
     action_taken VARCHAR(255) DEFAULT NULL,

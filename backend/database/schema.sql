@@ -326,6 +326,7 @@ CREATE TABLE IF NOT EXISTS `ai_alerts` (
     `ATMCode` VARCHAR(50) DEFAULT NULL,
     `File_loc` MEDIUMTEXT DEFAULT NULL COMMENT 'Relative file path in /uploads/alerts/ or legacy Base64 string',
     `scanned_vehicle_numberplate` VARCHAR(50) DEFAULT NULL,
+    `confidence` DECIMAL(5, 2) DEFAULT NULL,
     `acknowledged_by` VARCHAR(100) DEFAULT NULL,
     `acknowledged_at` DATETIME DEFAULT NULL,
     `action_taken` VARCHAR(255) DEFAULT NULL,
@@ -343,7 +344,8 @@ CREATE TABLE IF NOT EXISTS `ai_alerts` (
 -- ========================================================
 -- 15. SCHEMA PATCHES (IDEMPOTENT COLUMN ADDITIONS)
 -- ========================================================
-ALTER TABLE `ai_alerts` ADD COLUMN IF NOT EXISTS `acknowledged_by` VARCHAR(100) DEFAULT NULL AFTER `scanned_vehicle_numberplate`;
+ALTER TABLE `ai_alerts` ADD COLUMN IF NOT EXISTS `confidence` DECIMAL(5, 2) DEFAULT NULL AFTER `scanned_vehicle_numberplate`;
+ALTER TABLE `ai_alerts` ADD COLUMN IF NOT EXISTS `acknowledged_by` VARCHAR(100) DEFAULT NULL AFTER `confidence`;
 ALTER TABLE `ai_alerts` ADD COLUMN IF NOT EXISTS `acknowledged_at` DATETIME DEFAULT NULL AFTER `acknowledged_by`;
 ALTER TABLE `ai_alerts` ADD COLUMN IF NOT EXISTS `action_taken` VARCHAR(255) DEFAULT NULL AFTER `acknowledged_at`;
 ALTER TABLE `ai_alerts` ADD COLUMN IF NOT EXISTS `gov_sync_status` ENUM('NOT_SYNCED', 'QUEUED', 'SYNCED', 'FAILED') DEFAULT 'NOT_SYNCED' AFTER `action_taken`;
