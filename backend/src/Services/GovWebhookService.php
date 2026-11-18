@@ -204,17 +204,17 @@ class GovWebhookService
         $comment = $alert['comment'] ?? '';
         $actionTaken = $alert['action_taken'] ?? '';
 
-        // Handle Image & Image URL (supports Base64 payload, local image route, or external URL)
+        // Handle Image & Image URL (Image URL only - never store or send heavy Base64 in webhook queue)
         $fileLoc = $alert['File_loc'] ?? null;
-        $image = null;
         $imageUrl = null;
 
         if (!empty($fileLoc)) {
             if (str_starts_with($fileLoc, 'http://') || str_starts_with($fileLoc, 'https://')) {
                 $imageUrl = $fileLoc;
+            } elseif (str_starts_with($fileLoc, '/uploads/') || str_starts_with($fileLoc, 'uploads/')) {
+                $imageUrl = $baseUrl . '/' . ltrim($fileLoc, '/');
             } else {
-                // If it's a base64 encoded photo or data URL
-                $image = $fileLoc;
+                // If legacy base64 in database, reference the direct binary image stream endpoint
                 $imageUrl = $baseUrl . '/api/ai-alerts/' . $alertId . '/image';
             }
         } elseif (!empty($alertId)) {
@@ -310,7 +310,9 @@ class GovWebhookService
             'location'                 => !empty($location) ? "{$location} ({$lat}, {$lon})" : "{$lat}, {$lon}",
             'latitude'                 => $lat,
             'longitude'                => $lon,
-            'image'                    => $image,
+            'image'                    => $imageUrl,
+            'image_url'                => $imageUrl,
+            'imageUrl'                 => $imageUrl,
             'imageurl'                 => $imageUrl,
             'snapshot_image_url'       => $imageUrl,
             'snapshot_url'             => $imageUrl,
@@ -354,6 +356,9 @@ class GovWebhookService
             'VanCameraID'         => $vanCameraId,
             'van_camera_id'       => $vanCameraId,
             'snapshot_image_url'  => $imageUrl,
+            'image_url'           => $imageUrl,
+            'image'               => $imageUrl,
+            'imageUrl'            => $imageUrl,
             'bitrate'             => $bitrate,
             'Bitrate'             => $bitrate,
             'FPS'                 => $fps,
@@ -379,6 +384,9 @@ class GovWebhookService
                 'VanCameraID'         => $vanCameraId,
                 'van_camera_id'       => $vanCameraId,
                 'snapshot_image_url'  => $imageUrl,
+                'image_url'           => $imageUrl,
+                'image'               => $imageUrl,
+                'imageUrl'            => $imageUrl,
                 'bitrate'             => $bitrate,
                 'Bitrate'             => $bitrate,
                 'FPS'                 => $fps,

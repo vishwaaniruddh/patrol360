@@ -162,8 +162,40 @@ class GovWebhookTest extends TestCase
         $check = $db->query("SELECT `gov_sync_status` FROM `ai_alerts` WHERE `id` = {$testAlertId}")->fetchColumn();
         $this->assertEquals('QUEUED', $check);
 
+        // Verify central_api_dispatch_queue stores ONLY image URL (zero raw base64)
+        $qRow = $db->query("SELECT `payload_json` FROM `central_api_dispatch_queue` WHERE `id` = {$enqueued['queue_id']}")->fetch(\PDO::FETCH_ASSOC);
+        $this->assertNotEmpty($qRow['payload_json']);
+        $this->assertStringNotContainsString('data:image', $qRow['payload_json']);
+        $this->assertStringContainsString('/api/ai-alerts/' . $testAlertId . '/image', $qRow['payload_json']);
+
         // Cleanup
         $db->exec("DELETE FROM `central_api_dispatch_queue` WHERE `id` = {$enqueued['queue_id']}");
         $db->exec("DELETE FROM `ai_alerts` WHERE `id` = {$testAlertId}");
+    }
+
+    public function testSaveAlertImageConvertsBase64ToDiskFile(): void
+    {
+        // 1x1 transparent GIF base64
+        $tinyGifBase64 = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+        $savedPath = \App\Controllers\AiAlertController::saveAlertImage($tinyGifBase64, 'TEST-VAN-01');
+
+        $this->assertNotNull($savedPath);
+        $this->assertStringStartsWith('/uploads/alerts/alert_TEST-VAN-01_', $savedPath);
+
+        // Verify file exists on disk
+        $fullDiskPath = dirname(__DIR__) . '/public' . $savedPath;
+        $this->assertFileExists($fullDiskPath);
+
+        // Clean up test file
+        if (file_exists($fullDiskPath)) {
+            unlink($fullDiskPath);
+        }
+
+        // Test passing URL directly preserves URL
+        $externalUrl = 'https://example.com/live_camera_snapshot.jpg';
+        $this->assertEquals($externalUrl, \App\Controllers\AiAlertController::saveAlertImage($externalUrl));
+
+        // Test passing null returns null
+        $this->assertNull(\App\Controllers\AiAlertController::saveAlertImage(null));
     }
 }

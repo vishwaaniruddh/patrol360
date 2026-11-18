@@ -122,7 +122,7 @@ class AiAlertController
             FROM `ai_alerts` a
             LEFT JOIN `police_vehicles` v ON a.`vehicle_id` = v.`vehicle_id`
             {$whereSql}
-            ORDER BY a.`id` DESC
+            ORDER BY a.`createtime` DESC, a.`id` DESC
             LIMIT ? OFFSET ?
         ";
 
@@ -271,33 +271,8 @@ class AiAlertController
         }
 
         // Optional: save base64 image copy to public/uploads/alerts/ for direct browser display
-        $savedFileUrl = null;
-        if (!empty($fileLoc) && (str_starts_with($fileLoc, 'data:image') || strlen($fileLoc) > 100)) {
-            try {
-                $uploadDir = __DIR__ . '/../../public/uploads/alerts';
-                if (!is_dir($uploadDir)) {
-                    @mkdir($uploadDir, 0777, true);
-                }
-
-                $cleanBase64 = $fileLoc;
-                $ext = 'jpg';
-                if (preg_match('/^data:image\/(\w+);base64,/', $fileLoc, $matches)) {
-                    $ext = strtolower($matches[1]);
-                    $cleanBase64 = substr($fileLoc, strpos($fileLoc, ',') + 1);
-                }
-
-                $decodedData = base64_decode($cleanBase64);
-                if ($decodedData !== false) {
-                    $filename = 'alert_' . preg_replace('/[^A-Za-z0-9]/', '', $vehicleId) . '_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
-                    $targetPath = $uploadDir . '/' . $filename;
-                    if (@file_put_contents($targetPath, $decodedData)) {
-                        $savedFileUrl = 'uploads/alerts/' . $filename;
-                    }
-                }
-            } catch (Exception $e) {
-                // Non-fatal, base64 remains in DB
-            }
-        }
+        $savedFileUrl = self::saveAlertImage($fileLoc, $vehicleId);
+        $fileLocToSave = $savedFileUrl; // Store relative image path (/uploads/alerts/...) instead of multi-megabyte base64!
 
         $receivedtime = date('Y-m-d H:i:s');
 
@@ -334,7 +309,7 @@ class AiAlertController
             $alerttype,
             $location,
             $atmCode,
-            $fileLoc,
+            $fileLocToSave,
             $plate
         ]);
 
@@ -474,8 +449,74 @@ class AiAlertController
     }
 
     /**
+     * Convert Base64 image string to actual image file on disk and return public path.
+     * Keeps database lightweight by storing relative file path instead of multi-megabyte base64 strings.
+     *
+     * @param string|null $fileLoc Base64 data URI, raw base64 string, or existing path/URL
+     * @param string $vehicleId Vehicle identifier used for safe naming
+     * @return string|null Relative file path (e.g. '/uploads/alerts/alert_xxx.jpg') or external URL
+     */
+    public static function saveAlertImage(?string $fileLoc, string $vehicleId = 'alert'): ?string
+    {
+        if (empty($fileLoc)) {
+            return null;
+        }
+
+        $trimmed = trim((string)$fileLoc);
+
+        // If it's already an external HTTP(S) URL or valid relative file path, preserve as-is
+        if (str_starts_with($trimmed, 'http://') || str_starts_with($trimmed, 'https://')) {
+            return $trimmed;
+        }
+        if (str_starts_with($trimmed, '/uploads/alerts/') || str_starts_with($trimmed, 'uploads/alerts/')) {
+            return '/' . ltrim($trimmed, '/');
+        }
+
+        // Check if string is base64 data
+        $cleanBase64 = $trimmed;
+        $ext = 'jpg';
+
+        if (preg_match('/^data:image\/(\w+);base64,/i', $trimmed, $matches)) {
+            $matchedExt = strtolower($matches[1]);
+            if (in_array($matchedExt, ['jpg', 'jpeg', 'png', 'webp', 'gif'])) {
+                $ext = ($matchedExt === 'jpeg') ? 'jpg' : $matchedExt;
+            }
+            $cleanBase64 = substr($trimmed, strpos($trimmed, ',') + 1);
+        }
+
+        // Only attempt base64 decode if string is sufficiently long
+        if (strlen($cleanBase64) < 30) {
+            return $trimmed;
+        }
+
+        $decoded = base64_decode($cleanBase64, true);
+        if ($decoded === false || strlen($decoded) < 10) {
+            return null;
+        }
+
+        try {
+            $uploadDir = dirname(__DIR__, 2) . '/public/uploads/alerts';
+            if (!is_dir($uploadDir)) {
+                @mkdir($uploadDir, 0777, true);
+            }
+
+            $safeVehicle = preg_replace('/[^A-Za-z0-9_-]/', '', $vehicleId) ?: 'van';
+            $filename = 'alert_' . $safeVehicle . '_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+            $targetPath = $uploadDir . '/' . $filename;
+
+            if (@file_put_contents($targetPath, $decoded) !== false) {
+                return '/uploads/alerts/' . $filename;
+            }
+        } catch (\Throwable $e) {
+            error_log("Failed to save alert image to folder: " . $e->getMessage());
+        }
+
+        return null;
+    }
+
+    /**
      * GET /api/ai-alerts/:id/image
-     * Directly renders and streams the binary image (JPEG/PNG) from base64 File_loc
+     * Renders and streams the binary image (JPEG/PNG) from disk or decoded base64 File_loc
      */
     public function image(array $args): void
     {
@@ -491,39 +532,71 @@ class AiAlertController
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$row || empty($row['File_loc'])) {
-            header('Content-Type: image/svg+xml');
-            header('Cache-Control: public, max-age=3600');
-            echo '<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360">
-                    <rect width="100%" height="100%" fill="#0f172a"/>
-                    <rect x="20" y="20" width="600" height="320" rx="12" fill="#1e293b" stroke="#334155" stroke-width="2"/>
-                    <circle cx="320" cy="150" r="45" fill="#3b82f6" opacity="0.2"/>
-                    <text x="320" y="230" font-family="system-ui, sans-serif" font-size="18" fill="#94a3b8" text-anchor="middle" font-weight="600">NO FRAME CAPTURED</text>
-                  </svg>';
+            $this->renderPlaceholderSvg((string)$id);
             exit;
         }
 
-        $raw = $row['File_loc'];
+        $raw = trim((string)$row['File_loc']);
+
+        // 1. Check if File_loc points to a physical file on disk
+        $filePath = null;
+        if (str_starts_with($raw, '/') || str_starts_with($raw, 'uploads/')) {
+            $candidate = dirname(__DIR__, 2) . '/public/' . ltrim($raw, '/');
+            if (file_exists($candidate) && is_file($candidate)) {
+                $filePath = $candidate;
+            }
+        } elseif (file_exists($raw) && is_file($raw)) {
+            $filePath = $raw;
+        }
+
+        if ($filePath) {
+            $mime = mime_content_type($filePath) ?: 'image/jpeg';
+            header("Content-Type: {$mime}");
+            header('Content-Length: ' . filesize($filePath));
+            header('Cache-Control: public, max-age=86400');
+            readfile($filePath);
+            exit;
+        }
+
+        // 2. Check if external URL
+        if (str_starts_with($raw, 'http://') || str_starts_with($raw, 'https://')) {
+            header("Location: {$raw}", true, 302);
+            exit;
+        }
+
+        // 3. Backward compatibility: Decode raw/data-URI base64 string
         $mime = 'image/jpeg';
         $base64Data = $raw;
 
-        if (preg_match('/^data:image\/(\w+);base64,/', $raw, $matches)) {
+        if (preg_match('/^data:image\/(\w+);base64,/i', $raw, $matches)) {
             $ext = strtolower($matches[1]);
-            $mime = ($ext === 'png') ? 'image/png' : 'image/jpeg';
+            $mime = ($ext === 'png') ? 'image/png' : (($ext === 'webp') ? 'image/webp' : 'image/jpeg');
             $base64Data = substr($raw, strpos($raw, ',') + 1);
         }
 
         $binary = base64_decode($base64Data);
-        if ($binary === false) {
-            http_response_code(500);
-            echo "Failed to decode image";
+        if ($binary !== false && strlen($binary) > 0) {
+            header("Content-Type: {$mime}");
+            header('Content-Length: ' . strlen($binary));
+            header('Cache-Control: public, max-age=86400');
+            echo $binary;
             exit;
         }
 
-        header("Content-Type: {$mime}");
-        header('Content-Length: ' . strlen($binary));
-        header('Cache-Control: public, max-age=86400');
-        echo $binary;
+        $this->renderPlaceholderSvg((string)$id);
         exit;
+    }
+
+    private function renderPlaceholderSvg(string $id): void
+    {
+        header('Content-Type: image/svg+xml');
+        header('Cache-Control: public, max-age=3600');
+        echo '<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360">
+                <rect width="100%" height="100%" fill="#0f172a"/>
+                <rect x="20" y="20" width="600" height="320" rx="12" fill="#1e293b" stroke="#334155" stroke-width="2"/>
+                <circle cx="320" cy="150" r="45" fill="#3b82f6" opacity="0.2"/>
+                <text x="320" y="230" font-family="system-ui, sans-serif" font-size="18" fill="#94a3b8" text-anchor="middle" font-weight="600">NO FRAME CAPTURED</text>
+              </svg>';
     }
     /**
      * GET /api/ai-alerts/:id/video

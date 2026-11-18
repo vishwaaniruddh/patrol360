@@ -443,13 +443,41 @@ class OfficerController
             exit;
         }
 
-        $raw = $row['File_loc'];
+        $raw = trim((string)$row['File_loc']);
+
+        // 1. Check if File_loc points to a physical file on disk
+        $filePath = null;
+        if (str_starts_with($raw, '/') || str_starts_with($raw, 'uploads/')) {
+            $candidate = dirname(__DIR__, 2) . '/public/' . ltrim($raw, '/');
+            if (file_exists($candidate) && is_file($candidate)) {
+                $filePath = $candidate;
+            }
+        } elseif (file_exists($raw) && is_file($raw)) {
+            $filePath = $raw;
+        }
+
+        if ($filePath) {
+            $mime = mime_content_type($filePath) ?: 'image/jpeg';
+            header("Content-Type: {$mime}");
+            header('Content-Length: ' . filesize($filePath));
+            header('Cache-Control: public, max-age=86400');
+            readfile($filePath);
+            exit;
+        }
+
+        // 2. Check if external URL
+        if (str_starts_with($raw, 'http://') || str_starts_with($raw, 'https://')) {
+            header("Location: {$raw}", true, 302);
+            exit;
+        }
+
+        // 3. Backward compatibility: Decode raw/data-URI base64 string
         $mime = 'image/jpeg';
         $base64Data = $raw;
 
-        if (preg_match('/^data:image\/(\w+);base64,/', $raw, $matches)) {
+        if (preg_match('/^data:image\/(\w+);base64,/i', $raw, $matches)) {
             $ext = strtolower($matches[1]);
-            $mime = ($ext === 'png') ? 'image/png' : 'image/jpeg';
+            $mime = ($ext === 'png') ? 'image/png' : (($ext === 'webp') ? 'image/webp' : 'image/jpeg');
             $base64Data = substr($raw, strpos($raw, ',') + 1);
         }
 
@@ -972,6 +1000,7 @@ class OfficerController
         $location  = !empty($body['location']) ? trim($body['location']) : 'Reported by Officer';
         $comment   = !empty($body['comment']) ? trim($body['comment']) : 'Field officer manual report';
         $fileLoc   = $body['File_loc'] ?? ($body['image_base64'] ?? null);
+        $fileLocToSave = \App\Controllers\AiAlertController::saveAlertImage($fileLoc, $vehicleId);
 
         $timestamp = date('Y-m-d H:i:s');
         $officerTag = "{$officer['name']} ({$officer['badge_number']})";
@@ -1005,7 +1034,7 @@ class OfficerController
             $commentWithOfficer,
             $alerttype,
             $location,
-            $fileLoc,
+            $fileLocToSave,
             $plate
         ]);
 

@@ -356,7 +356,7 @@ CREATE TABLE IF NOT EXISTS ai_alerts (
     alerttype VARCHAR(50) DEFAULT NULL,
     location VARCHAR(100) DEFAULT NULL,
     ATMCode VARCHAR(50) DEFAULT NULL,
-    File_loc MEDIUMTEXT DEFAULT NULL, -- Base64 JPEG/PNG frame
+    File_loc MEDIUMTEXT DEFAULT NULL, -- Relative file path (/uploads/alerts/...) or Base64 frame
     scanned_vehicle_numberplate VARCHAR(50) DEFAULT NULL,
     acknowledged_by VARCHAR(100) DEFAULT NULL,
     acknowledged_at DATETIME DEFAULT NULL,
