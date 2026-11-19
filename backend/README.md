@@ -266,7 +266,7 @@ Base URL (Production): `https://sarsspl.com/patrol360/backend/public`
 - `POST /api/alerts/email` - Dispatch critical incident alert to command email *(PHPMailer)*
 
 ### I. Dashboard & Compliance Audit
-- `GET /api/dashboard/stats` - Live metrics for vehicles, cameras, detections, threats, and system health
+- `GET /api/dashboard/stats` - Live metrics for vehicles, cameras, detections, threats, and system health directly derived from live `ai_alerts` with real-time categorization (`raw_alert_type`, `event_type`, `title`, and priority severity)
 - `GET /api/audit-logs` - Police compliance audit trail *(Admin)*
 
 ### J. System Health & Dual-DB Sync Engine

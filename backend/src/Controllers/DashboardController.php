@@ -31,24 +31,25 @@ class DashboardController
         $onlineCameras = (int)$this->db->query("SELECT COUNT(*) FROM `vehicle_cameras` WHERE is_streaming = 1")->fetchColumn();
 
         // 3. ANPR metrics - aggregated dynamically across ai_alerts and detection events
-        $anprFromAi = (int)$this->db->query("SELECT COUNT(*) FROM `ai_alerts` WHERE `alerttype` LIKE '%vehicle%' OR `alerttype` LIKE '%anpr%' OR (`scanned_vehicle_numberplate` IS NOT NULL AND `scanned_vehicle_numberplate` != '')")->fetchColumn();
+        $anprFromAi = (int)$this->db->query("SELECT COUNT(*) FROM `ai_alerts` WHERE `alerttype` LIKE '%vehicle%' OR `alerttype` LIKE '%anpr%' OR `alerttype` LIKE '%truck%' OR `alerttype` LIKE '%car%' OR `alerttype` LIKE '%bus%' OR `alerttype` LIKE '%motorcycle%' OR (`scanned_vehicle_numberplate` IS NOT NULL AND `scanned_vehicle_numberplate` != '') OR (`vehicle_number` IS NOT NULL AND `vehicle_number` != '')")->fetchColumn();
         $totalPlatesScanned = max((int)$this->db->query("SELECT COUNT(*) FROM `anpr_detection_events`")->fetchColumn(), $anprFromAi);
         $stolenFromAi = (int)$this->db->query("SELECT COUNT(*) FROM `ai_alerts` WHERE `alerttype` LIKE '%stolen%' OR `alerttype` LIKE '%hotlist%'")->fetchColumn();
         $stolenMatches = max((int)$this->db->query("SELECT COUNT(*) FROM `anpr_detection_events` WHERE is_stolen_match = 1")->fetchColumn(), $stolenFromAi);
         $stolenWatchlistCount = (int)$this->db->query("SELECT COUNT(*) FROM `stolen_vehicles_watchlist` WHERE is_active = 1")->fetchColumn();
 
         // 4. FRS metrics - aggregated dynamically across ai_alerts and frs_detection_events
-        $frsFromAi = (int)$this->db->query("SELECT COUNT(*) FROM `ai_alerts` WHERE `alerttype` LIKE '%person%' OR `alerttype` LIKE '%suspect%' OR `alerttype` LIKE '%frs%'")->fetchColumn();
+        $frsFromAi = (int)$this->db->query("SELECT COUNT(*) FROM `ai_alerts` WHERE `alerttype` LIKE '%person%' OR `alerttype` LIKE '%suspect%' OR `alerttype` LIKE '%frs%' OR `alerttype` LIKE '%blacklist%'")->fetchColumn();
         $totalFaceDetections = max((int)$this->db->query("SELECT COUNT(*) FROM `frs_detection_events`")->fetchColumn(), $frsFromAi);
         $pendingFaceReviews = (int)$this->db->query("SELECT COUNT(*) FROM `frs_detection_events` WHERE operator_review_status = 'PENDING'")->fetchColumn();
         $confirmedFromAi = (int)$this->db->query("SELECT COUNT(*) FROM `ai_alerts` WHERE `alerttype` LIKE '%blacklist%' OR `alerttype` LIKE '%wanted%'")->fetchColumn();
         $confirmedFaceHits = max((int)$this->db->query("SELECT COUNT(*) FROM `frs_detection_events` WHERE operator_review_status = 'CONFIRMED'")->fetchColumn(), $confirmedFromAi);
         $wantedWatchlistCount = (int)$this->db->query("SELECT COUNT(*) FROM `person_watchlist` WHERE is_active = 1")->fetchColumn();
 
-        // 5. Threat & Safety metrics - aggregated dynamically across ai_alerts
+        // 5. Threat & Safety metrics - aggregated dynamically across real live ai_alerts
+        $aiAlertsCount = (int)$this->db->query("SELECT COUNT(*) FROM `ai_alerts`")->fetchColumn();
         $weaponsFromAi = (int)$this->db->query("SELECT COUNT(*) FROM `ai_alerts` WHERE `alerttype` LIKE '%weapon%' OR `alerttype` LIKE '%gun%' OR `alerttype` LIKE '%firearm%' OR `alerttype` LIKE '%knife%' OR `alerttype` LIKE '%blade%'")->fetchColumn();
-        $weaponThreatsTotal = max((int)$this->db->query("SELECT COUNT(*) FROM `weapon_threat_events`")->fetchColumn(), $weaponsFromAi);
-        $unackedWeapons = (int)$this->db->query("SELECT COUNT(*) FROM `ai_alerts` WHERE `status` = 'O'")->fetchColumn();
+        $weaponThreatsTotal = $aiAlertsCount > 0 ? $weaponsFromAi : (int)$this->db->query("SELECT COUNT(*) FROM `weapon_threat_events`")->fetchColumn();
+        $unackedWeapons = (int)$this->db->query("SELECT COUNT(*) FROM `ai_alerts` WHERE `status` = '0' OR `status` = 'O' OR `status` IS NULL")->fetchColumn();
         $fireHazardsTotal = (int)$this->db->query("SELECT COUNT(*) FROM `ai_alerts` WHERE `alerttype` LIKE '%fire%' OR `alerttype` LIKE '%smoke%'")->fetchColumn();
         $crowdIncidentsTotal = (int)$this->db->query("SELECT COUNT(*) FROM `ai_alerts` WHERE `alerttype` LIKE '%crowd%'")->fetchColumn();
 
@@ -94,30 +95,73 @@ class DashboardController
         while ($row = $aiRecentStmt->fetch(PDO::FETCH_ASSOC)) {
             $id = (int)$row['id'];
             $rawType = trim((string)($row['alerttype'] ?? 'AI Detection'));
-            $upperType = strtoupper($rawType);
+            $cleanType = preg_replace('/[^a-zA-Z0-9_\-\s]/', '', $rawType);
+            $upperType = strtoupper($cleanType);
 
-            // Determine normalized category & severity
-            if (str_contains($upperType, 'WEAPON') || str_contains($upperType, 'GUN') || str_contains($upperType, 'FIREARM') || str_contains($upperType, 'KNIFE') || str_contains($upperType, 'BLADE') || str_contains($upperType, 'PROJECTILE')) {
+            // Determine normalized category, severity & clear descriptive title
+            if (in_array($upperType, ['START', 'STOP', 'PATROL_START', 'PATROL_STOP', 'TRIP_START', 'TRIP_STOP']) || str_starts_with($upperType, 'START') || str_starts_with($upperType, 'STOP')) {
+                $category = 'PATROL_STATUS';
+                $severity = 'INFO';
+                $title = ($upperType === 'START' || str_starts_with($upperType, 'START')) ? 'Patrol Unit Started' : 'Patrol Unit Stopped';
+            } elseif (
+                str_contains($upperType, 'WEAPON') || 
+                str_contains($upperType, 'GUN') || 
+                str_contains($upperType, 'FIREARM') || 
+                str_contains($upperType, 'KNIFE') || 
+                str_contains($upperType, 'BLADE') || 
+                str_contains($upperType, 'PROJECTILE') ||
+                str_contains($upperType, 'REVOLVER') ||
+                str_contains($upperType, 'PISTOL') ||
+                str_contains($upperType, 'RIFLE') ||
+                str_contains($upperType, 'MACHETE') ||
+                str_contains($upperType, 'SHOTGUN') ||
+                str_contains($upperType, 'SWORD')
+            ) {
                 $category = 'WEAPON';
                 $severity = 'CRITICAL_RED';
+                $title = 'Weapon Threat: ' . $rawType;
             } elseif (str_contains($upperType, 'STOLEN') || str_contains($upperType, 'HOTLIST')) {
                 $category = 'ANPR';
                 $severity = 'CRITICAL';
-            } elseif (str_contains($upperType, 'VEHICLE') || str_contains($upperType, 'ANPR') || !empty($row['scanned_vehicle_numberplate']) || !empty($row['vehicle_number'])) {
-                $category = 'ANPR';
-                $severity = 'HIGH';
-            } elseif (str_contains($upperType, 'BLACKLIST') || str_contains($upperType, 'PERSON') || str_contains($upperType, 'SUSPECT') || str_contains($upperType, 'FRS')) {
+                $title = 'Stolen Vehicle Match: ' . $rawType;
+            } elseif (str_contains($upperType, 'BLACKLIST') || str_contains($upperType, 'WANTED') || str_contains($upperType, 'SUSPECT')) {
                 $category = 'FRS';
                 $severity = 'HIGH';
-            } elseif (str_contains($upperType, 'CROWD')) {
+                $title = 'Watchlist Match: ' . $rawType;
+            } elseif (str_contains($upperType, 'PERSON') || str_contains($upperType, 'FACE') || str_contains($upperType, 'FRS')) {
+                $category = 'FRS';
+                $severity = 'STANDARD';
+                $title = 'Person Detected';
+            } elseif (str_contains($upperType, 'CROWD') || str_contains($upperType, 'SURGE') || str_contains($upperType, 'ASSEMBLY')) {
                 $category = 'CROWD';
                 $severity = 'WARNING';
-            } elseif (str_contains($upperType, 'FIRE') || str_contains($upperType, 'SMOKE')) {
+                $title = 'Crowd Surge Alert';
+            } elseif (str_contains($upperType, 'FIRE') || str_contains($upperType, 'SMOKE') || str_contains($upperType, 'FLAME')) {
                 $category = 'FIRE';
                 $severity = 'CRITICAL';
-            } else {
-                $category = 'ANPR';
+                $title = 'Fire / Smoke Hazard';
+            } elseif (str_contains($upperType, 'ANIMAL') || str_contains($upperType, 'DOG') || str_contains($upperType, 'CATTLE')) {
+                $category = 'HAZARD';
+                $severity = 'LOW';
+                $title = 'Roadway Hazard: ' . $rawType;
+            } elseif (in_array($upperType, ['BOTTLE', 'CHAIR', 'BAG', 'BACKPACK', 'LUGGAGE', 'TRASH'])) {
+                $category = 'OBJECT';
+                $severity = 'LOW';
+                $title = ucfirst(strtolower($rawType)) . ' Detected';
+            } elseif (
+                in_array($upperType, ['TRUCK', 'BUS', 'CAR', 'MOTORCYCLE', 'AUTO', 'RICKSHAW', 'VAN', 'BICYCLE']) ||
+                str_contains($upperType, 'VEHICLE') ||
+                str_contains($upperType, 'ANPR') ||
+                !empty($row['scanned_vehicle_numberplate']) ||
+                !empty($row['vehicle_number'])
+            ) {
+                $category = 'VEHICLE';
                 $severity = 'STANDARD';
+                $title = 'Vehicle: ' . $rawType;
+            } else {
+                $category = 'AI_DETECTION';
+                $severity = 'STANDARD';
+                $title = $rawType;
             }
 
             // Image URL resolution: direct binary stream endpoint
@@ -140,7 +184,9 @@ class DashboardController
                 'alert_id'              => $id,
                 'event_id'              => "ALERT-{$id}",
                 'event_type'            => $category,
-                'title'                 => $rawType,
+                'alerttype'             => $rawType,
+                'raw_alert_type'        => $rawType,
+                'title'                 => $title,
                 'severity'              => $severity,
                 'vehicle_id'            => $row['vehicle_id'] ?: 'PATROLVAN01',
                 'camera_id'             => $row['camera_id'] ?: 'CAM_01_FRONT',
@@ -157,7 +203,7 @@ class DashboardController
                 'detected_plate_number' => $plateNum,
                 'vehicle_number'        => $plateNum,
                 'number_of_person'      => $row['number_of_person'] !== null ? (int)$row['number_of_person'] : null,
-                'status'                => $row['status'] ?: 'O',
+                'status'                => $row['status'] ?: '0',
                 'is_stolen_match'       => str_contains($upperType, 'STOLEN') || str_contains($upperType, 'HOTLIST'),
                 'fir_reference'         => "Alert #{$id} ({$rawType})"
             ];

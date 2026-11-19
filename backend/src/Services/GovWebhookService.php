@@ -83,10 +83,12 @@ class GovWebhookService
     public static function normalizeEventType(?string $rawType, array $context = []): string
     {
         $plate = trim((string)($context['scanned_vehicle_numberplate'] ?? $context['plate_number'] ?? ''));
-        $haystack = strtolower(str_replace(['_', '-', '.', '/', ':'], ' ', (string)$rawType . ' ' . ($context['comment'] ?? '')));
+        $rawStr = (string)$rawType;
+        $commentStr = (string)($context['comment'] ?? '');
+        $haystack = strtolower(str_replace(['_', '-', '.', '/', ':'], ' ', $rawStr . ' ' . $commentStr));
 
         // 1. Weapon Detection (guns, firearms, knives, blades, tactical threats)
-        if (preg_match('/\b(weapon\w*|gun\w*|knife|knives|firearm\w*|pistol\w*|rifle\w*|blade\w*|machete\w*|sword\w*|tactical\s+threat|handgun\w*)\b/i', $haystack)) {
+        if (preg_match('/\b(weapon\w*|gun\w*|knife|knives|firearm\w*|pistol\w*|rifle\w*|blade\w*|machete\w*|sword\w*|tactical\s+threat|handgun\w*|projectile\w*)\b/i', $haystack)) {
             return 'weapon detection';
         }
 
@@ -101,21 +103,20 @@ class GovWebhookService
         }
 
         // 4. Crowd Density
-        if (preg_match('/\b(crowd\w*|overcrowd\w*|density|gathering\w*|congregat\w*|mob\w*)\b/i', $haystack)) {
+        if (preg_match('/\b(crowd\w*|overcrowd\w*|density|gathering\w*|congregat\w*|mob\w*|surge\w*|assembly)\b/i', $haystack)) {
             return 'crowd density';
         }
 
-        // 5. Face Recognition
-        if (preg_match('/\b(frs|face\w*|facial\w*|suspect\w*|wanted|criminal\w*|person\s+watchlist)\b/i', $haystack)) {
+        // 5. Face Recognition / Blacklist / Suspects
+        if (
+            preg_match('/\b(frs|face\w*|facial\w*|suspect\w*|wanted\w*|criminal\w*|person\w*|blacklist\w*)\b/i', $haystack) ||
+            str_contains(strtolower($rawStr), 'blacklist') ||
+            str_contains(strtolower($rawStr), 'person')
+        ) {
             return 'face recognition';
         }
 
-        // 6. Vehicle Classification
-        if (preg_match('/\b(vehicle\s+class\w*|traffic\s+class\w*|heavy\s+vehicle\w*|truck\w*|bus\w*|motorcycle\w*|auto\s+rickshaw|car\s+class\w*)\b/i', $haystack)) {
-            return 'vehicle classification';
-        }
-
-        // 7. ANPR
+        // 6. ANPR (stolen vehicle, license plates, hotlists)
         if (
             preg_match('/\b(anpr|plate\w*|numberplate\w*|number\s+plate|hotlist|stolen\s+vehicle|stolen|license\s+plate)\b/i', $haystack) ||
             (!empty($plate) && $plate !== 'UNKNOWN' && $plate !== 'NONE')
@@ -123,12 +124,18 @@ class GovWebhookService
             return 'ANPR';
         }
 
-        // Fallbacks based on presence of vehicle plate
-        if (!empty($plate)) {
-            return 'ANPR';
+        // 7. Vehicle Classification & Edge Patrol Status (Start, Stop, Truck, Car, Bus, Motorcycle)
+        if (
+            preg_match('/\b(vehicle\w*|traffic\w*|heavy\s+vehicle\w*|truck\w*|bus\w*|motorcycle\w*|auto\s+rickshaw|car\w*|suv\w*|van\w*|scooter\w*|sedan\w*|start\w*|stop\w*|trip\w*|patrol\w*)\b/i', $haystack) ||
+            str_starts_with(strtolower($rawStr), 'vehicle') ||
+            str_starts_with(strtolower($rawStr), 'start') ||
+            str_starts_with(strtolower($rawStr), 'stop')
+        ) {
+            return 'vehicle classification';
         }
 
-        return 'weapon detection';
+        // Safe default: vehicle classification (never falsely trigger weapon alerts for unknown edge pings)
+        return 'vehicle classification';
     }
 
 
