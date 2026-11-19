@@ -184,7 +184,7 @@ class GovWebhookTest extends TestCase
         $savedPath = \App\Controllers\AiAlertController::saveAlertImage($tinyGifBase64, 'TEST-VAN-01');
 
         $this->assertNotNull($savedPath);
-        $this->assertStringStartsWith('/uploads/alerts/alert_TEST-VAN-01_', $savedPath);
+        $this->assertMatchesRegularExpression('#^/uploads/alerts/\d{4}/\d{2}/\d{2}/alert_TEST-VAN-01_#', $savedPath);
 
         // Verify file exists on disk
         $fullDiskPath = dirname(__DIR__) . '/public' . $savedPath;

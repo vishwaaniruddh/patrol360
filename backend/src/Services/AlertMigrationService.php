@@ -73,7 +73,7 @@ class AlertMigrationService
     public function migrateChunk(int $limit = 300, bool $dryRun = false): array
     {
         $fetchStmt = $this->db->prepare("
-            SELECT `id`, `vehicle_id`, `File_loc` FROM `ai_alerts` 
+            SELECT `id`, `vehicle_id`, `createtime`, `File_loc` FROM `ai_alerts` 
             WHERE `File_loc` IS NOT NULL 
               AND `File_loc` != '' 
               AND `File_loc` NOT LIKE '/uploads/%' 
@@ -142,9 +142,18 @@ class AlertMigrationService
                 }
             }
 
-            // Step 3: Write to disk
+            // Step 3: Write to disk under YYYY/MM/DD folder
+            $dateFolder = (!empty($row['createtime']) && strtotime($row['createtime']))
+                ? date('Y/m/d', strtotime($row['createtime']))
+                : date('Y/m/d');
+
+            $targetDir = $this->uploadDir . '/' . $dateFolder;
+            if (!is_dir($targetDir)) {
+                @mkdir($targetDir, 0777, true);
+            }
+
             $filename = "alert_{$vehicle}_{$id}." . $ext;
-            $targetFile = $this->uploadDir . '/' . $filename;
+            $targetFile = $targetDir . '/' . $filename;
 
             $written = @file_put_contents($targetFile, $decoded, LOCK_EX);
             if ($written === false || $written !== strlen($decoded)) {
@@ -175,7 +184,7 @@ class AlertMigrationService
             }
 
             // Step 5: Verify relative web path resolution
-            $newPath = "/uploads/alerts/{$filename}";
+            $newPath = "/uploads/alerts/{$dateFolder}/{$filename}";
             $resolvedWebPath = $this->publicDir . $newPath;
             if (!file_exists($resolvedWebPath) || !is_readable($resolvedWebPath)) {
                 $skipped++;

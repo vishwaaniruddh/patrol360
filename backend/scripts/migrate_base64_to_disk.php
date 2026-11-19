@@ -69,7 +69,7 @@ if ($totalToProcess > 0) {
     $bytesSaved = 0;
 
     $fetchStmt = $db->prepare("
-        SELECT `id`, `vehicle_id`, `File_loc` FROM `ai_alerts` 
+        SELECT `id`, `vehicle_id`, `createtime`, `File_loc` FROM `ai_alerts` 
         WHERE `id` > ?
           AND `File_loc` IS NOT NULL 
           AND `File_loc` != '' 
@@ -147,10 +147,19 @@ if ($totalToProcess > 0) {
             }
 
             // -------------------------------------------------------------
-            // VERIFICATION STEP 3: Write File to Disk
+            // VERIFICATION STEP 3: Write File to Disk under YYYY/MM/DD
             // -------------------------------------------------------------
+            $dateFolder = (!empty($row['createtime']) && strtotime($row['createtime']))
+                ? date('Y/m/d', strtotime($row['createtime']))
+                : date('Y/m/d');
+
+            $targetDir = $uploadDir . '/' . $dateFolder;
+            if (!is_dir($targetDir)) {
+                @mkdir($targetDir, 0777, true);
+            }
+
             $filename = "alert_{$vehicle}_{$id}." . $ext;
-            $targetFile = $uploadDir . '/' . $filename;
+            $targetFile = $targetDir . '/' . $filename;
 
             $written = @file_put_contents($targetFile, $decoded, LOCK_EX);
             if ($written === false || $written !== strlen($decoded)) {
@@ -186,7 +195,7 @@ if ($totalToProcess > 0) {
             // -------------------------------------------------------------
             // VERIFICATION STEP 5: Verify Web Address Resolution
             // -------------------------------------------------------------
-            $newPath = "/uploads/alerts/{$filename}";
+            $newPath = "/uploads/alerts/{$dateFolder}/{$filename}";
             $resolvedWebPath = dirname(__DIR__) . '/public' . $newPath;
             if (!file_exists($resolvedWebPath) || !is_readable($resolvedWebPath)) {
                 echo "  [ERROR] Alert #{$id}: Web address ({$newPath}) does not resolve to physical file. Original row left untouched.\n";

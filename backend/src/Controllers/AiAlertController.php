@@ -280,9 +280,9 @@ class AiAlertController
             $confidence = is_numeric($body['confidence_score']) ? (float)$body['confidence_score'] : (float)preg_replace('/[^0-9.]/', '', (string)$body['confidence_score']);
         }
 
-        // Optional: save base64 image copy to public/uploads/alerts/ for direct browser display
-        $savedFileUrl = self::saveAlertImage($fileLoc, $vehicleId);
-        $fileLocToSave = $savedFileUrl; // Store relative image path (/uploads/alerts/...) instead of multi-megabyte base64!
+        // Optional: save base64 image copy to public/uploads/alerts/YYYY/MM/DD for direct browser display
+        $savedFileUrl = self::saveAlertImage($fileLoc, $vehicleId, $createtime);
+        $fileLocToSave = $savedFileUrl; // Store relative image path (/uploads/alerts/YYYY/MM/DD/...) instead of multi-megabyte base64!
 
         $receivedtime = date('Y-m-d H:i:s');
 
@@ -505,12 +505,14 @@ class AiAlertController
     /**
      * Convert Base64 image string to actual image file on disk and return public path.
      * Keeps database lightweight by storing relative file path instead of multi-megabyte base64 strings.
+     * Automatically partitions files into YYYY/MM/DD subfolders to prevent folder bloat.
      *
      * @param string|null $fileLoc Base64 data URI, raw base64 string, or existing path/URL
      * @param string $vehicleId Vehicle identifier used for safe naming
-     * @return string|null Relative file path (e.g. '/uploads/alerts/alert_xxx.jpg') or external URL
+     * @param string|null $timestamp Optional alert timestamp (Y-m-d H:i:s) for folder organization
+     * @return string|null Relative file path (e.g. '/uploads/alerts/2026/11/19/alert_xxx.jpg') or external URL
      */
-    public static function saveAlertImage(?string $fileLoc, string $vehicleId = 'alert'): ?string
+    public static function saveAlertImage(?string $fileLoc, string $vehicleId = 'alert', ?string $timestamp = null): ?string
     {
         if (empty($fileLoc)) {
             return null;
@@ -518,7 +520,7 @@ class AiAlertController
 
         $trimmed = trim((string)$fileLoc);
 
-        // If it's already an external HTTP(S) URL or valid relative file path, preserve as-is
+        // If it's already an external HTTP(S) URL or valid relative file path, preserve as-is (including legacy /uploads/alerts/)
         if (str_starts_with($trimmed, 'http://') || str_starts_with($trimmed, 'https://')) {
             return $trimmed;
         }
@@ -549,7 +551,12 @@ class AiAlertController
         }
 
         try {
-            $uploadDir = dirname(__DIR__, 2) . '/public/uploads/alerts';
+            // Partition by Year/Month/Day (e.g. 2026/11/19)
+            $dateFolder = (!empty($timestamp) && strtotime($timestamp)) 
+                ? date('Y/m/d', strtotime($timestamp)) 
+                : date('Y/m/d');
+
+            $uploadDir = dirname(__DIR__, 2) . '/public/uploads/alerts/' . $dateFolder;
             if (!is_dir($uploadDir)) {
                 @mkdir($uploadDir, 0777, true);
             }
@@ -559,7 +566,7 @@ class AiAlertController
             $targetPath = $uploadDir . '/' . $filename;
 
             if (@file_put_contents($targetPath, $decoded) !== false) {
-                return '/uploads/alerts/' . $filename;
+                return '/uploads/alerts/' . $dateFolder . '/' . $filename;
             }
         } catch (\Throwable $e) {
             error_log("Failed to save alert image to folder: " . $e->getMessage());

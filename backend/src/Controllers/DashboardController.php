@@ -51,27 +51,43 @@ class DashboardController
         $recentAlerts = [];
 
         // Stolen plates
-        $stolenStmt = $this->db->query("SELECT 'ANPR_STOLEN' as event_type, id, event_id, vehicle_id, 
-                                               detected_plate_number as title, 'CRITICAL' as severity, created_at 
+        $stolenStmt = $this->db->query("SELECT 'ANPR_STOLEN' as event_type, id, event_id, vehicle_id, camera_id,
+                                               detected_plate_number as title, detected_plate_number,
+                                               'CRITICAL' as severity, created_at,
+                                               scene_snapshot_url, plate_crop_image_url,
+                                               latitude, longitude, location_name, ocr_confidence, is_stolen_match, fir_reference
                                         FROM `anpr_detection_events` 
                                         WHERE is_stolen_match = 1 
                                         ORDER BY created_at DESC LIMIT 5");
-        $recentAlerts = array_merge($recentAlerts, $stolenStmt->fetchAll());
+        $stolenRows = $stolenStmt->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($stolenRows as &$r) {
+            if (empty($r['scene_snapshot_url']) && !empty($r['plate_crop_image_url'])) {
+                $r['scene_snapshot_url'] = $r['plate_crop_image_url'];
+            }
+        }
+        unset($r);
+        $recentAlerts = array_merge($recentAlerts, $stolenRows);
 
         // Weapons
-        $weaponStmt = $this->db->query("SELECT 'WEAPON_THREAT' as event_type, id, event_id, vehicle_id, 
-                                               weapon_class as title, severity_level as severity, created_at 
+        $weaponStmt = $this->db->query("SELECT 'WEAPON_THREAT' as event_type, id, event_id, vehicle_id, camera_id,
+                                               weapon_class as title, weapon_class, severity_level as severity, created_at,
+                                               snapshot_url as scene_snapshot_url, snapshot_url,
+                                               latitude, longitude, location_name, confidence, bounding_box_json
                                         FROM `weapon_threat_events` 
                                         ORDER BY created_at DESC LIMIT 5");
-        $recentAlerts = array_merge($recentAlerts, $weaponStmt->fetchAll());
+        $weaponRows = $weaponStmt->fetchAll(PDO::FETCH_ASSOC);
+        $recentAlerts = array_merge($recentAlerts, $weaponRows);
 
         // FRS
-        $frsStmt = $this->db->query("SELECT 'FRS_MATCH' as event_type, id, event_id, vehicle_id, 
-                                            person_name as title, 'WARNING' as severity, created_at 
+        $frsStmt = $this->db->query("SELECT 'FRS_MATCH' as event_type, id, event_id, vehicle_id, camera_id,
+                                            person_name as title, person_name as suspect_name, 'WARNING' as severity, created_at,
+                                            face_crop_image_url as scene_snapshot_url, scene_snapshot_url,
+                                            latitude, longitude, location_name, similarity_score
                                      FROM `frs_detection_events` 
                                      WHERE operator_review_status = 'CONFIRMED' 
                                      ORDER BY created_at DESC LIMIT 5");
-        $recentAlerts = array_merge($recentAlerts, $frsStmt->fetchAll());
+        $frsRows = $frsStmt->fetchAll(PDO::FETCH_ASSOC);
+        $recentAlerts = array_merge($recentAlerts, $frsRows);
 
         // Sort combined alerts by created_at DESC
         usort($recentAlerts, function ($a, $b) {
