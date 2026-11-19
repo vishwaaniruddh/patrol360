@@ -30,80 +30,138 @@ class DashboardController
         $totalCameras = (int)$this->db->query("SELECT COUNT(*) FROM `vehicle_cameras`")->fetchColumn();
         $onlineCameras = (int)$this->db->query("SELECT COUNT(*) FROM `vehicle_cameras` WHERE is_streaming = 1")->fetchColumn();
 
-        // 3. ANPR metrics
-        $totalPlatesScanned = (int)$this->db->query("SELECT COUNT(*) FROM `anpr_detection_events`")->fetchColumn();
-        $stolenMatches = (int)$this->db->query("SELECT COUNT(*) FROM `anpr_detection_events` WHERE is_stolen_match = 1")->fetchColumn();
+        // 3. ANPR metrics - aggregated dynamically across ai_alerts and detection events
+        $anprFromAi = (int)$this->db->query("SELECT COUNT(*) FROM `ai_alerts` WHERE `alerttype` LIKE '%vehicle%' OR `alerttype` LIKE '%anpr%' OR (`scanned_vehicle_numberplate` IS NOT NULL AND `scanned_vehicle_numberplate` != '')")->fetchColumn();
+        $totalPlatesScanned = max((int)$this->db->query("SELECT COUNT(*) FROM `anpr_detection_events`")->fetchColumn(), $anprFromAi);
+        $stolenFromAi = (int)$this->db->query("SELECT COUNT(*) FROM `ai_alerts` WHERE `alerttype` LIKE '%stolen%' OR `alerttype` LIKE '%hotlist%'")->fetchColumn();
+        $stolenMatches = max((int)$this->db->query("SELECT COUNT(*) FROM `anpr_detection_events` WHERE is_stolen_match = 1")->fetchColumn(), $stolenFromAi);
         $stolenWatchlistCount = (int)$this->db->query("SELECT COUNT(*) FROM `stolen_vehicles_watchlist` WHERE is_active = 1")->fetchColumn();
 
-        // 4. FRS metrics
-        $totalFaceDetections = (int)$this->db->query("SELECT COUNT(*) FROM `frs_detection_events`")->fetchColumn();
+        // 4. FRS metrics - aggregated dynamically across ai_alerts and frs_detection_events
+        $frsFromAi = (int)$this->db->query("SELECT COUNT(*) FROM `ai_alerts` WHERE `alerttype` LIKE '%person%' OR `alerttype` LIKE '%suspect%' OR `alerttype` LIKE '%frs%'")->fetchColumn();
+        $totalFaceDetections = max((int)$this->db->query("SELECT COUNT(*) FROM `frs_detection_events`")->fetchColumn(), $frsFromAi);
         $pendingFaceReviews = (int)$this->db->query("SELECT COUNT(*) FROM `frs_detection_events` WHERE operator_review_status = 'PENDING'")->fetchColumn();
-        $confirmedFaceHits = (int)$this->db->query("SELECT COUNT(*) FROM `frs_detection_events` WHERE operator_review_status = 'CONFIRMED'")->fetchColumn();
+        $confirmedFromAi = (int)$this->db->query("SELECT COUNT(*) FROM `ai_alerts` WHERE `alerttype` LIKE '%blacklist%' OR `alerttype` LIKE '%wanted%'")->fetchColumn();
+        $confirmedFaceHits = max((int)$this->db->query("SELECT COUNT(*) FROM `frs_detection_events` WHERE operator_review_status = 'CONFIRMED'")->fetchColumn(), $confirmedFromAi);
         $wantedWatchlistCount = (int)$this->db->query("SELECT COUNT(*) FROM `person_watchlist` WHERE is_active = 1")->fetchColumn();
 
-        // 5. Threat & Safety metrics
-        $weaponThreatsTotal = (int)$this->db->query("SELECT COUNT(*) FROM `weapon_threat_events`")->fetchColumn();
-        $unackedWeapons = (int)$this->db->query("SELECT COUNT(*) FROM `weapon_threat_events` WHERE is_acknowledged = 0")->fetchColumn();
-        $fireHazardsTotal = (int)$this->db->query("SELECT COUNT(*) FROM `fire_smoke_events`")->fetchColumn();
-        $crowdIncidentsTotal = (int)$this->db->query("SELECT COUNT(*) FROM `crowd_analytics_events` WHERE is_threshold_exceeded = 1")->fetchColumn();
+        // 5. Threat & Safety metrics - aggregated dynamically across ai_alerts
+        $weaponsFromAi = (int)$this->db->query("SELECT COUNT(*) FROM `ai_alerts` WHERE `alerttype` LIKE '%weapon%' OR `alerttype` LIKE '%gun%' OR `alerttype` LIKE '%firearm%' OR `alerttype` LIKE '%knife%' OR `alerttype` LIKE '%blade%'")->fetchColumn();
+        $weaponThreatsTotal = max((int)$this->db->query("SELECT COUNT(*) FROM `weapon_threat_events`")->fetchColumn(), $weaponsFromAi);
+        $unackedWeapons = (int)$this->db->query("SELECT COUNT(*) FROM `ai_alerts` WHERE `status` = 'O'")->fetchColumn();
+        $fireHazardsTotal = (int)$this->db->query("SELECT COUNT(*) FROM `ai_alerts` WHERE `alerttype` LIKE '%fire%' OR `alerttype` LIKE '%smoke%'")->fetchColumn();
+        $crowdIncidentsTotal = (int)$this->db->query("SELECT COUNT(*) FROM `ai_alerts` WHERE `alerttype` LIKE '%crowd%'")->fetchColumn();
 
-        // 6. Recent high priority feed (Latest 10 alerts across ANPR stolen + Weapons + Confirmed FRS)
+        // 6. Recent high priority feed - Real-time alerts directly from ai_alerts table
+        $appConfig = require __DIR__ . '/../../config/app.php';
+        $baseUrl = rtrim($appConfig['base_url'] ?? '', '/');
+
+        // Dynamically inspect column availability in ai_alerts
+        $cols = $this->db->query("SHOW COLUMNS FROM `ai_alerts`")->fetchAll(PDO::FETCH_COLUMN);
+        $confCol = in_array('confidence', $cols, true) ? "a.`confidence`" : "NULL AS `confidence`";
+        $vehNumCol = in_array('vehicle_number', $cols, true) ? "a.`vehicle_number`" : "NULL AS `vehicle_number`";
+        $numPersonCol = in_array('number_of_person', $cols, true) ? "a.`number_of_person`" : "NULL AS `number_of_person`";
+
+        $aiRecentStmt = $this->db->query("
+            SELECT 
+                a.`id`,
+                a.`vehicle_id`,
+                a.`camera_id`,
+                a.`lat`,
+                a.`lon`,
+                a.`createtime`,
+                a.`receivedtime`,
+                a.`comment`,
+                a.`status`,
+                a.`sendip`,
+                a.`alerttype`,
+                a.`location`,
+                a.`ATMCode`,
+                a.`File_loc`,
+                a.`scanned_vehicle_numberplate`,
+                {$confCol},
+                {$vehNumCol},
+                {$numPersonCol},
+                v.`registration_number` AS `vehicle_registration`,
+                v.`police_station`
+            FROM `ai_alerts` a
+            LEFT JOIN `police_vehicles` v ON a.`vehicle_id` = v.`vehicle_id`
+            ORDER BY a.`id` DESC
+            LIMIT 10
+        ");
+
         $recentAlerts = [];
+        while ($row = $aiRecentStmt->fetch(PDO::FETCH_ASSOC)) {
+            $id = (int)$row['id'];
+            $rawType = trim((string)($row['alerttype'] ?? 'AI Detection'));
+            $upperType = strtoupper($rawType);
 
-        // Stolen plates
-        $stolenStmt = $this->db->query("SELECT 'ANPR_STOLEN' as event_type, id, event_id, vehicle_id, camera_id,
-                                               detected_plate_number as title, detected_plate_number,
-                                               'CRITICAL' as severity, created_at,
-                                               scene_snapshot_url, plate_crop_image_url,
-                                               latitude, longitude, ocr_confidence, is_stolen_match
-                                        FROM `anpr_detection_events` 
-                                        WHERE is_stolen_match = 1 
-                                        ORDER BY created_at DESC LIMIT 5");
-        $stolenRows = $stolenStmt->fetchAll(PDO::FETCH_ASSOC);
-        foreach ($stolenRows as &$r) {
-            if (empty($r['scene_snapshot_url']) && !empty($r['plate_crop_image_url'])) {
-                $r['scene_snapshot_url'] = $r['plate_crop_image_url'];
+            // Determine normalized category & severity
+            if (str_contains($upperType, 'WEAPON') || str_contains($upperType, 'GUN') || str_contains($upperType, 'FIREARM') || str_contains($upperType, 'KNIFE') || str_contains($upperType, 'BLADE') || str_contains($upperType, 'PROJECTILE')) {
+                $category = 'WEAPON';
+                $severity = 'CRITICAL_RED';
+            } elseif (str_contains($upperType, 'STOLEN') || str_contains($upperType, 'HOTLIST')) {
+                $category = 'ANPR';
+                $severity = 'CRITICAL';
+            } elseif (str_contains($upperType, 'VEHICLE') || str_contains($upperType, 'ANPR') || !empty($row['scanned_vehicle_numberplate']) || !empty($row['vehicle_number'])) {
+                $category = 'ANPR';
+                $severity = 'HIGH';
+            } elseif (str_contains($upperType, 'BLACKLIST') || str_contains($upperType, 'PERSON') || str_contains($upperType, 'SUSPECT') || str_contains($upperType, 'FRS')) {
+                $category = 'FRS';
+                $severity = 'HIGH';
+            } elseif (str_contains($upperType, 'CROWD')) {
+                $category = 'CROWD';
+                $severity = 'WARNING';
+            } elseif (str_contains($upperType, 'FIRE') || str_contains($upperType, 'SMOKE')) {
+                $category = 'FIRE';
+                $severity = 'CRITICAL';
+            } else {
+                $category = 'ANPR';
+                $severity = 'STANDARD';
             }
-            $r['location_name'] = 'Ahmedabad Metro Route 1';
-            $r['fir_reference'] = 'Stolen Watchlist Match';
-        }
-        unset($r);
-        $recentAlerts = array_merge($recentAlerts, $stolenRows);
 
-        // Weapons
-        $weaponStmt = $this->db->query("SELECT 'WEAPON_THREAT' as event_type, id, event_id, vehicle_id, camera_id,
-                                               weapon_class as title, weapon_class, severity_level as severity, created_at,
-                                               snapshot_url as scene_snapshot_url, snapshot_url,
-                                               latitude, longitude, confidence
-                                        FROM `weapon_threat_events` 
-                                        ORDER BY created_at DESC LIMIT 5");
-        $weaponRows = $weaponStmt->fetchAll(PDO::FETCH_ASSOC);
-        foreach ($weaponRows as &$r) {
-            $r['location_name'] = 'Ahmedabad Metro Patrol Sector';
-        }
-        unset($r);
-        $recentAlerts = array_merge($recentAlerts, $weaponRows);
+            // Image URL resolution: direct binary stream endpoint
+            $imageUrl = "{$baseUrl}/api/ai-alerts/{$id}/image";
 
-        // FRS
-        $frsStmt = $this->db->query("SELECT 'FRS_MATCH' as event_type, id, event_id, vehicle_id, camera_id,
-                                            person_name as title, person_name as suspect_name, 'WARNING' as severity, created_at,
-                                            face_crop_url as scene_snapshot_url, face_crop_url,
-                                            latitude, longitude, match_confidence as confidence
-                                     FROM `frs_detection_events` 
-                                     WHERE operator_review_status = 'CONFIRMED' 
-                                     ORDER BY created_at DESC LIMIT 5");
-        $frsRows = $frsStmt->fetchAll(PDO::FETCH_ASSOC);
-        foreach ($frsRows as &$r) {
-            $r['location_name'] = 'Patrol Surveillance Zone';
-        }
-        unset($r);
-        $recentAlerts = array_merge($recentAlerts, $frsRows);
+            $plateNum = !empty($row['vehicle_number']) 
+                ? (string)$row['vehicle_number'] 
+                : (!empty($row['scanned_vehicle_numberplate']) ? (string)$row['scanned_vehicle_numberplate'] : '');
 
-        // Sort combined alerts by created_at DESC
-        usort($recentAlerts, function ($a, $b) {
-            return strcmp($b['created_at'], $a['created_at']);
-        });
-        $recentAlerts = array_slice($recentAlerts, 0, 10);
+            $confidenceVal = !empty($row['confidence']) 
+                ? (float)$row['confidence'] 
+                : 95.0;
+
+            $locationName = (!empty($row['location']) && $row['location'] !== 'demo') 
+                ? $row['location'] 
+                : (!empty($row['police_station']) ? $row['police_station'] : 'Ahmedabad Patrol Sector');
+
+            $recentAlerts[] = [
+                'id'                    => $id,
+                'alert_id'              => $id,
+                'event_id'              => "ALERT-{$id}",
+                'event_type'            => $category,
+                'title'                 => $rawType,
+                'severity'              => $severity,
+                'vehicle_id'            => $row['vehicle_id'] ?: 'PATROLVAN01',
+                'camera_id'             => $row['camera_id'] ?: 'CAM_01_FRONT',
+                'created_at'            => $row['createtime'] ?: date('Y-m-d H:i:s'),
+                'image_url'             => $imageUrl,
+                'scene_snapshot_url'    => $imageUrl,
+                'snapshot_url'          => $imageUrl,
+                'plate_crop_image_url'  => $imageUrl,
+                'latitude'              => $row['lat'] ?: '23.0258',
+                'longitude'             => $row['lon'] ?: '72.5873',
+                'location_name'         => $locationName,
+                'confidence'            => $confidenceVal,
+                'ocr_confidence'        => $confidenceVal,
+                'detected_plate_number' => $plateNum,
+                'vehicle_number'        => $plateNum,
+                'number_of_person'      => $row['number_of_person'] !== null ? (int)$row['number_of_person'] : null,
+                'status'                => $row['status'] ?: 'O',
+                'is_stolen_match'       => str_contains($upperType, 'STOLEN') || str_contains($upperType, 'HOTLIST'),
+                'fir_reference'         => "Alert #{$id} ({$rawType})"
+            ];
+        }
 
         Response::success([
             'vehicles' => [
