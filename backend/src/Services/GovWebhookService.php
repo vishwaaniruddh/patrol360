@@ -251,6 +251,14 @@ class GovWebhookService
             $confidence = is_numeric($alert['confidence_score']) ? (float)$alert['confidence_score'] : (float)preg_replace('/[^0-9.]/', '', (string)$alert['confidence_score']);
         }
 
+        // Resolve vehicle_number and number_of_person
+        $vehicleNumber = !empty($alert['vehicle_number']) 
+            ? (string)$alert['vehicle_number'] 
+            : (!empty($alert['scanned_vehicle_numberplate']) ? (string)$alert['scanned_vehicle_numberplate'] : $plate);
+        $numberOfPerson = (isset($alert['number_of_person']) && $alert['number_of_person'] !== null && $alert['number_of_person'] !== '')
+            ? (int)$alert['number_of_person'] 
+            : null;
+
         // Resolve raw description from any available field
         $rawDescription = trim(
             (string)(
@@ -315,6 +323,8 @@ class GovWebhookService
             'status'                   => $statusLabel,
             'status_code'              => $statusCode,
             'plate_number'             => $plate,
+            'vehicle_number'           => $vehicleNumber,
+            'number_of_person'         => $numberOfPerson,
             'location'                 => !empty($location) ? "{$location} ({$lat}, {$lon})" : "{$lat}, {$lon}",
             'latitude'                 => $lat,
             'longitude'                => $lon,
@@ -387,6 +397,8 @@ class GovWebhookService
             'confidence'          => $confidence,
             'confidence_score'    => $confidence,
             'Confidence'          => $confidence,
+            'vehicle_number'      => $vehicleNumber,
+            'number_of_person'    => $numberOfPerson,
             'comment'             => $comment ?: $eventDescription,
             'color_of_detection'  => $detectionColor,
             'ColorOfDetection'    => $detectionColor,
@@ -418,6 +430,8 @@ class GovWebhookService
                 'confidence'          => $confidence,
                 'confidence_score'    => $confidence,
                 'Confidence'          => $confidence,
+                'vehicle_number'      => $vehicleNumber,
+                'number_of_person'    => $numberOfPerson,
                 'comment'             => $comment ?: $eventDescription,
                 'color_of_detection'  => $detectionColor,
                 'ColorOfDetection'    => $detectionColor,

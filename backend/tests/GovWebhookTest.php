@@ -202,4 +202,51 @@ class GovWebhookTest extends TestCase
         // Test passing null returns null
         $this->assertNull(\App\Controllers\AiAlertController::saveAlertImage(null));
     }
+
+    public function testAiAlertWithVehicleNumberAndNumberOfPerson(): void
+    {
+        $db = \App\Database::getConnection();
+
+        // Insert alert with vehicle_number and number_of_person
+        $stmt = $db->prepare("
+            INSERT INTO `ai_alerts` (
+                `vehicle_id`, `camera_id`, `lat`, `lon`, `createtime`, 
+                `receivedtime`, `alerttype`, `scanned_vehicle_numberplate`, 
+                `vehicle_number`, `number_of_person`, `confidence`, `status`
+            ) VALUES (?, ?, ?, ?, NOW(), NOW(), ?, ?, ?, ?, ?, 'O')
+        ");
+        $stmt->execute([
+            'PATROL_VAN_01',
+            'CAM_01_FRONT',
+            '23.0225',
+            '72.5714',
+            'CROWD_DETECTED',
+            'GJ-01-HW-1517',
+            'GJ-01-HW-1517',
+            5,
+            88.50
+        ]);
+        $alertId = (int)$db->lastInsertId();
+
+        $this->assertGreaterThan(0, $alertId);
+
+        // Fetch back and verify
+        $fetch = $db->query("SELECT * FROM `ai_alerts` WHERE `id` = {$alertId}")->fetch(\PDO::FETCH_ASSOC);
+        $this->assertEquals('GJ-01-HW-1517', $fetch['vehicle_number']);
+        $this->assertEquals(5, (int)$fetch['number_of_person']);
+        $this->assertEquals(88.50, (float)$fetch['confidence']);
+
+        // Verify GovWebhookService builds payload including vehicle_number and number_of_person
+        $govService = new \App\Services\GovWebhookService($db);
+        $payload = $govService->formatAlertPayload($fetch);
+
+        $this->assertEquals('GJ-01-HW-1517', $payload['vehicle_number']);
+        $this->assertEquals(5, $payload['number_of_person']);
+        $this->assertEquals(88.50, $payload['confidence']);
+        $this->assertEquals('GJ-01-HW-1517', $payload['data']['vehicle_number']);
+        $this->assertEquals(5, $payload['data']['number_of_person']);
+
+        // Cleanup
+        $db->exec("DELETE FROM `ai_alerts` WHERE `id` = {$alertId}");
+    }
 }

@@ -2607,6 +2607,8 @@
                   <tr><td class="param-name">createtime</td><td class="param-type">datetime</td><td class="param-req">NO</td><td>Edge detection time (defaults to <code>NOW()</code>)</td></tr>
                   <tr><td class="param-name">alerttype</td><td class="param-type">string</td><td class="param-req">NO</td><td>Classification (e.g. <code>ANPR</code>, <code>WEAPON</code>, <code>HOTLIST_MATCH</code>)</td></tr>
                   <tr><td class="param-name">scanned_vehicle_numberplate</td><td class="param-type">string</td><td class="param-req">NO</td><td>Recognized license plate (Auto-matches stolen database!)</td></tr>
+                  <tr><td class="param-name">vehicle_number</td><td class="param-type">string</td><td class="param-req">NO</td><td>Detected vehicle registration plate (e.g. <code>GJ-01-HW-1517</code>)</td></tr>
+                  <tr><td class="param-name">number_of_person</td><td class="param-type">integer</td><td class="param-req">NO</td><td>Detected persons/crowd headcount (e.g. <code>3</code>)</td></tr>
                   <tr><td class="param-name">confidence</td><td class="param-type">decimal</td><td class="param-req">NO</td><td>AI model confidence score (e.g. <code>95.50</code>, synced to Gov API)</td></tr>
                   <tr><td class="param-name">File_loc</td><td class="param-type">mediumtext</td><td class="param-req">NO</td><td>Relative file path (/uploads/alerts/YYYY/MM/DD/...) or Base64 JPEG/PNG image frame (auto-saved to date-partitioned disk folder)</td></tr>
                   <tr><td class="param-name">location</td><td class="param-type">string</td><td class="param-req">NO</td><td>Physical landmark or zone (e.g. <code>Navrangpura Circle</code>)</td></tr>
@@ -2631,6 +2633,8 @@
   "alerttype": "ANPR_HOTLIST_MATCH",
   "confidence": 95.50,
   "scanned_vehicle_numberplate": "MH12DE1432",
+  "vehicle_number": "MH12DE1432",
+  "number_of_person": 1,
   "ATMCode": "ATM-SBI-001",
   "location": "Navrangpura Circle",
   "comment": "Suspect vehicle detected at junction",

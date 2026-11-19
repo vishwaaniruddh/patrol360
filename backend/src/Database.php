@@ -66,6 +66,17 @@ class Database
                 if (!in_array('action_taken', $cols, true)) {
                     $db->exec("ALTER TABLE `ai_alerts` ADD COLUMN `action_taken` VARCHAR(255) DEFAULT NULL AFTER `acknowledged_at`");
                 }
+                if (!in_array('confidence', $cols, true)) {
+                    $db->exec("ALTER TABLE `ai_alerts` ADD COLUMN `confidence` DECIMAL(5, 2) DEFAULT NULL AFTER `action_taken`");
+                } else {
+                    $db->exec("ALTER TABLE `ai_alerts` MODIFY COLUMN `confidence` DECIMAL(5, 2) DEFAULT NULL");
+                }
+                if (!in_array('vehicle_number', $cols, true)) {
+                    $db->exec("ALTER TABLE `ai_alerts` ADD COLUMN `vehicle_number` VARCHAR(64) DEFAULT NULL AFTER `confidence`");
+                }
+                if (!in_array('number_of_person', $cols, true)) {
+                    $db->exec("ALTER TABLE `ai_alerts` ADD COLUMN `number_of_person` INT DEFAULT NULL AFTER `vehicle_number`");
+                }
             }
 
             // 1.1 users table patches (Face ID Biometric Encoding BLOB)

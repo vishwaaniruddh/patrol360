@@ -85,6 +85,8 @@ class AiAlertController
         $ackAtCol = in_array('acknowledged_at', $cols, true) ? "a.`acknowledged_at`" : "NULL AS `acknowledged_at`";
         $actTakenCol = in_array('action_taken', $cols, true) ? "a.`action_taken`" : "NULL AS `action_taken`";
         $confCol = in_array('confidence', $cols, true) ? "a.`confidence`" : "NULL AS `confidence`";
+        $vehNumCol = in_array('vehicle_number', $cols, true) ? "a.`vehicle_number`" : "NULL AS `vehicle_number`";
+        $numPersonCol = in_array('number_of_person', $cols, true) ? "a.`number_of_person`" : "NULL AS `number_of_person`";
 
         // Fetch records
         $sql = "
@@ -109,6 +111,8 @@ class AiAlertController
                 a.`ATMCode`,
                 a.`scanned_vehicle_numberplate`,
                 {$confCol},
+                {$vehNumCol},
+                {$numPersonCol},
                 CASE 
                     WHEN a.`status` = 'O' THEN 'Open'
                     WHEN a.`status` = 'A' THEN 'Acknowledged'
@@ -280,92 +284,84 @@ class AiAlertController
             $confidence = is_numeric($body['confidence_score']) ? (float)$body['confidence_score'] : (float)preg_replace('/[^0-9.]/', '', (string)$body['confidence_score']);
         }
 
+        // vehicle_number (scanned or detected vehicle registration/number plate)
+        $vehicleNumber = !empty($body['vehicle_number']) 
+            ? trim((string)$body['vehicle_number']) 
+            : (!empty($body['vehicle_reg']) ? trim((string)$body['vehicle_reg']) : ($plate ?? null));
+
+        // number_of_person (detected person/crowd headcount)
+        $numberOfPerson = null;
+        if (isset($body['number_of_person']) && $body['number_of_person'] !== '' && $body['number_of_person'] !== null) {
+            $numberOfPerson = (int)$body['number_of_person'];
+        } elseif (isset($body['number_of_persons']) && $body['number_of_persons'] !== '' && $body['number_of_persons'] !== null) {
+            $numberOfPerson = (int)$body['number_of_persons'];
+        } elseif (isset($body['person_count']) && $body['person_count'] !== '' && $body['person_count'] !== null) {
+            $numberOfPerson = (int)$body['person_count'];
+        }
+
         // Optional: save base64 image copy to public/uploads/alerts/YYYY/MM/DD for direct browser display
         $savedFileUrl = self::saveAlertImage($fileLoc, $vehicleId, $createtime);
         $fileLocToSave = $savedFileUrl; // Store relative image path (/uploads/alerts/YYYY/MM/DD/...) instead of multi-megabyte base64!
 
         $receivedtime = date('Y-m-d H:i:s');
 
-        // Check if confidence column is present in table
+        // Dynamically inspect column availability for zero-downtime resilience
         $cols = $this->db->query("SHOW COLUMNS FROM `ai_alerts`")->fetchAll(PDO::FETCH_COLUMN);
         $hasConfidence = in_array('confidence', $cols, true);
+        $hasVehicleNumber = in_array('vehicle_number', $cols, true);
+        $hasNumberOfPerson = in_array('number_of_person', $cols, true);
 
-        // Insert into ai_alerts
+        // Build dynamic insert columns and parameters
+        $insertCols = [
+            '`vehicle_id`', 
+            '`camera_id`', 
+            '`lat`', 
+            '`lon`', 
+            '`createtime`', 
+            '`receivedtime`', 
+            '`comment`', 
+            '`status`', 
+            '`sendip`', 
+            '`alerttype`', 
+            '`location`', 
+            '`ATMCode`', 
+            '`File_loc`', 
+            '`scanned_vehicle_numberplate`'
+        ];
+        $insertVals = [
+            $vehicleId,
+            $cameraId,
+            $lat,
+            $lon,
+            $createtime,
+            $receivedtime,
+            $comment,
+            $status,
+            $sendip,
+            $alerttype,
+            $location,
+            $atmCode,
+            $fileLocToSave,
+            $plate
+        ];
+
         if ($hasConfidence) {
-            $insert = $this->db->prepare("
-                INSERT INTO `ai_alerts` (
-                    `vehicle_id`, 
-                    `camera_id`, 
-                    `lat`, 
-                    `lon`, 
-                    `createtime`, 
-                    `receivedtime`, 
-                    `comment`, 
-                    `status`, 
-                    `sendip`, 
-                    `alerttype`, 
-                    `location`, 
-                    `ATMCode`, 
-                    `File_loc`, 
-                    `scanned_vehicle_numberplate`,
-                    `confidence`
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ");
-
-            $insert->execute([
-                $vehicleId,
-                $cameraId,
-                $lat,
-                $lon,
-                $createtime,
-                $receivedtime,
-                $comment,
-                $status,
-                $sendip,
-                $alerttype,
-                $location,
-                $atmCode,
-                $fileLocToSave,
-                $plate,
-                $confidence
-            ]);
-        } else {
-            $insert = $this->db->prepare("
-                INSERT INTO `ai_alerts` (
-                    `vehicle_id`, 
-                    `camera_id`, 
-                    `lat`, 
-                    `lon`, 
-                    `createtime`, 
-                    `receivedtime`, 
-                    `comment`, 
-                    `status`, 
-                    `sendip`, 
-                    `alerttype`, 
-                    `location`, 
-                    `ATMCode`, 
-                    `File_loc`, 
-                    `scanned_vehicle_numberplate`
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ");
-
-            $insert->execute([
-                $vehicleId,
-                $cameraId,
-                $lat,
-                $lon,
-                $createtime,
-                $receivedtime,
-                $comment,
-                $status,
-                $sendip,
-                $alerttype,
-                $location,
-                $atmCode,
-                $fileLocToSave,
-                $plate
-            ]);
+            $insertCols[] = '`confidence`';
+            $insertVals[] = $confidence;
         }
+        if ($hasVehicleNumber) {
+            $insertCols[] = '`vehicle_number`';
+            $insertVals[] = $vehicleNumber;
+        }
+        if ($hasNumberOfPerson) {
+            $insertCols[] = '`number_of_person`';
+            $insertVals[] = $numberOfPerson;
+        }
+
+        $colList = implode(', ', $insertCols);
+        $placeholders = implode(', ', array_fill(0, count($insertCols), '?'));
+        $insert = $this->db->prepare("INSERT INTO `ai_alerts` ({$colList}) VALUES ({$placeholders})");
+        $insert->execute($insertVals);
 
         $newId = (int)$this->db->lastInsertId();
 

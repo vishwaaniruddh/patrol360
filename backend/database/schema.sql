@@ -327,6 +327,8 @@ CREATE TABLE IF NOT EXISTS `ai_alerts` (
     `File_loc` MEDIUMTEXT DEFAULT NULL COMMENT 'Relative file path in /uploads/alerts/ or legacy Base64 string',
     `scanned_vehicle_numberplate` VARCHAR(50) DEFAULT NULL,
     `confidence` DECIMAL(5, 2) DEFAULT NULL,
+    `vehicle_number` VARCHAR(64) DEFAULT NULL,
+    `number_of_person` INT DEFAULT NULL,
     `acknowledged_by` VARCHAR(100) DEFAULT NULL,
     `acknowledged_at` DATETIME DEFAULT NULL,
     `action_taken` VARCHAR(255) DEFAULT NULL,
