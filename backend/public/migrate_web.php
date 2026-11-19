@@ -37,6 +37,31 @@ if (isset($_GET['action']) && $_GET['action'] === 'migrate') {
     exit;
 }
 
+// Handle AJAX queue purge & sanitization request
+if (isset($_GET['action']) && $_GET['action'] === 'clean_queue') {
+    header('Content-Type: application/json; charset=utf-8');
+    try {
+        $purged = $service->purgeDeliveredQueuePayloads();
+        $sanitized = $service->sanitizePendingQueuePayloads(500);
+        echo json_encode([
+            'status' => 'success',
+            'data'   => [
+                'purged_sent' => $purged,
+                'sanitized'   => $sanitized['sanitized'],
+                'remaining'   => $sanitized['remaining'],
+                'bytes_freed' => $sanitized['bytes_freed']
+            ]
+        ], JSON_PRETTY_PRINT);
+    } catch (\Throwable $e) {
+        http_response_code(500);
+        echo json_encode([
+            'status'  => 'error',
+            'message' => $e->getMessage()
+        ]);
+    }
+    exit;
+}
+
 // Initial status for web page
 $remaining = $service->getRemainingCount();
 $migrated  = $service->getMigratedCount();
@@ -139,6 +164,11 @@ $percent   = $total > 0 ? round(($migrated / $total) * 100, 1) : 100;
         </button>
         <button id="btn-stop" class="btn-danger" style="display:none;" onclick="stopAutoRun()">
             ⏹ Pause
+        </button>
+    </div>
+    <div style="margin-top: 0.75rem;">
+        <button id="btn-clean-queue" class="btn-primary" style="background: #4f46e5; width: 100%;" onclick="cleanQueuePayloads()">
+            🧹 Purge & Sanitize Central Queue (Remove Heavy Base64 from Webhooks)
         </button>
     </div>
 
@@ -247,6 +277,27 @@ function stopAutoRun() {
     document.getElementById('btn-auto').style.display = 'inline-flex';
     document.getElementById('btn-stop').style.display = 'none';
     appendLog('Migration paused.', 'warn');
+}
+
+async function cleanQueuePayloads() {
+    const btn = document.getElementById('btn-clean-queue');
+    btn.disabled = true;
+    appendLog('Purging delivered items and sanitizing queued Base64 payloads...', 'info');
+    try {
+        const res = await fetch('migrate_web.php?action=clean_queue');
+        const json = await res.json();
+        if (json.status === 'success') {
+            const d = json.data;
+            const mb = (d.bytes_freed / (1024 * 1024)).toFixed(2);
+            appendLog(`✔ Queue Clean Complete: Purged ${d.purged_sent} delivered items | Sanitized ${d.sanitized} pending records (${mb} MB freed). Remaining bloated: ${d.remaining}`, 'success');
+        } else {
+            appendLog(`❌ Queue Error: ${json.message}`, 'error');
+        }
+    } catch (e) {
+        appendLog(`❌ Network error: ${e.message}`, 'error');
+    } finally {
+        btn.disabled = false;
+    }
 }
 </script>
 

@@ -222,8 +222,65 @@ class AlertMigrationService
     {
         return (int)$this->db->exec("
             DELETE FROM `central_api_dispatch_queue` 
-            WHERE `payload_json` LIKE '%data:image%' 
+            WHERE (`payload_json` LIKE '%data:image%' 
+               OR `payload_json` LIKE '%/9j/%' 
+               OR LENGTH(`payload_json`) > 10000) 
               AND `delivery_status` = 'SENT_200'
         ");
+    }
+
+    /**
+     * Re-format bloated QUEUED or FAILED items in central_api_dispatch_queue so they never store or transmit Base64
+     */
+    public function sanitizePendingQueuePayloads(int $batchLimit = 500): array
+    {
+        $stmt = $this->db->prepare("
+            SELECT `id`, `event_id`, `payload_json` 
+            FROM `central_api_dispatch_queue` 
+            WHERE (`payload_json` LIKE '%data:image%' 
+               OR `payload_json` LIKE '%/9j/%' 
+               OR LENGTH(`payload_json`) > 10000)
+              AND `delivery_status` != 'SENT_200'
+            ORDER BY `id` ASC
+            LIMIT ?
+        ");
+        $stmt->bindValue(1, $batchLimit, PDO::PARAM_INT);
+        $stmt->execute();
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $sanitizedCount = 0;
+        $bytesFreed = 0;
+        $webhookService = new GovWebhookService($this->db);
+        $upd = $this->db->prepare("UPDATE `central_api_dispatch_queue` SET `payload_json` = ? WHERE `id` = ?");
+
+        foreach ($rows as $row) {
+            $id = (int)$row['id'];
+            $oldLen = strlen((string)$row['payload_json']);
+            if (preg_match('/^ALERT-(\d+)-/', (string)$row['event_id'], $m)) {
+                $alertId = (int)$m[1];
+                $stmtAlert = $this->db->prepare("SELECT * FROM `ai_alerts` WHERE `id` = ? LIMIT 1");
+                $stmtAlert->execute([$alertId]);
+                $alertRow = $stmtAlert->fetch(PDO::FETCH_ASSOC);
+                if ($alertRow) {
+                    $cleanPayload = $webhookService->formatAlertPayload($alertRow);
+                    $cleanJson = json_encode($cleanPayload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+                    $upd->execute([$cleanJson, $id]);
+                    $sanitizedCount++;
+                    $bytesFreed += max(0, $oldLen - strlen($cleanJson));
+                }
+            }
+        }
+
+        return [
+            'sanitized'   => $sanitizedCount,
+            'bytes_freed' => $bytesFreed,
+            'remaining'   => (int)$this->db->query("
+                SELECT COUNT(*) FROM `central_api_dispatch_queue` 
+                WHERE (`payload_json` LIKE '%data:image%' 
+                   OR `payload_json` LIKE '%/9j/%' 
+                   OR LENGTH(`payload_json`) > 10000)
+                  AND `delivery_status` != 'SENT_200'
+            ")->fetchColumn()
+        ];
     }
 }

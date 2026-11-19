@@ -741,6 +741,24 @@ class GovWebhookService
                 continue;
             }
 
+            // On-the-fly sanitize: If legacy queue row has bloated base64 in payload_json, refresh and sanitize it before sending!
+            if (str_contains($item['payload_json'], '/9j/') || str_contains($item['payload_json'], 'data:image') || strlen($item['payload_json']) > 20000) {
+                if (preg_match('/^ALERT-(\d+)-/', $item['event_id'], $m)) {
+                    $linkedAlertId = (int)$m[1];
+                    try {
+                        $stmtAlert = $this->db->prepare("SELECT * FROM `ai_alerts` WHERE `id` = ? LIMIT 1");
+                        $stmtAlert->execute([$linkedAlertId]);
+                        $alertRow = $stmtAlert->fetch(PDO::FETCH_ASSOC);
+                        if ($alertRow) {
+                            $payload = $this->formatAlertPayload($alertRow);
+                            $cleanJson = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+                            $this->db->prepare("UPDATE `central_api_dispatch_queue` SET `payload_json` = ? WHERE `id` = ?")
+                                     ->execute([$cleanJson, $queueId]);
+                        }
+                    } catch (\Throwable $t) {}
+                }
+            }
+
             $res = $this->sendRaw($payload, $item['destination_url']);
             $now = date('Y-m-d H:i:s');
             $httpCode = $res['http_code'];

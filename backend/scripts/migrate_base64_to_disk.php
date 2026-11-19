@@ -232,6 +232,8 @@ echo "[2/2] Scanning `central_api_dispatch_queue` for bloated Base64 payloads...
 $qStmt = $db->query("
     SELECT COUNT(*) FROM `central_api_dispatch_queue` 
     WHERE `payload_json` LIKE '%data:image%'
+       OR `payload_json` LIKE '%/9j/%'
+       OR LENGTH(`payload_json`) > 10000
 ");
 $queueBloatCount = (int)$qStmt->fetchColumn();
 
@@ -239,7 +241,11 @@ echo "Found {$queueBloatCount} queued dispatch records with heavy Base64 payload
 
 if ($queueBloatCount > 0 && !$isDryRun) {
     echo "Purging legacy delivered/bloated queue payloads...\n";
-    $del = $db->exec("DELETE FROM `central_api_dispatch_queue` WHERE `payload_json` LIKE '%data:image%' AND `delivery_status` = 'SENT_200'");
+    $del = $db->exec("
+        DELETE FROM `central_api_dispatch_queue` 
+        WHERE (`payload_json` LIKE '%data:image%' OR `payload_json` LIKE '%/9j/%' OR LENGTH(`payload_json`) > 10000) 
+          AND `delivery_status` = 'SENT_200'
+    ");
     echo "✔ Purged {$del} delivered records with heavy payloads.\n";
 } elseif ($isDryRun && $queueBloatCount > 0) {
     echo "  [DRY RUN] Would purge {$queueBloatCount} delivered heavy queue items.\n";
