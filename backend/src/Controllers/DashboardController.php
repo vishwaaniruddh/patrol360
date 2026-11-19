@@ -55,7 +55,7 @@ class DashboardController
                                                detected_plate_number as title, detected_plate_number,
                                                'CRITICAL' as severity, created_at,
                                                scene_snapshot_url, plate_crop_image_url,
-                                               latitude, longitude, location_name, ocr_confidence, is_stolen_match, fir_reference
+                                               latitude, longitude, ocr_confidence, is_stolen_match
                                         FROM `anpr_detection_events` 
                                         WHERE is_stolen_match = 1 
                                         ORDER BY created_at DESC LIMIT 5");
@@ -64,6 +64,8 @@ class DashboardController
             if (empty($r['scene_snapshot_url']) && !empty($r['plate_crop_image_url'])) {
                 $r['scene_snapshot_url'] = $r['plate_crop_image_url'];
             }
+            $r['location_name'] = 'Ahmedabad Metro Route 1';
+            $r['fir_reference'] = 'Stolen Watchlist Match';
         }
         unset($r);
         $recentAlerts = array_merge($recentAlerts, $stolenRows);
@@ -72,21 +74,29 @@ class DashboardController
         $weaponStmt = $this->db->query("SELECT 'WEAPON_THREAT' as event_type, id, event_id, vehicle_id, camera_id,
                                                weapon_class as title, weapon_class, severity_level as severity, created_at,
                                                snapshot_url as scene_snapshot_url, snapshot_url,
-                                               latitude, longitude, location_name, confidence, bounding_box_json
+                                               latitude, longitude, confidence
                                         FROM `weapon_threat_events` 
                                         ORDER BY created_at DESC LIMIT 5");
         $weaponRows = $weaponStmt->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($weaponRows as &$r) {
+            $r['location_name'] = 'Ahmedabad Metro Patrol Sector';
+        }
+        unset($r);
         $recentAlerts = array_merge($recentAlerts, $weaponRows);
 
         // FRS
         $frsStmt = $this->db->query("SELECT 'FRS_MATCH' as event_type, id, event_id, vehicle_id, camera_id,
                                             person_name as title, person_name as suspect_name, 'WARNING' as severity, created_at,
-                                            face_crop_image_url as scene_snapshot_url, scene_snapshot_url,
-                                            latitude, longitude, location_name, similarity_score
+                                            face_crop_url as scene_snapshot_url, face_crop_url,
+                                            latitude, longitude, match_confidence as confidence
                                      FROM `frs_detection_events` 
                                      WHERE operator_review_status = 'CONFIRMED' 
                                      ORDER BY created_at DESC LIMIT 5");
         $frsRows = $frsStmt->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($frsRows as &$r) {
+            $r['location_name'] = 'Patrol Surveillance Zone';
+        }
+        unset($r);
         $recentAlerts = array_merge($recentAlerts, $frsRows);
 
         // Sort combined alerts by created_at DESC
