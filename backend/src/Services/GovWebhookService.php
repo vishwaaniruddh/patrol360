@@ -82,79 +82,85 @@ class GovWebhookService
      */
     public static function normalizeEventType(?string $rawType, array $context = []): string
     {
-        $plate = trim((string)($context['scanned_vehicle_numberplate'] ?? $context['plate_number'] ?? ''));
-        $rawStr = (string)$rawType;
-        $commentStr = (string)($context['comment'] ?? '');
-        $haystack = strtolower(str_replace(['_', '-', '.', '/', ':'], ' ', $rawStr . ' ' . $commentStr));
+        $rawStr = trim((string)$rawType);
+        if ($rawStr === '') {
+            return 'vehicle classification';
+        }
 
-        // 1. Weapon Detection (guns, firearms, knives, blades, tactical threats)
-        if (preg_match('/\b(weapon\w*|gun\w*|knife|knives|firearm\w*|pistol\w*|rifle\w*|blade\w*|machete\w*|sword\w*|tactical\s+threat|handgun\w*|projectile\w*)\b/i', $haystack)) {
-            return 'weapon detection';
+        $upper = strtoupper(str_replace(['_', '-', '.', '/', ':'], ' ', $rawStr));
+
+        // 1. Weapon Detection
+        if (
+            str_contains($upper, 'WEAPON') ||
+            str_contains($upper, 'GUN') ||
+            str_contains($upper, 'FIREARM') ||
+            str_contains($upper, 'KNIFE') ||
+            str_contains($upper, 'BLADE') ||
+            str_contains($upper, 'PISTOL') ||
+            str_contains($upper, 'RIFLE') ||
+            str_contains($upper, 'MACHETE') ||
+            str_contains($upper, 'TACTICAL THREAT') ||
+            str_contains($upper, 'PROJECTILE')
+        ) {
+            return ($rawStr === 'Weapon') ? 'Weapon' : 'weapon detection';
         }
 
         // 2. Fire (excluding firearm)
-        if (preg_match('/\b(fire(?!arm)|flame\w*|blaze\w*|conflagrat\w*)\b/i', $haystack)) {
+        if ((str_contains($upper, 'FIRE') && !str_contains($upper, 'FIREARM')) || str_contains($upper, 'BLAZE') || str_contains($upper, 'FLAME')) {
             return 'fire';
         }
 
         // 3. Smoke
-        if (preg_match('/\b(smoke\w*|fume\w*)\b/i', $haystack)) {
+        if (str_contains($upper, 'SMOKE') || str_contains($upper, 'FUME')) {
             return 'smoke';
         }
 
         // 4. Crowd Density
-        if (preg_match('/\b(crowd\w*|overcrowd\w*|density|gathering\w*|congregat\w*|mob\w*|surge\w*|assembly)\b/i', $haystack)) {
-            return 'crowd density';
+        if (str_contains($upper, 'CROWD') || str_contains($upper, 'SURGE') || str_contains($upper, 'ASSEMBLY') || str_contains($upper, 'OVERCROWD')) {
+            return ($rawStr === 'Crowd') ? 'Crowd' : 'crowd density';
         }
 
         // 5. Face Recognition / Blacklist / Suspects
-        if (
-            preg_match('/\b(frs|face\w*|facial\w*|suspect\w*|wanted\w*|criminal\w*|person\w*|blacklist\w*)\b/i', $haystack) ||
-            str_contains(strtolower($rawStr), 'blacklist') ||
-            str_contains(strtolower($rawStr), 'person')
-        ) {
-            return 'face recognition';
+        if (str_contains($upper, 'FRS') || str_contains($upper, 'FACE') || str_contains($upper, 'SUSPECT') || str_contains($upper, 'WANTED') || str_contains($upper, 'BLACKLIST')) {
+            return ($rawStr === 'BlacklistPerson') ? 'BlacklistPerson' : 'face recognition';
         }
 
-        // 6. ANPR (stolen vehicle, license plates, hotlists)
-        if (
-            preg_match('/\b(anpr|plate\w*|numberplate\w*|number\s+plate|hotlist|stolen\s+vehicle|stolen|license\s+plate)\b/i', $haystack) ||
-            (!empty($plate) && $plate !== 'UNKNOWN' && $plate !== 'NONE')
-        ) {
+        // 6. ANPR - ONLY if rawType explicitly indicates ANPR / Stolen / Hotlist
+        if ($upper === 'ANPR' || str_contains($upper, 'ANPR') || str_contains($upper, 'STOLEN') || str_contains($upper, 'HOTLIST')) {
             return 'ANPR';
         }
 
-        // 7. Vehicle Classification & Edge Patrol Status (Start, Stop, Truck, Car, Bus, Motorcycle)
-        if (
-            preg_match('/\b(vehicle\w*|traffic\w*|heavy\s+vehicle\w*|truck\w*|bus\w*|motorcycle\w*|auto\s+rickshaw|car\w*|suv\w*|van\w*|scooter\w*|sedan\w*|start\w*|stop\w*|trip\w*|patrol\w*)\b/i', $haystack) ||
-            str_starts_with(strtolower($rawStr), 'vehicle') ||
-            str_starts_with(strtolower($rawStr), 'start') ||
-            str_starts_with(strtolower($rawStr), 'stop')
-        ) {
+        // 7. Explicit canonical test strings
+        if ($upper === 'VEHICLE CLASSIFICATION' || $upper === 'HEAVY VEHICLE ALERT') {
             return 'vehicle classification';
         }
 
-        // Safe default: vehicle classification (never falsely trigger weapon alerts for unknown edge pings)
-        return 'vehicle classification';
+        // 8. Vehicle & Edge Telemetry Types: preserve exact raw alert type!
+        // (e.g. 'Vehicle', 'Start', 'Stop', 'Truck', 'Car', 'Bus', 'Motorcycle', 'Animal', etc.)
+        return $rawStr;
     }
 
 
     /**
-     * Map canonical event type to detection indicator color:
+     * Map event type to detection indicator color:
      * - red: weapon detection, fire
      * - pink: smoke, crowd density
      * - blue: face recognition
-     * - green: ANPR, vehicle classification
+     * - green: ANPR, vehicle classification, Vehicle
      */
     public static function resolveDetectionColor(string $canonicalEventType): string
     {
-        return match (strtolower(trim($canonicalEventType))) {
-            'weapon detection', 'fire'            => 'red',
-            'smoke', 'crowd density'              => 'pink',
-            'face recognition'                    => 'blue',
-            'anpr', 'vehicle classification'      => 'green',
-            default                               => 'red'
-        };
+        $type = strtolower(trim($canonicalEventType));
+        if ($type === 'weapon detection' || $type === 'weapon' || $type === 'fire') {
+            return 'red';
+        }
+        if ($type === 'smoke' || $type === 'crowd density' || $type === 'crowd') {
+            return 'pink';
+        }
+        if ($type === 'face recognition' || $type === 'blacklistperson' || $type === 'frs') {
+            return 'blue';
+        }
+        return 'green';
     }
 
     /**
