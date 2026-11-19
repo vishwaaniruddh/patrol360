@@ -22,6 +22,9 @@ echo "====================================================================\n";
 echo " Patrol360: Base64 to Image File Migration & Quota Optimizer\n";
 echo "====================================================================\n\n";
 
+ini_set('memory_limit', '512M');
+set_time_limit(0);
+
 $db = Database::getConnection();
 
 $uploadDir = dirname(__DIR__) . '/public/uploads/alerts';
@@ -30,6 +33,7 @@ if (!is_dir($uploadDir)) {
         die("Error: Could not create upload directory: {$uploadDir}\n");
     }
 }
+@chmod($uploadDir, 0777);
 
 // 1. Process ai_alerts
 echo "[1/2] Scanning `ai_alerts` for Base64 image blobs...\n";
@@ -49,13 +53,14 @@ echo "Found {$totalToProcess} alert records with Base64 data to migrate.\n";
 
 if ($totalToProcess > 0) {
     $batchSize = 250;
-    $offset = 0;
+    $lastId = 0;
     $processed = 0;
     $bytesSaved = 0;
 
     $fetchStmt = $db->prepare("
         SELECT `id`, `vehicle_id`, `File_loc` FROM `ai_alerts` 
-        WHERE `File_loc` IS NOT NULL 
+        WHERE `id` > ?
+          AND `File_loc` IS NOT NULL 
           AND `File_loc` != '' 
           AND `File_loc` NOT LIKE '/uploads/%' 
           AND `File_loc` NOT LIKE 'uploads/%' 
@@ -67,7 +72,7 @@ if ($totalToProcess > 0) {
     $updateStmt = $db->prepare("UPDATE `ai_alerts` SET `File_loc` = ? WHERE `id` = ?");
 
     while (true) {
-        $fetchStmt->execute();
+        $fetchStmt->execute([$lastId]);
         $rows = $fetchStmt->fetchAll(PDO::FETCH_ASSOC);
         if (empty($rows)) {
             break;
@@ -75,6 +80,7 @@ if ($totalToProcess > 0) {
 
         foreach ($rows as $row) {
             $id = (int)$row['id'];
+            $lastId = $id;
             $vehicle = preg_replace('/[^A-Za-z0-9_-]/', '', (string)$row['vehicle_id']) ?: 'van';
             $raw = trim((string)$row['File_loc']);
             $rawLength = strlen($raw);
