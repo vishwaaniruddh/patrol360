@@ -231,6 +231,7 @@ class AlertMigrationService
 
     /**
      * Re-format bloated QUEUED or FAILED items in central_api_dispatch_queue so they never store or transmit Base64
+     * and strictly adhere to clean camelCase without duplicates.
      */
     public function sanitizePendingQueuePayloads(int $batchLimit = 500): array
     {
@@ -239,6 +240,8 @@ class AlertMigrationService
             FROM `central_api_dispatch_queue` 
             WHERE (`payload_json` LIKE '%data:image%' 
                OR `payload_json` LIKE '%/9j/%' 
+               OR `payload_json` LIKE '%\"event_type\"%'
+               OR `payload_json` LIKE '%\"VanID\"%'
                OR LENGTH(`payload_json`) > 10000)
               AND `delivery_status` != 'SENT_200'
             ORDER BY `id` ASC
@@ -278,6 +281,8 @@ class AlertMigrationService
                 SELECT COUNT(*) FROM `central_api_dispatch_queue` 
                 WHERE (`payload_json` LIKE '%data:image%' 
                    OR `payload_json` LIKE '%/9j/%' 
+                   OR `payload_json` LIKE '%\"event_type\"%'
+                   OR `payload_json` LIKE '%\"VanID\"%'
                    OR LENGTH(`payload_json`) > 10000)
                   AND `delivery_status` != 'SENT_200'
             ")->fetchColumn()

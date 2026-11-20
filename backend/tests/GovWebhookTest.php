@@ -51,49 +51,58 @@ class GovWebhookTest extends TestCase
 
         $this->assertArrayHasKey('event', $payload);
         $this->assertEquals('log.created', $payload['event']);
-        $this->assertArrayHasKey('event_type', $payload);
-        $this->assertEquals('weapon detection', $payload['event_type']);
-        $this->assertArrayHasKey('video_clip_url', $payload);
-        $this->assertStringContainsString('/api/ai-alerts/9999/video', $payload['video_clip_url']);
+        $this->assertArrayHasKey('eventType', $payload);
+        $this->assertEquals('weapon detection', $payload['eventType']);
+        $this->assertArrayHasKey('videoClipUrl', $payload);
+        $this->assertStringContainsString('/api/ai-alerts/9999/video', $payload['videoClipUrl']);
 
-        // Extra client fields at root
-        $this->assertEquals('Van1', $payload['VanID']);
-        $this->assertEquals(1, $payload['VanCameraID']);
-        $this->assertArrayHasKey('snapshot_image_url', $payload);
+        // Clean client fields at root (strictly camelCase, zero duplicates)
+        $this->assertEquals('Van1', $payload['vanId']);
+        $this->assertEquals(1, $payload['vanCameraId']);
+        $this->assertArrayHasKey('imageUrl', $payload);
         $this->assertEquals('4096 kbps', $payload['bitrate']);
-        $this->assertEquals(25, $payload['FPS']);
-        $this->assertEquals('1920x1080', $payload['Resolutions']);
-        $this->assertEquals('High-threat firearm detected', $payload['event_description']);
-        $this->assertEquals('High-threat firearm detected', $payload['EventDescription']);
+        $this->assertEquals(25, $payload['fps']);
+        $this->assertEquals('1920x1080', $payload['resolution']);
         $this->assertEquals('High-threat firearm detected', $payload['eventDescription']);
-        $this->assertEquals('High-threat firearm detected', $payload['description']);
-        $this->assertEquals('High-threat firearm detected', $payload['Description']);
-        $this->assertEquals('red', $payload['color_of_detection']);
+        $this->assertEquals('red', $payload['colorOfDetection']);
         $this->assertEquals(96.5, $payload['confidence']);
+
+        // Verify old duplicate aliases are completely removed
+        $this->assertArrayNotHasKey('event_type', $payload);
+        $this->assertArrayNotHasKey('VanID', $payload);
+        $this->assertArrayNotHasKey('VanCameraID', $payload);
+        $this->assertArrayNotHasKey('Bitrate', $payload);
+        $this->assertArrayNotHasKey('FPS', $payload);
+        $this->assertArrayNotHasKey('Resolutions', $payload);
+        $this->assertArrayNotHasKey('event_description', $payload);
+        $this->assertArrayNotHasKey('EventDescription', $payload);
+        $this->assertArrayNotHasKey('description', $payload);
+        $this->assertArrayNotHasKey('Description', $payload);
+        $this->assertArrayNotHasKey('color_of_detection', $payload);
 
         // Data level
         $this->assertArrayHasKey('data', $payload);
-        $this->assertEquals('weapon detection', $payload['data']['event_type']);
-        $this->assertEquals('Van1', $payload['data']['VanID']);
-        $this->assertEquals(1, $payload['data']['VanCameraID']);
-        $this->assertEquals('red', $payload['data']['color_of_detection']);
+        $this->assertEquals('weapon detection', $payload['data']['eventType']);
+        $this->assertEquals('Van1', $payload['data']['vanId']);
+        $this->assertEquals(1, $payload['data']['vanCameraId']);
+        $this->assertEquals('red', $payload['data']['colorOfDetection']);
         $this->assertEquals(96.5, $payload['data']['confidence']);
         $this->assertArrayHasKey('message', $payload['data']);
 
-        // Inner message level
+        // Inner message level (strictly camelCase)
         $inner = json_decode($payload['data']['message'], true);
         $this->assertIsArray($inner);
-        $this->assertEquals(9999, $inner['alert_id']);
-        $this->assertEquals('PATROL-UNIT-01', $inner['vehicle_id']);
-        $this->assertEquals('Van1', $inner['VanID']);
-        $this->assertEquals(1, $inner['VanCameraID']);
-        $this->assertEquals('GJ-01-AB-1234', $inner['plate_number']);
-        $this->assertEquals('weapon detection', $inner['event_type']);
-        $this->assertEquals('red', $inner['color_of_detection']);
+        $this->assertEquals(9999, $inner['alertId']);
+        $this->assertEquals('PATROL-UNIT-01', $inner['vehicleId']);
+        $this->assertEquals('Van1', $inner['vanId']);
+        $this->assertEquals(1, $inner['vanCameraId']);
+        $this->assertEquals('GJ-01-AB-1234', $inner['plateNumber']);
+        $this->assertEquals('weapon detection', $inner['eventType']);
+        $this->assertEquals('red', $inner['colorOfDetection']);
         $this->assertEquals(96.5, $inner['confidence']);
         $this->assertEquals('4096 kbps', $inner['bitrate']);
-        $this->assertEquals(25, $inner['FPS']);
-        $this->assertEquals('1920x1080', $inner['Resolutions']);
+        $this->assertEquals(25, $inner['fps']);
+        $this->assertEquals('1920x1080', $inner['resolution']);
     }
 
     public function testDetectionColorMappings(): void
@@ -240,11 +249,11 @@ class GovWebhookTest extends TestCase
         $govService = new \App\Services\GovWebhookService($db);
         $payload = $govService->formatAlertPayload($fetch);
 
-        $this->assertEquals('GJ-01-HW-1517', $payload['vehicle_number']);
-        $this->assertEquals(5, $payload['number_of_person']);
+        $this->assertEquals('GJ-01-HW-1517', $payload['vehicleNumber']);
+        $this->assertEquals(5, $payload['numberOfPerson']);
         $this->assertEquals(88.50, $payload['confidence']);
-        $this->assertEquals('GJ-01-HW-1517', $payload['data']['vehicle_number']);
-        $this->assertEquals(5, $payload['data']['number_of_person']);
+        $this->assertEquals('GJ-01-HW-1517', $payload['data']['vehicleNumber']);
+        $this->assertEquals(5, $payload['data']['numberOfPerson']);
 
         // Cleanup
         $db->exec("DELETE FROM `ai_alerts` WHERE `id` = {$alertId}");
