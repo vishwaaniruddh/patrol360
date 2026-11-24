@@ -89,6 +89,10 @@ class GovWebhookService
 
         $upper = strtoupper(str_replace(['_', '-', '.', '/', ':'], ' ', $rawStr));
 
+        // Check for attached vehicle license plate context
+        $plate = trim((string)($context['scanned_vehicle_numberplate'] ?? $context['vehicle_number'] ?? $context['plate_number'] ?? ''));
+        $hasPlate = (!empty($plate) && $plate !== 'UNKNOWN' && $plate !== 'NONE');
+
         // 1. Weapon Detection
         if (
             str_contains($upper, 'WEAPON') ||
@@ -120,22 +124,51 @@ class GovWebhookService
             return ($rawStr === 'Crowd') ? 'Crowd' : 'crowd density';
         }
 
-        // 5. Face Recognition / Blacklist / Suspects
-        if (str_contains($upper, 'FRS') || str_contains($upper, 'FACE') || str_contains($upper, 'SUSPECT') || str_contains($upper, 'WANTED') || str_contains($upper, 'BLACKLIST')) {
-            return ($rawStr === 'BlacklistPerson') ? 'BlacklistPerson' : 'face recognition';
+        // 5. Blacklisted Number Plate / Stolen Vehicle Watchlist (ANPR Hotlist Match)
+        // Must evaluate BEFORE generic face recognition so BlackListPlate is never misclassified as BlackListFace
+        if (
+            $upper === 'BLACKLISTPLATE' ||
+            str_contains($upper, 'BLACKLIST PLATE') ||
+            str_contains($upper, 'BLACKLISTPLATE') ||
+            str_contains($upper, 'BLACKLIST VEHICLE') ||
+            str_contains($upper, 'STOLEN VEHICLE') ||
+            str_contains($upper, 'STOLEN') ||
+            str_contains($upper, 'HOTLIST') ||
+            (str_contains($upper, 'BLACKLIST') && ($hasPlate || str_contains($upper, 'PLATE') || str_contains($upper, 'VEHICLE') || str_contains($upper, 'ANPR')))
+        ) {
+            return 'BlackListPlate';
         }
 
-        // 6. ANPR - ONLY if rawType explicitly indicates ANPR / Stolen / Hotlist
-        if ($upper === 'ANPR' || str_contains($upper, 'ANPR') || str_contains($upper, 'STOLEN') || str_contains($upper, 'HOTLIST')) {
-            return 'ANPR';
+        // 6. Blacklisted Face / Wanted Person Watchlist (FRS Match)
+        if (
+            $upper === 'BLACKLISTFACE' ||
+            str_contains($upper, 'BLACKLIST FACE') ||
+            str_contains($upper, 'BLACKLISTFACE') ||
+            str_contains($upper, 'BLACKLIST PERSON') ||
+            $upper === 'BLACKLISTPERSON' ||
+            str_contains($upper, 'WANTED') ||
+            str_contains($upper, 'SUSPECT') ||
+            (str_contains($upper, 'BLACKLIST') && !$hasPlate)
+        ) {
+            return 'BlackListFace';
         }
 
-        // 7. Explicit canonical test strings
+        // 7. General Facial Recognition (FRS)
+        if (str_contains($upper, 'FRS') || str_contains($upper, 'FACE') || str_contains($upper, 'PERSON')) {
+            return 'face recognition';
+        }
+
+        // 8. General ANPR - ONLY if rawType explicitly indicates ANPR / Plate
+        if ($upper === 'ANPR' || str_contains($upper, 'ANPR') || str_contains($upper, 'PLATE')) {
+            return $hasPlate && str_contains($upper, 'BLACKLIST') ? 'BlackListPlate' : 'ANPR';
+        }
+
+        // 9. Explicit canonical test strings
         if ($upper === 'VEHICLE CLASSIFICATION' || $upper === 'HEAVY VEHICLE ALERT') {
             return 'vehicle classification';
         }
 
-        // 8. Vehicle & Edge Telemetry Types: preserve exact raw alert type!
+        // 10. Vehicle & Edge Telemetry Types: preserve exact raw alert type!
         // (e.g. 'Vehicle', 'Start', 'Stop', 'Truck', 'Car', 'Bus', 'Motorcycle', 'Animal', etc.)
         return $rawStr;
     }
@@ -143,21 +176,21 @@ class GovWebhookService
 
     /**
      * Map event type to detection indicator color:
-     * - red: weapon detection, fire
+     * - red: weapon detection, fire, BlackListPlate
      * - pink: smoke, crowd density
-     * - blue: face recognition
+     * - blue: face recognition, BlackListFace
      * - green: ANPR, vehicle classification, Vehicle
      */
     public static function resolveDetectionColor(string $canonicalEventType): string
     {
         $type = strtolower(trim($canonicalEventType));
-        if ($type === 'weapon detection' || $type === 'weapon' || $type === 'fire') {
+        if ($type === 'weapon detection' || $type === 'weapon' || $type === 'fire' || $type === 'blacklistplate' || str_contains($type, 'stolen')) {
             return 'red';
         }
         if ($type === 'smoke' || $type === 'crowd density' || $type === 'crowd') {
             return 'pink';
         }
-        if ($type === 'face recognition' || $type === 'blacklistperson' || $type === 'frs') {
+        if ($type === 'face recognition' || $type === 'blacklistperson' || $type === 'blacklistface' || $type === 'frs') {
             return 'blue';
         }
         return 'green';
@@ -299,6 +332,11 @@ class GovWebhookService
                 $eventDescription = "Patrol Unit Started{$locStr}{$coordStr} by {$vanId} (Camera {$vanCameraId})";
             } elseif ($typeUpper === 'STOP' || str_starts_with($typeUpper, 'STOP')) {
                 $eventDescription = "Patrol Unit Stopped{$locStr}{$coordStr} by {$vanId} (Camera {$vanCameraId})";
+            } elseif ($typeUpper === 'BLACKLISTPLATE' || str_contains($typeUpper, 'BLACKLISTPLATE') || str_contains($typeUpper, 'BLACKLIST PLATE')) {
+                $plateStr = $vehicleNumber ?: ($plate ?: 'Unknown');
+                $eventDescription = "Blacklist Plate Intercept: Vehicle [{$plateStr}] matched watchlist{$locStr}{$coordStr} by {$vanId} (Camera {$vanCameraId})";
+            } elseif ($typeUpper === 'BLACKLISTFACE' || str_contains($typeUpper, 'BLACKLISTFACE') || str_contains($typeUpper, 'BLACKLIST FACE') || $typeUpper === 'BLACKLISTPERSON') {
+                $eventDescription = "Blacklist Face Intercept: Person matched watchlist{$locStr}{$coordStr} by {$vanId} (Camera {$vanCameraId})";
             } elseif ($plate && $normalizedEventType === 'ANPR') {
                 $eventDescription = "ANPR Plate Scan: License plate [{$plate}] detected{$locStr}{$coordStr} by {$vanId} (Camera {$vanCameraId})";
             } elseif ($plate) {

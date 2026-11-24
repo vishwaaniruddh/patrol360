@@ -109,9 +109,11 @@ class GovWebhookTest extends TestCase
     {
         $this->assertEquals('red', GovWebhookService::resolveDetectionColor('weapon detection'));
         $this->assertEquals('red', GovWebhookService::resolveDetectionColor('fire'));
+        $this->assertEquals('red', GovWebhookService::resolveDetectionColor('BlackListPlate'));
         $this->assertEquals('pink', GovWebhookService::resolveDetectionColor('smoke'));
         $this->assertEquals('pink', GovWebhookService::resolveDetectionColor('crowd density'));
         $this->assertEquals('blue', GovWebhookService::resolveDetectionColor('face recognition'));
+        $this->assertEquals('blue', GovWebhookService::resolveDetectionColor('BlackListFace'));
         $this->assertEquals('green', GovWebhookService::resolveDetectionColor('ANPR'));
         $this->assertEquals('green', GovWebhookService::resolveDetectionColor('vehicle classification'));
     }
@@ -126,16 +128,20 @@ class GovWebhookTest extends TestCase
         $this->assertEquals('crowd density', GovWebhookService::normalizeEventType('CROWD_GATHERING'));
         $this->assertEquals('crowd density', GovWebhookService::normalizeEventType('overcrowding'));
 
-        // 3. ANPR
+        // 3. ANPR & BlackListPlate
         $this->assertEquals('ANPR', GovWebhookService::normalizeEventType('ANPR_HIT'));
-        $this->assertEquals('ANPR', GovWebhookService::normalizeEventType('STOLEN_VEHICLE', ['scanned_vehicle_numberplate' => 'GJ01AB1234']));
+        $this->assertEquals('BlackListPlate', GovWebhookService::normalizeEventType('BlackListPlate'));
+        $this->assertEquals('BlackListPlate', GovWebhookService::normalizeEventType('STOLEN_VEHICLE', ['scanned_vehicle_numberplate' => 'GJ01AB1234']));
+        $this->assertEquals('BlackListPlate', GovWebhookService::normalizeEventType('Blacklist', ['scanned_vehicle_numberplate' => 'GJ01AB1234']));
 
         // 4. smoke
         $this->assertEquals('smoke', GovWebhookService::normalizeEventType('SMOKE_HAZARD'));
 
-        // 5. face recognition
+        // 5. face recognition & BlackListFace
         $this->assertEquals('face recognition', GovWebhookService::normalizeEventType('FRS_MATCH'));
-        $this->assertEquals('face recognition', GovWebhookService::normalizeEventType('WANTED_SUSPECT'));
+        $this->assertEquals('BlackListFace', GovWebhookService::normalizeEventType('BlackListFace'));
+        $this->assertEquals('BlackListFace', GovWebhookService::normalizeEventType('BlacklistPerson'));
+        $this->assertEquals('BlackListFace', GovWebhookService::normalizeEventType('WANTED_SUSPECT'));
 
         // 6. vehicle classification
         $this->assertEquals('vehicle classification', GovWebhookService::normalizeEventType('VEHICLE_CLASSIFICATION'));

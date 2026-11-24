@@ -279,9 +279,9 @@ Base URL (Production): `https://sarsspl.com/patrol360/backend/public`
 
 ### K. Government Webhook Upload & Offline Dispatch Engine
 Implements integration with Central Government Ingestion Endpoint (`https://api-patrol.urosgeotechlab.com/api/webhooks/receiver`) per `Patrol360_Webhook_API_Integration_Guide.docx`:
-- **7 Canonical Government Event Types**: Standardized into `fire`, `crowd density`, `ANPR`, `smoke`, `face recognition`, `vehicle classification`, `weapon detection` (and exact edge alert types like `Stop`, `Start`, `Truck`).
+- **Canonical Government Event Types**: Standardized into `fire`, `crowd density`, `ANPR`, `smoke`, `face recognition`, `vehicle classification`, `weapon detection`, `BlackListPlate` (stolen/blacklisted vehicle plates), `BlackListFace` (wanted person/suspect watchlist matches), and exact edge alert types like `Stop`, `Start`, `Truck`.
 - **Extended Edge Payload Fields (Standardized Strict camelCase, Zero Duplicates)**:
-  - `eventType`: Canonical or edge event type (e.g. `"weapon detection"`, `"Stop"`, `"Start"`, `"ANPR"`, `"Vehicle"`)
+  - `eventType`: Canonical or edge event type (e.g. `"weapon detection"`, `"BlackListPlate"`, `"BlackListFace"`, `"Stop"`, `"Start"`, `"ANPR"`, `"Vehicle"`)
   - `vanId`: Police patrol unit (e.g. `"Van1"`)
   - `vanCameraId`: Camera channel integer (`1` to `4`)
   - `imageUrl`: Full HTTPS URL to the captured evidence frame

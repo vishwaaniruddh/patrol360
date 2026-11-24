@@ -236,8 +236,16 @@ class AiAlertController
             $sendip = trim(explode(',', $sendip)[0]);
         }
 
-        // Alert Type
-        $alerttype = !empty($body['alerttype']) ? trim($body['alerttype']) : 'AI_DETECTION';
+        // Alert Type (support camelCase and snake_case variants)
+        $alerttype = !empty($body['alerttype']) 
+            ? trim($body['alerttype']) 
+            : (!empty($body['alert_type']) 
+                ? trim($body['alert_type']) 
+                : (!empty($body['eventType']) 
+                    ? trim($body['eventType']) 
+                    : (!empty($body['event_type']) 
+                        ? trim($body['event_type']) 
+                        : 'AI_DETECTION')));
 
         // Location & ATMCode
         $location = !empty($body['location']) ? trim($body['location']) : null;
@@ -270,9 +278,12 @@ class AiAlertController
                 $stolenDetails = $stolenMatch;
                 $hitNotice = "[CRITICAL HOTLIST HIT: Plate {$plate} matched Stolen FIR #{$stolenMatch['fir_number']} - {$stolenMatch['police_station']}]";
                 $comment = $comment ? "{$comment} | {$hitNotice}" : $hitNotice;
-                if ($alerttype === 'AI_DETECTION' || $alerttype === 'ANPR') {
-                    $alerttype = 'STOLEN_VEHICLE_MATCH';
+                if (in_array($alerttype, ['AI_DETECTION', 'ANPR', 'STOLEN_VEHICLE_MATCH', 'BlacklistPerson', 'BlackListFace'])) {
+                    $alerttype = 'BlackListPlate';
                 }
+            } elseif (in_array(strtoupper($alerttype), ['BLACKLIST', 'BLACKLISTPLATE', 'BLACKLIST_PLATE', 'BLACKLISTPERSON', 'BLACKLISTFACE'])) {
+                // If a plate is attached and the alert was flagged as Blacklist, ensure it is BlackListPlate (not BlackListFace)
+                $alerttype = 'BlackListPlate';
             }
         }
 
