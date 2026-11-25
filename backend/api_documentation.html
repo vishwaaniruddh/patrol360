@@ -2600,16 +2600,16 @@
               <table class="param-table">
                 <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
                 <tbody>
-                  <tr><td class="param-name">vehicle_id</td><td class="param-type">string</td><td class="param-req">YES</td><td>Police Patrol Unit ID (e.g. <code>PATROL_VAN_01</code>)</td></tr>
-                  <tr><td class="param-name">camera_id</td><td class="param-type">string</td><td class="param-req">YES</td><td>Mounted Camera ID (e.g. <code>CAM_01_FRONT</code>)</td></tr>
+                  <tr><td class="param-name">vehicle_id</td><td class="param-type">string</td><td class="param-req">YES</td><td>Police Patrol Unit ID (e.g. <code>PATROL_VAN_01</code>, accepts <code>van_id</code>, <code>VanID</code>, <code>vehicleId</code>)</td></tr>
+                  <tr><td class="param-name">camera_id</td><td class="param-type">string</td><td class="param-req">YES</td><td>Mounted Camera ID (e.g. <code>CAM_01_FRONT</code>, accepts <code>van_camera_id</code>, <code>VanCameraID</code>, <code>cameraId</code>)</td></tr>
                   <tr><td class="param-name">lat</td><td class="param-type">string</td><td class="param-req">YES</td><td>GPS Latitude (e.g. <code>23.022512</code>)</td></tr>
                   <tr><td class="param-name">lon</td><td class="param-type">string</td><td class="param-req">YES</td><td>GPS Longitude (e.g. <code>72.571432</code>)</td></tr>
                   <tr><td class="param-name">createtime</td><td class="param-type">datetime</td><td class="param-req">NO</td><td>Edge detection time (defaults to <code>NOW()</code>)</td></tr>
-                  <tr><td class="param-name">alerttype</td><td class="param-type">string</td><td class="param-req">NO</td><td>Classification (e.g. <code>ANPR</code>, <code>WEAPON</code>, <code>HOTLIST_MATCH</code>)</td></tr>
+                  <tr><td class="param-name">alerttype</td><td class="param-type">string</td><td class="param-req">NO</td><td>Classification (e.g. <code>ANPR</code>, <code>weapon</code>, <code>fire</code>, <code>crowd</code>; accepts <code>event_type</code>, <code>eventType</code>, <code>alert_type</code>)</td></tr>
                   <tr><td class="param-name">scanned_vehicle_numberplate</td><td class="param-type">string</td><td class="param-req">NO</td><td>Recognized license plate (Auto-matches stolen database!)</td></tr>
                   <tr><td class="param-name">vehicle_number</td><td class="param-type">string</td><td class="param-req">NO</td><td>Detected vehicle registration plate (e.g. <code>GJ-01-HW-1517</code>)</td></tr>
                   <tr><td class="param-name">number_of_person</td><td class="param-type">integer</td><td class="param-req">NO</td><td>Detected persons/crowd headcount (e.g. <code>3</code>)</td></tr>
-                  <tr><td class="param-name">incident_clip</td><td class="param-type">string</td><td class="param-req">NO</td><td>URL or relative path to incident video clip (e.g. <code>https://.../video.mp4</code>)</td></tr>
+                  <tr><td class="param-name">incident_clip</td><td class="param-type">string / file</td><td class="param-req">NO</td><td>Video clip: supports Base64 video string, multipart upload file, or direct URL. Auto-stored into designated <code>/uploads/videos/YYYY/MM/DD/</code> folder and stored URL address saved in <code>ai_alerts.incident_clip</code>.</td></tr>
                   <tr><td class="param-name">confidence</td><td class="param-type">decimal</td><td class="param-req">NO</td><td>AI model confidence score (e.g. <code>95.50</code>, synced to Gov API)</td></tr>
                   <tr><td class="param-name">File_loc</td><td class="param-type">mediumtext</td><td class="param-req">NO</td><td>Relative file path (/uploads/alerts/YYYY/MM/DD/...) or Base64 JPEG/PNG image frame (auto-saved to date-partitioned disk folder)</td></tr>
                   <tr><td class="param-name">location</td><td class="param-type">string</td><td class="param-req">NO</td><td>Physical landmark or zone (e.g. <code>Navrangpura Circle</code>)</td></tr>

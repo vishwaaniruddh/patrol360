@@ -77,6 +77,9 @@ class Database
                 if (!in_array('number_of_person', $cols, true)) {
                     $db->exec("ALTER TABLE `ai_alerts` ADD COLUMN `number_of_person` INT DEFAULT NULL AFTER `vehicle_number`");
                 }
+                if (!in_array('incident_clip', $cols, true)) {
+                    $db->exec("ALTER TABLE `ai_alerts` ADD COLUMN `incident_clip` TEXT DEFAULT NULL AFTER `number_of_person`");
+                }
             }
 
             // 1.1 users table patches (Face ID Biometric Encoding BLOB)

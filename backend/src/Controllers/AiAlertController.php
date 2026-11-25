@@ -188,16 +188,13 @@ class AiAlertController
     {
         $body = $args['body'] ?? [];
 
-        // Validate required fields
-        $validator = Validator::make($body)
-            ->required(['vehicle_id', 'camera_id']);
+        // Validate required fields (support vehicle_id, van_id, VanID, vehicleId and camera_id, van_camera_id, VanCameraID, cameraId)
+        $vehicleId = trim((string)($body['vehicle_id'] ?? ($body['van_id'] ?? ($body['VanID'] ?? ($body['vehicleId'] ?? '')))));
+        $cameraId  = trim((string)($body['camera_id'] ?? ($body['van_camera_id'] ?? ($body['VanCameraID'] ?? ($body['cameraId'] ?? '')))));
 
-        if ($validator->fails()) {
-            Response::error('Validation failed', 422, $validator->errors());
+        if ($vehicleId === '' || $cameraId === '') {
+            Response::error('Validation failed: vehicle_id and camera_id are required', 422);
         }
-
-        $vehicleId = trim($body['vehicle_id']);
-        $cameraId  = trim($body['camera_id']);
 
         // Handle latitude & longitude (allow lat, lon, latitude, longitude, lng)
         $lat = isset($body['lat']) ? (string)$body['lat'] : (isset($body['latitude']) ? (string)$body['latitude'] : '0.000000');
@@ -238,8 +235,18 @@ class AiAlertController
             $sendip = trim(explode(',', $sendip)[0]);
         }
 
-        // Alert Type
-        $alerttype = !empty($body['alerttype']) ? trim($body['alerttype']) : 'AI_DETECTION';
+        // Alert Type (support alerttype, event_type, eventType, alert_type, alertType, type)
+        $alerttype = !empty($body['alerttype']) 
+            ? trim($body['alerttype']) 
+            : (!empty($body['event_type']) 
+                ? trim($body['event_type']) 
+                : (!empty($body['eventType']) 
+                    ? trim($body['eventType']) 
+                    : (!empty($body['alert_type']) 
+                        ? trim($body['alert_type']) 
+                        : (!empty($body['alertType']) 
+                            ? trim($body['alertType']) 
+                            : (!empty($body['type']) ? trim($body['type']) : 'AI_DETECTION')))));
 
         // Location & ATMCode
         $location = !empty($body['location']) ? trim($body['location']) : null;
@@ -301,14 +308,34 @@ class AiAlertController
             $numberOfPerson = (int)$body['person_count'];
         }
 
-        // incident_clip (URL or relative path to incident video clip)
-        $incidentClip = !empty($body['incident_clip']) 
-            ? trim((string)$body['incident_clip']) 
-            : (!empty($body['incidentClip']) 
-                ? trim((string)$body['incidentClip']) 
-                : (!empty($body['video_clip_url']) 
-                    ? trim((string)$body['video_clip_url']) 
-                    : (!empty($body['video_clip']) ? trim((string)$body['video_clip']) : null)));
+        // incident_clip (URL or relative path to incident video clip, with designated uploads directory storage)
+        $rawClip = null;
+        if (!empty($_FILES['incident_clip']['tmp_name'])) {
+            $rawClip = $_FILES['incident_clip'];
+        } elseif (!empty($_FILES['incidentClip']['tmp_name'])) {
+            $rawClip = $_FILES['incidentClip'];
+        } elseif (!empty($_FILES['video']['tmp_name'])) {
+            $rawClip = $_FILES['video'];
+        } elseif (!empty($_FILES['clip']['tmp_name'])) {
+            $rawClip = $_FILES['clip'];
+        } elseif (!empty($body['incident_clip'])) {
+            $rawClip = $body['incident_clip'];
+        } elseif (!empty($body['incidentClip'])) {
+            $rawClip = $body['incidentClip'];
+        } elseif (!empty($body['video_clip_url'])) {
+            $rawClip = $body['video_clip_url'];
+        } elseif (!empty($body['video_clip'])) {
+            $rawClip = $body['video_clip'];
+        } elseif (!empty($body['video_url'])) {
+            $rawClip = $body['video_url'];
+        } elseif (!empty($body['video_base64'])) {
+            $rawClip = $body['video_base64'];
+        } elseif (!empty($body['clip_base64'])) {
+            $rawClip = $body['clip_base64'];
+        }
+
+        $savedClipUrl = self::saveIncidentClip($rawClip, $vehicleId, $createtime);
+        $incidentClip = $savedClipUrl ?: (!empty($rawClip) && is_string($rawClip) ? trim($rawClip) : null);
 
         // Optional: save base64 image copy to public/uploads/alerts/YYYY/MM/DD for direct browser display
         $savedFileUrl = self::saveAlertImage($fileLoc, $vehicleId, $createtime);
@@ -588,6 +615,112 @@ class AiAlertController
     }
 
     /**
+     * Store incoming video clip (base64 data URI, raw base64 string, $_FILES multipart upload, or existing file/URL)
+     * into designated partitioned directory public/uploads/videos/YYYY/MM/DD/ and return the URL address.
+     *
+     * @param mixed $clipInput Base64 string, $_FILES entry array, or URL/path string
+     * @param string $vehicleId Patrol vehicle identifier (e.g. PATROLVAN01)
+     * @param string|null $timestamp Createtime or event timestamp
+     * @return string|null Full URL address to stored video, or null if input was empty/invalid
+     */
+    public static function saveIncidentClip($clipInput, string $vehicleId = 'PATROLVAN01', ?string $timestamp = null): ?string
+    {
+        if (empty($clipInput)) {
+            return null;
+        }
+
+        $appConfig = require __DIR__ . '/../../config/app.php';
+        $baseUrl = rtrim($appConfig['base_url'] ?? '', '/');
+
+        // Partition folder by Year/Month/Day (e.g. 2026/11/25)
+        $dateFolder = (!empty($timestamp) && strtotime($timestamp)) 
+            ? date('Y/m/d', strtotime($timestamp)) 
+            : date('Y/m/d');
+
+        $uploadDir = dirname(__DIR__, 2) . '/public/uploads/videos/' . $dateFolder;
+        if (!is_dir($uploadDir)) {
+            @mkdir($uploadDir, 0777, true);
+        }
+
+        $safeVehicle = preg_replace('/[^A-Za-z0-9_-]/', '', $vehicleId) ?: 'van';
+
+        // 1. Handle $_FILES multipart file upload array
+        if (is_array($clipInput) && isset($clipInput['tmp_name']) && is_uploaded_file($clipInput['tmp_name'])) {
+            $origName = $clipInput['name'] ?? '';
+            $ext = 'mp4';
+            if (preg_match('/\.([a-zA-Z0-9]+)$/', $origName, $m)) {
+                $candidateExt = strtolower($m[1]);
+                if (in_array($candidateExt, ['mp4', 'avi', 'mkv', 'webm', 'mov', 'flv', 'ts'])) {
+                    $ext = $candidateExt;
+                }
+            }
+
+            $filename = 'incident_' . $safeVehicle . '_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+            $targetPath = $uploadDir . '/' . $filename;
+
+            if (@move_uploaded_file($clipInput['tmp_name'], $targetPath)) {
+                return $baseUrl ? "{$baseUrl}/uploads/videos/{$dateFolder}/{$filename}" : "/uploads/videos/{$dateFolder}/{$filename}";
+            }
+            return null;
+        }
+
+        if (!is_string($clipInput)) {
+            return null;
+        }
+
+        $trimmed = trim($clipInput);
+
+        // 2. If it's already an absolute HTTP/HTTPS URL, preserve it
+        if (str_starts_with($trimmed, 'http://') || str_starts_with($trimmed, 'https://')) {
+            return $trimmed;
+        }
+
+        // 3. If it's an existing relative path to uploads/videos
+        if (str_starts_with($trimmed, '/uploads/videos/') || str_starts_with($trimmed, 'uploads/videos/')) {
+            $rel = '/' . ltrim($trimmed, '/');
+            return $baseUrl ? "{$baseUrl}{$rel}" : $rel;
+        }
+
+        // 4. Handle base64 video string or Data URI
+        $cleanBase64 = $trimmed;
+        $ext = 'mp4';
+
+        if (preg_match('/^data:video\/([a-zA-Z0-9_\-+]+);base64,/i', $trimmed, $matches)) {
+            $matchedExt = strtolower($matches[1]);
+            if (in_array($matchedExt, ['mp4', 'webm', 'x-matroska', 'mkv', 'quicktime', 'mov', 'avi', 'x-msvideo'])) {
+                if ($matchedExt === 'quicktime') $ext = 'mov';
+                elseif ($matchedExt === 'x-matroska') $ext = 'mkv';
+                elseif ($matchedExt === 'x-msvideo') $ext = 'avi';
+                else $ext = $matchedExt;
+            }
+            $cleanBase64 = substr($trimmed, strpos($trimmed, ',') + 1);
+        }
+
+        // Base64 video must have non-trivial size
+        if (strlen($cleanBase64) < 100) {
+            return null;
+        }
+
+        $decoded = base64_decode($cleanBase64, true);
+        if ($decoded === false || strlen($decoded) < 50) {
+            return null;
+        }
+
+        try {
+            $filename = 'incident_' . $safeVehicle . '_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+            $targetPath = $uploadDir . '/' . $filename;
+
+            if (@file_put_contents($targetPath, $decoded) !== false) {
+                return $baseUrl ? "{$baseUrl}/uploads/videos/{$dateFolder}/{$filename}" : "/uploads/videos/{$dateFolder}/{$filename}";
+            }
+        } catch (\Throwable $e) {
+            error_log("Failed to save incident clip: " . $e->getMessage());
+        }
+
+        return null;
+    }
+
+    /**
      * GET /api/ai-alerts/:id/image
      * Renders and streams the binary image (JPEG/PNG) from disk or decoded base64 File_loc
      */
@@ -684,7 +817,7 @@ class AiAlertController
             exit;
         }
 
-        $stmt = $this->db->prepare("SELECT `id`, `vehicle_id`, `camera_id` FROM `ai_alerts` WHERE `id` = ?");
+        $stmt = $this->db->prepare("SELECT `id`, `vehicle_id`, `camera_id`, `incident_clip` FROM `ai_alerts` WHERE `id` = ?");
         $stmt->execute([$id]);
         $alert = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -696,6 +829,41 @@ class AiAlertController
 
         $appConfig = require __DIR__ . '/../../config/app.php';
         $baseUrl = rtrim($appConfig['base_url'] ?? '', '/');
+
+        // 1. Check if incident_clip is recorded and exists on disk or as external link
+        if (!empty($alert['incident_clip'])) {
+            $clipVal = trim((string)$alert['incident_clip']);
+            $localClipFile = null;
+
+            if (str_starts_with($clipVal, 'http://') || str_starts_with($clipVal, 'https://')) {
+                // If it points to local server URL, extract the relative path
+                $parsed = parse_url($clipVal, PHP_URL_PATH);
+                if ($parsed && str_contains($parsed, '/uploads/videos/')) {
+                    $subPath = substr($parsed, strpos($parsed, '/uploads/videos/'));
+                    $candidate = dirname(__DIR__, 2) . '/public' . $subPath;
+                    if (file_exists($candidate) && is_file($candidate)) {
+                        $localClipFile = $candidate;
+                    }
+                } else {
+                    // Redirect to external clip URL
+                    header("Location: {$clipVal}", true, 302);
+                    exit;
+                }
+            } elseif (str_starts_with($clipVal, '/') || str_starts_with($clipVal, 'uploads/')) {
+                $candidate = dirname(__DIR__, 2) . '/public/' . ltrim($clipVal, '/');
+                if (file_exists($candidate) && is_file($candidate)) {
+                    $localClipFile = $candidate;
+                }
+            }
+
+            if ($localClipFile && file_exists($localClipFile)) {
+                header('Content-Type: video/mp4');
+                header('Content-Length: ' . filesize($localClipFile));
+                header('Accept-Ranges: bytes');
+                readfile($localClipFile);
+                exit;
+            }
+        }
 
         // Check if pre-recorded MP4 video clip exists
         $videoDir = __DIR__ . '/../../public/uploads/videos';

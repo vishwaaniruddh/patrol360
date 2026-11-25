@@ -119,14 +119,15 @@ class GovWebhookService
             return 'crowd';
         }
 
-        // 4. Plate / BlackListPlate / ANPR / Stolen Watchlist
+        // 4. Plate / BlackListPlate / ANPR / Stolen Watchlist / Vehicle detections with Plate
         if (
             $upper === 'PLATE' ||
             str_contains($upper, 'PLATE') ||
             str_contains($upper, 'STOLEN') ||
             str_contains($upper, 'HOTLIST') ||
             str_contains($upper, 'ANPR') ||
-            (!empty($context['scanned_vehicle_numberplate']) && str_contains($upper, 'BLACKLIST'))
+            (!empty($context['scanned_vehicle_numberplate']) && str_contains($upper, 'BLACKLIST')) ||
+            ($hasPlate && in_array($upper, ['START', 'STOP', 'TRUCK', 'CAR', 'BUS', 'MOTORCYCLE', 'VEHICLE', 'AI DETECTION', 'AI_DETECTION']))
         ) {
             return 'plate';
         }
@@ -143,8 +144,8 @@ class GovWebhookService
             return 'face';
         }
 
-        // 6. Explicit canonical test strings
-        if ($upper === 'VEHICLE CLASSIFICATION' || $upper === 'HEAVY VEHICLE ALERT') {
+        // 6. Explicit vehicle classification
+        if ($upper === 'VEHICLE CLASSIFICATION' || $upper === 'HEAVY VEHICLE ALERT' || in_array($upper, ['TRUCK', 'BUS', 'CAR', 'MOTORCYCLE', 'VEHICLE'])) {
             return 'vehicle classification';
         }
 

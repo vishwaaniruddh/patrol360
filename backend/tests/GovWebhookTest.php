@@ -269,4 +269,69 @@ class GovWebhookTest extends TestCase
         // Cleanup
         $db->exec("DELETE FROM `ai_alerts` WHERE `id` = {$alertId}");
     }
+
+    public function testSaveIncidentClipConvertsBase64ToDiskFile(): void
+    {
+        // 120-byte dummy MP4 container payload
+        $dummyMp4Bytes = "\x00\x00\x00\x20\x66\x74\x79\x70\x69\x73\x6f\x6d\x00\x00\x02\x00\x69\x73\x6f\x6d\x69\x73\x6f\x32\x61\x76\x63\x31\x6d\x70\x34\x31" . str_repeat("\x00", 100);
+        $base64Video = 'data:video/mp4;base64,' . base64_encode($dummyMp4Bytes);
+
+        $savedUrl = \App\Controllers\AiAlertController::saveIncidentClip($base64Video, 'TEST-VAN-01');
+        $this->assertNotNull($savedUrl);
+        $this->assertMatchesRegularExpression('#/uploads/videos/\d{4}/\d{2}/\d{2}/incident_TEST-VAN-01_#', $savedUrl);
+
+        // Verify file exists in public/uploads/videos/
+        $parsed = parse_url($savedUrl, PHP_URL_PATH);
+        $subPath = substr($parsed, strpos($parsed, '/uploads/videos/'));
+        $fullDiskPath = dirname(__DIR__) . '/public' . $subPath;
+        $this->assertFileExists($fullDiskPath);
+
+        // Clean up
+        if (file_exists($fullDiskPath)) {
+            unlink($fullDiskPath);
+        }
+
+        // Test passing URL directly preserves URL
+        $externalUrl = 'https://sarsspl.com/patrol360/backend/public/uploads/videos/2026/11/25/incident_sample.mp4';
+        $this->assertEquals($externalUrl, \App\Controllers\AiAlertController::saveIncidentClip($externalUrl));
+
+        // Test passing null returns null
+        $this->assertNull(\App\Controllers\AiAlertController::saveIncidentClip(null));
+    }
+
+    public function testAiAlertWithIncidentClipField(): void
+    {
+        $db = \App\Database::getConnection();
+
+        $clipUrl = 'https://sarsspl.com/patrol360/backend/public/uploads/videos/2026/11/25/incident_clip_5048.mp4';
+        $stmt = $db->prepare("
+            INSERT INTO `ai_alerts` (
+                `vehicle_id`, `camera_id`, `lat`, `lon`, `createtime`, 
+                `receivedtime`, `alerttype`, `incident_clip`, `status`
+            ) VALUES (?, ?, ?, ?, NOW(), NOW(), ?, ?, 'O')
+        ");
+        $stmt->execute([
+            'PATROL_VAN_01',
+            'CAM_01_FRONT',
+            '23.0225',
+            '72.5714',
+            'weapon',
+            $clipUrl
+        ]);
+        $alertId = (int)$db->lastInsertId();
+        $this->assertGreaterThan(0, $alertId);
+
+        $fetch = $db->query("SELECT * FROM `ai_alerts` WHERE `id` = {$alertId}")->fetch(\PDO::FETCH_ASSOC);
+        $this->assertEquals($clipUrl, $fetch['incident_clip']);
+
+        $govService = new \App\Services\GovWebhookService($db);
+        $payload = $govService->formatAlertPayload($fetch);
+
+        $this->assertEquals($clipUrl, $payload['incident_clip']);
+        $this->assertEquals($clipUrl, $payload['incidentClip']);
+        $this->assertEquals($clipUrl, $payload['data']['incident_clip']);
+
+        // Cleanup
+        $db->exec("DELETE FROM `ai_alerts` WHERE `id` = {$alertId}");
+    }
 }

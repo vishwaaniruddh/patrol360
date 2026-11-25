@@ -7,6 +7,7 @@
     "eventLatitude": 23.0258,
     "eventLongitude": 72.5873,
     "videoClipUrl": "https://sarsspl.com/patrol360/backend/public/api/ai-alerts/5248/video",
+    "incident_clip": "https://sarsspl.com/patrol360/backend/public/api/ai-alerts/5248/video",
     "vanId": "Van1",
     "vanCameraId": 3,
     "vanNumber": "GJ01HW1517",
