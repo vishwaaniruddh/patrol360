@@ -189,18 +189,18 @@ class GovWebhookService
 
     /**
      * Map event type to detection indicator color:
-     * - red: weapon, fire, face, plate, blacklistperson
-     * - pink: smoke, crowd
+     * - red: weapon, fire, face, plate, crowd, blacklistperson
+     * - pink: smoke, crowd density
      * - blue: face recognition
      * - green: ANPR, vehicle classification, Vehicle
      */
     public static function resolveDetectionColor(string $canonicalEventType): string
     {
         $type = strtolower(trim($canonicalEventType));
-        if ($type === 'weapon' || $type === 'weapon detection' || $type === 'fire' || $type === 'plate' || $type === 'blacklistplate' || str_contains($type, 'stolen') || $type === 'face' || $type === 'blacklistperson') {
+        if ($type === 'weapon' || $type === 'weapon detection' || $type === 'fire' || $type === 'plate' || $type === 'blacklistplate' || str_contains($type, 'stolen') || $type === 'face' || $type === 'crowd' || $type === 'blacklistperson') {
             return 'red';
         }
-        if ($type === 'smoke' || $type === 'crowd density' || $type === 'crowd') {
+        if ($type === 'smoke' || $type === 'crowd density') {
             return 'pink';
         }
         if ($type === 'face recognition' || $type === 'frs') {
@@ -339,17 +339,18 @@ class GovWebhookService
             $typeUpper = strtoupper($normalizedEventType);
             $typeLabel = ucfirst($normalizedEventType);
             $locStr = (!empty($location) && $location !== 'Patrol Sector Coordinates') ? " at {$location}" : '';
-            $coordStr = ($lat !== '0.0000' && $lon !== '0.0000') ? " ({$lat}, {$lon})" : '';
+            $coordStr = (!str_contains($locStr, '(') && $lat !== '0.0000' && $lon !== '0.0000') ? " ({$lat}, {$lon})" : '';
 
             if ($typeUpper === 'START' || str_starts_with($typeUpper, 'START')) {
                 $eventDescription = "Patrol Unit Started{$locStr}{$coordStr} by {$vanId} (Camera {$vanCameraId})";
             } elseif ($typeUpper === 'STOP' || str_starts_with($typeUpper, 'STOP')) {
                 $eventDescription = "Patrol Unit Stopped{$locStr}{$coordStr} by {$vanId} (Camera {$vanCameraId})";
-            } elseif ($typeUpper === 'BLACKLISTPLATE' || str_contains($typeUpper, 'BLACKLISTPLATE') || str_contains($typeUpper, 'BLACKLIST PLATE')) {
-                $plateStr = $vehicleNumber ?: ($plate ?: 'Unknown');
-                $eventDescription = "Blacklist Plate Intercept: Vehicle [{$plateStr}] matched watchlist{$locStr}{$coordStr} by {$vanId} (Camera {$vanCameraId})";
-            } elseif ($typeUpper === 'BLACKLISTFACE' || str_contains($typeUpper, 'BLACKLISTFACE') || str_contains($typeUpper, 'BLACKLIST FACE') || $typeUpper === 'BLACKLISTPERSON' || $typeUpper === 'FACE') {
+            } elseif ($typeUpper === 'PLATE' || $typeUpper === 'BLACKLISTPLATE' || str_contains($typeUpper, 'BLACKLISTPLATE') || str_contains($typeUpper, 'BLACKLIST PLATE')) {
+                $eventDescription = "BlacklistPlate recognition Threat Incident identified{$locStr}{$coordStr} by {$vanId} (Camera {$vanCameraId})";
+            } elseif ($typeUpper === 'FACE' || $typeUpper === 'BLACKLISTFACE' || str_contains($typeUpper, 'BLACKLISTFACE') || str_contains($typeUpper, 'BLACKLIST FACE') || $typeUpper === 'BLACKLISTPERSON') {
                 $eventDescription = "Face recognition Threat Incident identified{$locStr}{$coordStr} by {$vanId} (Camera {$vanCameraId})";
+            } elseif ($typeUpper === 'CROWD' || $typeUpper === 'FIRE' || $typeUpper === 'WEAPON') {
+                $eventDescription = "{$typeLabel} recognition Threat Incident identified{$locStr}{$coordStr} by {$vanId} (Camera {$vanCameraId})";
             } elseif ($plate && $normalizedEventType === 'ANPR') {
                 $eventDescription = "ANPR Plate Scan: License plate [{$plate}] detected{$locStr}{$coordStr} by {$vanId} (Camera {$vanCameraId})";
             } elseif ($plate) {
@@ -357,7 +358,7 @@ class GovWebhookService
             } elseif (in_array($typeUpper, ['TRUCK', 'BUS', 'CAR', 'MOTORCYCLE', 'VEHICLE', 'VEHICLE CLASSIFICATION'])) {
                 $eventDescription = "{$typeLabel} Classification identified{$locStr}{$coordStr} by {$vanId} (Camera {$vanCameraId})";
             } else {
-                $eventDescription = "{$typeLabel} Threat Incident identified{$locStr}{$coordStr} by {$vanId} (Camera {$vanCameraId})";
+                $eventDescription = "{$typeLabel} recognition Threat Incident identified{$locStr}{$coordStr} by {$vanId} (Camera {$vanCameraId})";
             }
         }
 
@@ -435,16 +436,13 @@ class GovWebhookService
             'status'           => $statusLabel,
             'statusCode'       => $statusCode,
             'plateNumber'      => $plate,
-            'vehiclePlateNumber' => !empty($plate) ? $plate : null,
-            'vehicleNumber'    => $vehicleNumber,
-            'vanNumber'        => $vanNumber,
+            'vehicleNumber'    => $vehicleNumber ?: $vanNumber,
             'numberOfPerson'   => $numberOfPerson,
             'location'         => $eventLocation,
             'latitude'         => (string)$lat,
             'longitude'        => (string)$lon,
             'imageUrl'         => $imageUrl,
             'videoClipUrl'     => $videoClipUrl,
-            'incident_clip'    => $incidentClip,
             'bitrate'          => $bitrate,
             'fps'              => $fps,
             'resolution'       => $resolution,
@@ -463,7 +461,7 @@ class GovWebhookService
         $messageJson = json_encode($eventDetail, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
         $eventName = ($statusCode === 'C') ? 'alert.closed' : (($statusCode === 'A') ? 'alert.acknowledged' : 'log.created');
 
-        return [
+        $payload = [
             'event'            => $eventName,
             'eventType'        => $normalizedEventType,
             'eventId'          => (int)$alertId,
@@ -471,59 +469,37 @@ class GovWebhookService
             'eventLocation'    => $eventLocation,
             'eventLatitude'    => $eventLatitude,
             'eventLongitude'   => $eventLongitude,
-            'vehiclePlateNumber' => !empty($plate) ? $plate : null,
-            'videoClipUrl'     => $videoClipUrl,
-            'vanId'            => $vanId,
-            'vanCameraId'      => $vanCameraId,
-            'vanNumber'        => $vanNumber,
-            'vehicleNumber'    => $vehicleNumber,
-            'imageUrl'         => $imageUrl,
-            'bitrate'          => $bitrate,
-            'fps'              => $fps,
-            'resolution'       => $resolution,
-            'eventDescription' => $eventDescription,
-            'confidence'       => $confidence,
-            'numberOfPerson'   => $numberOfPerson,
-            'comment'          => $comment ?: $eventDescription,
-            'colorOfDetection' => $detectionColor,
-            'detectedAt'       => $createtime,
-            'actionTaken'      => $actionTaken,
-            'acknowledgedBy'   => $ackBy,
-            'acknowledgedAt'   => $ackAt,
-            'closedBy'         => $closedBy,
-            'closedTime'       => $closedTime,
-            'incident_clip'    => $incidentClip,
-            'incidentClip'     => $incidentClip,
-            'message'          => $messageJson,
-            'createdAt'        => $createtime,
-            'data'             => [
-                'eventType'        => $normalizedEventType,
-                'videoClipUrl'     => $videoClipUrl,
-                'vanId'            => $vanId,
-                'vanCameraId'      => $vanCameraId,
-                'vanNumber'        => $vanNumber,
-                'vehicleNumber'    => $vehicleNumber,
-                'imageUrl'         => $imageUrl,
-                'bitrate'          => $bitrate,
-                'fps'              => $fps,
-                'resolution'       => $resolution,
-                'eventDescription' => $eventDescription,
-                'confidence'       => $confidence,
-                'numberOfPerson'   => $numberOfPerson,
-                'comment'          => $comment ?: $eventDescription,
-                'colorOfDetection' => $detectionColor,
-                'detectedAt'       => $createtime,
-                'actionTaken'      => $actionTaken,
-                'acknowledgedBy'   => $ackBy,
-                'acknowledgedAt'   => $ackAt,
-                'closedBy'         => $closedBy,
-                'closedTime'       => $closedTime,
-                'incident_clip'    => $incidentClip,
-                'incidentClip'     => $incidentClip,
-                'message'          => $messageJson,
-                'eventDetail'      => $eventDetail
-            ]
         ];
+
+        // Include vehiclePlateNumber on fire, plate, weapon (or whenever a scanned plate is present)
+        if (in_array($normalizedEventType, ['fire', 'plate', 'weapon'], true) || !empty($plate)) {
+            $payload['vehiclePlateNumber'] = !empty($plate) ? $plate : null;
+        }
+
+        $payload['videoClipUrl']     = $videoClipUrl;
+        $payload['incident_clip']    = $incidentClip;
+        $payload['vanId']            = $vanId;
+        $payload['vanCameraId']      = $vanCameraId;
+        $payload['vanNumber']        = $vanNumber;
+        $payload['imageUrl']         = $imageUrl;
+        $payload['bitrate']          = $bitrate;
+        $payload['fps']              = $fps;
+        $payload['resolution']       = $resolution;
+        $payload['eventDescription'] = $eventDescription;
+        $payload['confidence']       = $confidence;
+        $payload['numberOfPerson']   = $numberOfPerson;
+        $payload['comment']          = $comment ?: $eventDescription;
+        $payload['colorOfDetection'] = $detectionColor;
+        $payload['detectedAt']       = $createtime;
+        $payload['actionTaken']      = $actionTaken;
+        $payload['acknowledgedBy']   = $ackBy;
+        $payload['acknowledgedAt']   = $ackAt;
+        $payload['closedBy']         = $closedBy;
+        $payload['closedTime']       = $closedTime;
+        $payload['message']          = $messageJson;
+        $payload['createdAt']        = $createtime;
+
+        return $payload;
     }
 
     /**
@@ -818,8 +794,14 @@ class GovWebhookService
                 continue;
             }
 
-            // On-the-fly sanitize: If legacy queue row has bloated base64 in payload_json, refresh and sanitize it before sending!
-            if (str_contains($item['payload_json'], '/9j/') || str_contains($item['payload_json'], 'data:image') || strlen($item['payload_json']) > 20000) {
+            // On-the-fly sanitize: If legacy queue row has bloated base64 or redundant data/eventDetail wrapper, refresh and sanitize it before sending!
+            if (
+                str_contains($item['payload_json'], '/9j/') ||
+                str_contains($item['payload_json'], 'data:image') ||
+                str_contains($item['payload_json'], '"eventDetail"') ||
+                str_contains($item['payload_json'], '"incidentClip"') ||
+                strlen($item['payload_json']) > 20000
+            ) {
                 if (preg_match('/^ALERT-(\d+)-/', $item['event_id'], $m)) {
                     $linkedAlertId = (int)$m[1];
                     try {

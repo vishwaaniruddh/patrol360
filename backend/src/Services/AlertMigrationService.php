@@ -242,6 +242,8 @@ class AlertMigrationService
                OR `payload_json` LIKE '%/9j/%' 
                OR `payload_json` LIKE '%\"event_type\"%'
                OR `payload_json` LIKE '%\"VanID\"%'
+               OR `payload_json` LIKE '%\"eventDetail\"%'
+               OR `payload_json` LIKE '%\"incidentClip\"%'
                OR LENGTH(`payload_json`) > 10000)
               AND `delivery_status` != 'SENT_200'
             ORDER BY `id` ASC
@@ -283,6 +285,8 @@ class AlertMigrationService
                    OR `payload_json` LIKE '%/9j/%' 
                    OR `payload_json` LIKE '%\"event_type\"%'
                    OR `payload_json` LIKE '%\"VanID\"%'
+                   OR `payload_json` LIKE '%\"eventDetail\"%'
+                   OR `payload_json` LIKE '%\"incidentClip\"%'
                    OR LENGTH(`payload_json`) > 10000)
                   AND `delivery_status` != 'SENT_200'
             ")->fetchColumn()

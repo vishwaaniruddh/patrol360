@@ -588,29 +588,31 @@ class GovSyncController
 
             $payload = !empty($r['payload_json']) ? json_decode($r['payload_json'], true) : [];
             $innerMsg = [];
-            if (!empty($payload['data']['message']) && is_string($payload['data']['message'])) {
+            if (!empty($payload['message']) && is_string($payload['message'])) {
+                $innerMsg = json_decode($payload['message'], true) ?: [];
+            } elseif (!empty($payload['data']['message']) && is_string($payload['data']['message'])) {
                 $innerMsg = json_decode($payload['data']['message'], true) ?: [];
             }
-            $eventDetail = $payload['event_detail'] ?? $payload['event'] ?? $payload;
+            $eventDetail = $payload['event_detail'] ?? ($payload['data']['eventDetail'] ?? $payload);
 
-            $vanId = !empty($alert['vehicle_id']) ? $alert['vehicle_id'] : ($innerMsg['vehicle_id'] ?? ($eventDetail['VanID'] ?? ($eventDetail['van_id'] ?? 'PATROL-VAN-01')));
-            $cameraId = !empty($alert['camera_id']) ? $alert['camera_id'] : ($innerMsg['camera_id'] ?? ($eventDetail['VanCameraID'] ?? ($eventDetail['van_camera_id'] ?? 'CAM-01')));
-            $rawType = !empty($alert['alerttype']) ? $alert['alerttype'] : ($innerMsg['alert_type'] ?? ($r['event_type'] ?? 'AI Detection'));
-            $plate = !empty($alert['scanned_vehicle_numberplate']) ? $alert['scanned_vehicle_numberplate'] : ($innerMsg['plate_number'] ?? ($eventDetail['plate_number'] ?? '-'));
+            $vanId = !empty($alert['vehicle_id']) ? $alert['vehicle_id'] : ($innerMsg['vehicleId'] ?? ($innerMsg['vehicle_id'] ?? ($payload['vanId'] ?? ($eventDetail['VanID'] ?? ($eventDetail['van_id'] ?? 'PATROL-VAN-01')))));
+            $cameraId = !empty($alert['camera_id']) ? $alert['camera_id'] : ($innerMsg['cameraId'] ?? ($innerMsg['camera_id'] ?? ($payload['vanCameraId'] ?? ($eventDetail['VanCameraID'] ?? ($eventDetail['van_camera_id'] ?? 'CAM-01')))));
+            $rawType = !empty($alert['alerttype']) ? $alert['alerttype'] : ($innerMsg['rawAlertType'] ?? ($innerMsg['alert_type'] ?? ($payload['eventType'] ?? ($r['event_type'] ?? 'AI Detection'))));
+            $plate = !empty($alert['scanned_vehicle_numberplate']) ? $alert['scanned_vehicle_numberplate'] : ($payload['vehiclePlateNumber'] ?? ($innerMsg['plateNumber'] ?? ($innerMsg['plate_number'] ?? ($eventDetail['plate_number'] ?? '-'))));
             $comment = !empty($alert['comment']) 
                 ? $alert['comment'] 
-                : ($innerMsg['event_description'] ?? ($innerMsg['description'] ?? ($innerMsg['comment'] ?? ($eventDetail['remarks'] ?? 'Transmitted to Central Gov API'))));
+                : ($payload['comment'] ?? ($payload['eventDescription'] ?? ($innerMsg['eventDescription'] ?? ($innerMsg['event_description'] ?? ($innerMsg['description'] ?? ($innerMsg['comment'] ?? ($eventDetail['remarks'] ?? 'Transmitted to Central Gov API')))))));
 
             $canonicalType = GovWebhookService::normalizeEventType($rawType, [
                 'scanned_vehicle_numberplate' => $plate,
                 'comment' => $comment
             ]);
 
-            $location = !empty($alert['location']) ? $alert['location'] : ($innerMsg['location'] ?? ($eventDetail['location'] ?? 'Patrol Surveillance Grid'));
-            $lat = !empty($alert['lat']) ? $alert['lat'] : ($innerMsg['latitude'] ?? ($eventDetail['latitude'] ?? '23.0225'));
-            $lon = !empty($alert['lon']) ? $alert['lon'] : ($innerMsg['longitude'] ?? ($eventDetail['longitude'] ?? '72.5714'));
+            $location = !empty($alert['location']) ? $alert['location'] : ($payload['eventLocation'] ?? ($innerMsg['location'] ?? ($eventDetail['location'] ?? 'Patrol Surveillance Grid')));
+            $lat = !empty($alert['lat']) ? $alert['lat'] : ($payload['eventLatitude'] ?? ($innerMsg['latitude'] ?? ($eventDetail['latitude'] ?? '23.0225')));
+            $lon = !empty($alert['lon']) ? $alert['lon'] : ($payload['eventLongitude'] ?? ($innerMsg['longitude'] ?? ($eventDetail['longitude'] ?? '72.5714')));
 
-            $statusCode = !empty($alert['alert_status']) ? $alert['alert_status'] : ($innerMsg['status_code'] ?? ($eventDetail['status_code'] ?? 'O'));
+            $statusCode = !empty($alert['alert_status']) ? $alert['alert_status'] : ($innerMsg['statusCode'] ?? ($innerMsg['status_code'] ?? ($eventDetail['status_code'] ?? 'O')));
             $statusLabel = ($statusCode === 'C' || $statusCode === 'CLOSED') ? 'CLOSED' : (($statusCode === 'A' || $statusCode === 'ACKNOWLEDGED') ? 'ACKNOWLEDGED' : 'OPEN');
 
             $receiptId = !empty($r['external_item_id'])
@@ -621,7 +623,7 @@ class GovSyncController
                 ? $r['external_received_at']
                 : (!empty($alert['gov_synced_at']) ? $alert['gov_synced_at'] : ($r['last_retry_at'] ?? $r['queue_created_at'] ?? date('Y-m-d H:i:s')));
 
-            $detectTime = !empty($alert['alert_time']) ? $alert['alert_time'] : ($innerMsg['detected_at'] ?? ($r['queue_created_at'] ?? date('Y-m-d H:i:s')));
+            $detectTime = !empty($alert['alert_time']) ? $alert['alert_time'] : ($payload['detectedAt'] ?? ($innerMsg['detectedAt'] ?? ($innerMsg['detected_at'] ?? ($r['queue_created_at'] ?? date('Y-m-d H:i:s')))));
 
             $formatted[] = [
                 'queue_id' => $r['queue_id'] ? (int) $r['queue_id'] : null,
