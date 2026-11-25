@@ -329,6 +329,7 @@ CREATE TABLE IF NOT EXISTS `ai_alerts` (
     `confidence` DECIMAL(5, 2) DEFAULT NULL,
     `vehicle_number` VARCHAR(64) DEFAULT NULL,
     `number_of_person` INT DEFAULT NULL,
+    `incident_clip` TEXT DEFAULT NULL,
     `acknowledged_by` VARCHAR(100) DEFAULT NULL,
     `acknowledged_at` DATETIME DEFAULT NULL,
     `action_taken` VARCHAR(255) DEFAULT NULL,
@@ -347,7 +348,10 @@ CREATE TABLE IF NOT EXISTS `ai_alerts` (
 -- 15. SCHEMA PATCHES (IDEMPOTENT COLUMN ADDITIONS)
 -- ========================================================
 ALTER TABLE `ai_alerts` ADD COLUMN IF NOT EXISTS `confidence` DECIMAL(5, 2) DEFAULT NULL AFTER `scanned_vehicle_numberplate`;
-ALTER TABLE `ai_alerts` ADD COLUMN IF NOT EXISTS `acknowledged_by` VARCHAR(100) DEFAULT NULL AFTER `confidence`;
+ALTER TABLE `ai_alerts` ADD COLUMN IF NOT EXISTS `vehicle_number` VARCHAR(64) DEFAULT NULL AFTER `confidence`;
+ALTER TABLE `ai_alerts` ADD COLUMN IF NOT EXISTS `number_of_person` INT DEFAULT NULL AFTER `vehicle_number`;
+ALTER TABLE `ai_alerts` ADD COLUMN IF NOT EXISTS `incident_clip` TEXT DEFAULT NULL AFTER `number_of_person`;
+ALTER TABLE `ai_alerts` ADD COLUMN IF NOT EXISTS `acknowledged_by` VARCHAR(100) DEFAULT NULL AFTER `incident_clip`;
 ALTER TABLE `ai_alerts` ADD COLUMN IF NOT EXISTS `acknowledged_at` DATETIME DEFAULT NULL AFTER `acknowledged_by`;
 ALTER TABLE `ai_alerts` ADD COLUMN IF NOT EXISTS `action_taken` VARCHAR(255) DEFAULT NULL AFTER `acknowledged_at`;
 ALTER TABLE `ai_alerts` ADD COLUMN IF NOT EXISTS `gov_sync_status` ENUM('NOT_SYNCED', 'QUEUED', 'SYNCED', 'FAILED') DEFAULT 'NOT_SYNCED' AFTER `action_taken`;

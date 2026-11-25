@@ -90,8 +90,8 @@ class GovWebhookService
         $upper = strtoupper(str_replace(['_', '-', '.', '/', ':'], ' ', $rawStr));
 
         // Check for attached vehicle license plate context
-        $plate = trim((string)($context['scanned_vehicle_numberplate'] ?? $context['vehicle_number'] ?? $context['plate_number'] ?? ''));
-        $hasPlate = (!empty($plate) && $plate !== 'UNKNOWN' && $plate !== 'NONE');
+        $plate = trim((string)($context['scanned_vehicle_numberplate'] ?? ($context['vehicle_number'] ?? ($context['plate_number'] ?? ''))));
+        $hasPlate = !empty($plate);
 
         // 1. Weapon Detection
         if (
@@ -106,91 +106,103 @@ class GovWebhookService
             str_contains($upper, 'TACTICAL THREAT') ||
             str_contains($upper, 'PROJECTILE')
         ) {
-            return ($rawStr === 'Weapon') ? 'Weapon' : 'weapon detection';
+            return 'weapon';
         }
 
-        // 2. Fire (excluding firearm)
-        if ((str_contains($upper, 'FIRE') && !str_contains($upper, 'FIREARM')) || str_contains($upper, 'BLAZE') || str_contains($upper, 'FLAME')) {
+        // 2. Fire & Smoke
+        if ((str_contains($upper, 'FIRE') && !str_contains($upper, 'FIREARM')) || str_contains($upper, 'BLAZE') || str_contains($upper, 'FLAME') || str_contains($upper, 'SMOKE') || str_contains($upper, 'FUME')) {
             return 'fire';
         }
 
-        // 3. Smoke
-        if (str_contains($upper, 'SMOKE') || str_contains($upper, 'FUME')) {
-            return 'smoke';
-        }
-
-        // 4. Crowd Density
+        // 3. Crowd Density
         if (str_contains($upper, 'CROWD') || str_contains($upper, 'SURGE') || str_contains($upper, 'ASSEMBLY') || str_contains($upper, 'OVERCROWD')) {
-            return ($rawStr === 'Crowd') ? 'Crowd' : 'crowd density';
+            return 'crowd';
         }
 
-        // 5. Blacklisted Number Plate / Stolen Vehicle Watchlist (ANPR Hotlist Match)
-        // Must evaluate BEFORE generic face recognition so BlackListPlate is never misclassified as BlackListFace
+        // 4. Plate / BlackListPlate / ANPR / Stolen Watchlist
         if (
-            $upper === 'BLACKLISTPLATE' ||
-            str_contains($upper, 'BLACKLIST PLATE') ||
-            str_contains($upper, 'BLACKLISTPLATE') ||
-            str_contains($upper, 'BLACKLIST VEHICLE') ||
-            str_contains($upper, 'STOLEN VEHICLE') ||
+            $upper === 'PLATE' ||
+            str_contains($upper, 'PLATE') ||
             str_contains($upper, 'STOLEN') ||
             str_contains($upper, 'HOTLIST') ||
-            (str_contains($upper, 'BLACKLIST') && ($hasPlate || str_contains($upper, 'PLATE') || str_contains($upper, 'VEHICLE') || str_contains($upper, 'ANPR')))
+            str_contains($upper, 'ANPR') ||
+            (!empty($context['scanned_vehicle_numberplate']) && str_contains($upper, 'BLACKLIST'))
         ) {
-            return 'BlackListPlate';
+            return 'plate';
         }
 
-        // 6. Blacklisted Face / Wanted Person Watchlist (FRS Match)
+        // 5. Face Recognition / Blacklist Person / Wanted Suspects
         if (
-            $upper === 'BLACKLISTFACE' ||
-            str_contains($upper, 'BLACKLIST FACE') ||
-            str_contains($upper, 'BLACKLISTFACE') ||
-            str_contains($upper, 'BLACKLIST PERSON') ||
-            $upper === 'BLACKLISTPERSON' ||
-            str_contains($upper, 'WANTED') ||
+            str_contains($upper, 'FRS') ||
+            str_contains($upper, 'FACE') ||
+            str_contains($upper, 'PERSON') ||
             str_contains($upper, 'SUSPECT') ||
-            (str_contains($upper, 'BLACKLIST') && !$hasPlate)
+            str_contains($upper, 'WANTED') ||
+            str_contains($upper, 'BLACKLIST')
         ) {
-            return 'BlackListFace';
+            return 'face';
         }
 
-        // 7. General Facial Recognition (FRS)
-        if (str_contains($upper, 'FRS') || str_contains($upper, 'FACE') || str_contains($upper, 'PERSON')) {
-            return 'face recognition';
-        }
-
-        // 8. General ANPR - ONLY if rawType explicitly indicates ANPR / Plate
-        if ($upper === 'ANPR' || str_contains($upper, 'ANPR') || str_contains($upper, 'PLATE')) {
-            return $hasPlate && str_contains($upper, 'BLACKLIST') ? 'BlackListPlate' : 'ANPR';
-        }
-
-        // 9. Explicit canonical test strings
+        // 6. Explicit canonical test strings
         if ($upper === 'VEHICLE CLASSIFICATION' || $upper === 'HEAVY VEHICLE ALERT') {
             return 'vehicle classification';
         }
 
-        // 10. Vehicle & Edge Telemetry Types: preserve exact raw alert type!
+        // 7. Vehicle & Edge Telemetry Types: preserve exact raw alert type!
         // (e.g. 'Vehicle', 'Start', 'Stop', 'Truck', 'Car', 'Bus', 'Motorcycle', 'Animal', etc.)
         return $rawStr;
     }
 
+    /**
+     * Resolve descriptive title for events
+     */
+    public static function resolveEventTitle(string $normalizedEventType, string $rawType, ?string $plate = null): string
+    {
+        $typeUpper = strtoupper($normalizedEventType);
+        $rawUpper = strtoupper($rawType);
+
+        if ($typeUpper === 'FACE' || str_contains($rawUpper, 'BLACKLISTPERSON') || str_contains($rawUpper, 'FACE') || str_contains($rawUpper, 'PERSON')) {
+            return 'Blacklist Person Alert';
+        }
+        if ($typeUpper === 'PLATE' || str_contains($rawUpper, 'PLATE') || str_contains($rawUpper, 'STOLEN') || str_contains($rawUpper, 'HOTLIST') || str_contains($rawUpper, 'ANPR')) {
+            return $plate ? "BlacklistPlate {$plate} Alert" : 'BlacklistPlate Alert';
+        }
+        if ($typeUpper === 'WEAPON' || str_contains($typeUpper, 'WEAPON')) {
+            return 'Gun/knife/Explosive/etc... Alert';
+        }
+        if ($typeUpper === 'FIRE' || str_contains($typeUpper, 'FIRE') || str_contains($typeUpper, 'SMOKE')) {
+            return 'Fire/Smoke Alert';
+        }
+        if ($typeUpper === 'CROWD' || str_contains($typeUpper, 'CROWD')) {
+            return 'Crowd Alert';
+        }
+        if ($typeUpper === 'START' || str_starts_with($typeUpper, 'START')) {
+            return 'Patrol Unit Started';
+        }
+        if ($typeUpper === 'STOP' || str_starts_with($typeUpper, 'STOP')) {
+            return 'Patrol Unit Stopped';
+        }
+
+        return ucfirst($normalizedEventType) . ' Alert';
+    }
 
     /**
      * Map event type to detection indicator color:
-     * - red: weapon detection, fire, BlackListPlate
-     * - pink: smoke, crowd density
-     * - blue: face recognition, BlackListFace
+     * - red: weapon, fire, face, plate, blacklistperson
+     * - pink: smoke, crowd
+     * - blue: face recognition
      * - green: ANPR, vehicle classification, Vehicle
      */
     public static function resolveDetectionColor(string $canonicalEventType): string
     {
         $type = strtolower(trim($canonicalEventType));
-        if ($type === 'weapon detection' || $type === 'weapon' || $type === 'fire' || $type === 'blacklistplate' || str_contains($type, 'stolen')) {
+        if ($type === 'weapon' || $type === 'weapon detection' || $type === 'fire' || $type === 'plate' || $type === 'blacklistplate' || str_contains($type, 'stolen') || $type === 'face' || $type === 'blacklistperson') {
             return 'red';
         }
         if ($type === 'smoke' || $type === 'crowd density' || $type === 'crowd') {
             return 'pink';
         }
-        if ($type === 'face recognition' || $type === 'blacklistperson' || $type === 'blacklistface' || $type === 'frs') {
+        if ($type === 'face recognition' || $type === 'frs') {
             return 'blue';
         }
         return 'green';
@@ -335,8 +347,8 @@ class GovWebhookService
             } elseif ($typeUpper === 'BLACKLISTPLATE' || str_contains($typeUpper, 'BLACKLISTPLATE') || str_contains($typeUpper, 'BLACKLIST PLATE')) {
                 $plateStr = $vehicleNumber ?: ($plate ?: 'Unknown');
                 $eventDescription = "Blacklist Plate Intercept: Vehicle [{$plateStr}] matched watchlist{$locStr}{$coordStr} by {$vanId} (Camera {$vanCameraId})";
-            } elseif ($typeUpper === 'BLACKLISTFACE' || str_contains($typeUpper, 'BLACKLISTFACE') || str_contains($typeUpper, 'BLACKLIST FACE') || $typeUpper === 'BLACKLISTPERSON') {
-                $eventDescription = "Blacklist Face Intercept: Person matched watchlist{$locStr}{$coordStr} by {$vanId} (Camera {$vanCameraId})";
+            } elseif ($typeUpper === 'BLACKLISTFACE' || str_contains($typeUpper, 'BLACKLISTFACE') || str_contains($typeUpper, 'BLACKLIST FACE') || $typeUpper === 'BLACKLISTPERSON' || $typeUpper === 'FACE') {
+                $eventDescription = "Face recognition Threat Incident identified{$locStr}{$coordStr} by {$vanId} (Camera {$vanCameraId})";
             } elseif ($plate && $normalizedEventType === 'ANPR') {
                 $eventDescription = "ANPR Plate Scan: License plate [{$plate}] detected{$locStr}{$coordStr} by {$vanId} (Camera {$vanCameraId})";
             } elseif ($plate) {
@@ -364,32 +376,80 @@ class GovWebhookService
             } catch (\Throwable $t) {}
         }
 
-        // Prepare structured event details (strictly camelCase, zero duplicate aliases)
+        // Resolve eventLocation, eventLatitude, eventLongitude, eventTitle, vanNumber
+        $locStr = (!empty($location) && $location !== 'Patrol Sector Coordinates') ? $location : '';
+        $coordStr = ($lat !== '0.0000' && $lon !== '0.0000') ? "({$lat}, {$lon})" : '';
+        if (!empty($locStr) && !empty($coordStr)) {
+            $eventLocation = str_contains($locStr, '(') ? $locStr : "{$locStr} {$coordStr}";
+        } elseif (!empty($locStr)) {
+            $eventLocation = $locStr;
+        } elseif (!empty($coordStr)) {
+            $eventLocation = $coordStr;
+        } else {
+            $eventLocation = "Patrol Sector ({$lat}, {$lon})";
+        }
+
+        $eventLatitude = is_numeric($lat) ? (float)$lat : 0.0;
+        $eventLongitude = is_numeric($lon) ? (float)$lon : 0.0;
+        $eventTitle = !empty($alert['event_title']) ? $alert['event_title'] : self::resolveEventTitle($normalizedEventType, $rawType, $plate);
+
+        $vanNumber = !empty($alert['van_number'])
+            ? (string)$alert['van_number']
+            : (!empty($alert['vehicle_number'])
+                ? (string)$alert['vehicle_number']
+                : (!empty($alert['registration_number'])
+                    ? str_replace('-', '', (string)$alert['registration_number'])
+                    : (!empty($alert['vehicle_registration'])
+                        ? str_replace('-', '', (string)$alert['vehicle_registration'])
+                        : $vehicleId)));
+
+        // Resolve incident_clip
+        $incidentClip = null;
+        if (!empty($alert['incident_clip'])) {
+            $rawClip = $alert['incident_clip'];
+            if (is_string($rawClip) && (str_starts_with(trim($rawClip), '{') || str_starts_with(trim($rawClip), '['))) {
+                $decoded = json_decode($rawClip, true);
+                $incidentClip = $decoded !== null ? $decoded : $rawClip;
+            } elseif (is_string($rawClip) && (str_starts_with($rawClip, '/uploads/') || str_starts_with($rawClip, 'uploads/'))) {
+                $incidentClip = $baseUrl . '/' . ltrim($rawClip, '/');
+            } else {
+                $incidentClip = $rawClip;
+            }
+        } elseif (!empty($alert['incidentClip'])) {
+            $incidentClip = $alert['incidentClip'];
+        } else {
+            $incidentClip = $videoClipUrl;
+        }
+
+        // Inner structured event detail object for message JSON string
         $eventDetail = [
             'system'           => 'Patrol360 Mobile Police Intelligence',
-            'alertId'          => $alertId,
+            'alertId'          => (int)$alertId,
             'vehicleId'        => $vehicleId,
             'vanId'            => $vanId,
-            'cameraId'         => $camera,
+            'cameraId'         => (string)$camera,
             'vanCameraId'      => $vanCameraId,
             'eventType'        => $normalizedEventType,
             'rawAlertType'     => $rawType,
             'status'           => $statusLabel,
             'statusCode'       => $statusCode,
             'plateNumber'      => $plate,
+            'vehiclePlateNumber' => !empty($plate) ? $plate : null,
             'vehicleNumber'    => $vehicleNumber,
+            'vanNumber'        => $vanNumber,
             'numberOfPerson'   => $numberOfPerson,
-            'location'         => !empty($location) ? "{$location} ({$lat}, {$lon})" : "{$lat}, {$lon}",
-            'latitude'         => $lat,
-            'longitude'        => $lon,
+            'location'         => $eventLocation,
+            'latitude'         => (string)$lat,
+            'longitude'        => (string)$lon,
             'imageUrl'         => $imageUrl,
             'videoClipUrl'     => $videoClipUrl,
+            'incident_clip'    => $incidentClip,
             'bitrate'          => $bitrate,
             'fps'              => $fps,
             'resolution'       => $resolution,
             'eventDescription' => $eventDescription,
             'confidence'       => $confidence,
-            'colorOfDetection' => $detectionColor,
+            'colorOfDetection' => ($normalizedEventType === 'face' || str_contains(strtolower($rawType), 'face')) ? 'blue' : $detectionColor,
             'detectedAt'       => $createtime,
             'comment'          => $comment ?: $eventDescription,
             'actionTaken'      => $actionTaken,
@@ -399,40 +459,67 @@ class GovWebhookService
             'closedTime'       => $closedTime
         ];
 
+        $messageJson = json_encode($eventDetail, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
         $eventName = ($statusCode === 'C') ? 'alert.closed' : (($statusCode === 'A') ? 'alert.acknowledged' : 'log.created');
 
         return [
             'event'            => $eventName,
             'eventType'        => $normalizedEventType,
+            'eventId'          => (int)$alertId,
+            'eventTitle'       => $eventTitle,
+            'eventLocation'    => $eventLocation,
+            'eventLatitude'    => $eventLatitude,
+            'eventLongitude'   => $eventLongitude,
+            'vehiclePlateNumber' => !empty($plate) ? $plate : null,
             'videoClipUrl'     => $videoClipUrl,
             'vanId'            => $vanId,
             'vanCameraId'      => $vanCameraId,
+            'vanNumber'        => $vanNumber,
+            'vehicleNumber'    => $vehicleNumber,
             'imageUrl'         => $imageUrl,
             'bitrate'          => $bitrate,
             'fps'              => $fps,
             'resolution'       => $resolution,
             'eventDescription' => $eventDescription,
             'confidence'       => $confidence,
-            'vehicleNumber'    => $vehicleNumber,
             'numberOfPerson'   => $numberOfPerson,
             'comment'          => $comment ?: $eventDescription,
             'colorOfDetection' => $detectionColor,
+            'detectedAt'       => $createtime,
+            'actionTaken'      => $actionTaken,
+            'acknowledgedBy'   => $ackBy,
+            'acknowledgedAt'   => $ackAt,
+            'closedBy'         => $closedBy,
+            'closedTime'       => $closedTime,
+            'incident_clip'    => $incidentClip,
+            'incidentClip'     => $incidentClip,
+            'message'          => $messageJson,
+            'createdAt'        => $createtime,
             'data'             => [
                 'eventType'        => $normalizedEventType,
                 'videoClipUrl'     => $videoClipUrl,
                 'vanId'            => $vanId,
                 'vanCameraId'      => $vanCameraId,
+                'vanNumber'        => $vanNumber,
+                'vehicleNumber'    => $vehicleNumber,
                 'imageUrl'         => $imageUrl,
                 'bitrate'          => $bitrate,
                 'fps'              => $fps,
                 'resolution'       => $resolution,
                 'eventDescription' => $eventDescription,
                 'confidence'       => $confidence,
-                'vehicleNumber'    => $vehicleNumber,
                 'numberOfPerson'   => $numberOfPerson,
                 'comment'          => $comment ?: $eventDescription,
                 'colorOfDetection' => $detectionColor,
-                'message'          => json_encode($eventDetail, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+                'detectedAt'       => $createtime,
+                'actionTaken'      => $actionTaken,
+                'acknowledgedBy'   => $ackBy,
+                'acknowledgedAt'   => $ackAt,
+                'closedBy'         => $closedBy,
+                'closedTime'       => $closedTime,
+                'incident_clip'    => $incidentClip,
+                'incidentClip'     => $incidentClip,
+                'message'          => $messageJson,
                 'eventDetail'      => $eventDetail
             ]
         ];
@@ -513,7 +600,12 @@ class GovWebhookService
      */
     public function enqueueAlert(int $alertId): array
     {
-        $stmt = $this->db->prepare("SELECT * FROM `ai_alerts` WHERE `id` = ? LIMIT 1");
+        $stmt = $this->db->prepare("
+            SELECT a.*, v.`registration_number` AS `vehicle_registration`
+            FROM `ai_alerts` a
+            LEFT JOIN `police_vehicles` v ON a.`vehicle_id` = v.`vehicle_id`
+            WHERE a.`id` = ? LIMIT 1
+        ");
         $stmt->execute([$alertId]);
         $alert = $stmt->fetch(PDO::FETCH_ASSOC);
 

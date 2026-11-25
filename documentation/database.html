@@ -361,6 +361,7 @@ CREATE TABLE IF NOT EXISTS ai_alerts (
     confidence DECIMAL(5, 2) DEFAULT NULL, -- AI detection model confidence score (e.g. 95.50)
     vehicle_number VARCHAR(64) DEFAULT NULL, -- Scanned or detected vehicle registration plate
     number_of_person INT DEFAULT NULL, -- Detected person or crowd headcount
+    incident_clip TEXT DEFAULT NULL, -- URL or relative path to incident video clip
     acknowledged_by VARCHAR(100) DEFAULT NULL,
     acknowledged_at DATETIME DEFAULT NULL,
     action_taken VARCHAR(255) DEFAULT NULL,

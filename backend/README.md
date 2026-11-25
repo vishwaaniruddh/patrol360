@@ -280,20 +280,31 @@ Base URL (Production): `https://sarsspl.com/patrol360/backend/public`
 ### K. Government Webhook Upload & Offline Dispatch Engine
 Implements integration with Central Government Ingestion Endpoint (`https://api-patrol.urosgeotechlab.com/api/webhooks/receiver`) per `Patrol360_Webhook_API_Integration_Guide.docx`:
 - **Canonical Government Event Types**: Standardized into `fire`, `crowd density`, `ANPR`, `smoke`, `face recognition`, `vehicle classification`, `weapon detection`, `BlackListPlate` (stolen/blacklisted vehicle plates), `BlackListFace` (wanted person/suspect watchlist matches), and exact edge alert types like `Stop`, `Start`, `Truck`.
-- **Extended Edge Payload Fields (Standardized Strict camelCase, Zero Duplicates)**:
-  - `eventType`: Canonical or edge event type (e.g. `"weapon detection"`, `"BlackListPlate"`, `"BlackListFace"`, `"Stop"`, `"Start"`, `"ANPR"`, `"Vehicle"`)
+- **Extended Edge Payload Fields (Standardized Strict Government Spec)**:
+  - `event`: Event lifecycle state (`"log.created"`, `"alert.acknowledged"`, `"alert.closed"`)
+  - `eventType`: Canonical or edge event type (e.g. `"face"`, `"weapon"`, `"fire"`, `"smoke"`, `"crowd"`, `"ANPR"`, `"BlackListPlate"`, `"Stop"`, `"Start"`)
+  - `eventId`: Unique integer alert ID (e.g. `5248`)
+  - `eventTitle`: Incident title (e.g. `"Blacklist Person Alert"`, `"Weapon Threat Alert"`)
+  - `eventLocation`: Human-readable location with coordinates (e.g. `"PoliceStation1 (23.0258, 72.5873)"`)
+  - `eventLatitude`: Float latitude (e.g. `23.0258`)
+  - `eventLongitude`: Float longitude (e.g. `72.5873`)
   - `vanId`: Police patrol unit (e.g. `"Van1"`)
   - `vanCameraId`: Camera channel integer (`1` to `4`)
+  - `vanNumber`: Patrol van registration number (e.g. `"GJ01HW1517"`)
   - `imageUrl`: Full HTTPS URL to the captured evidence frame
   - `videoClipUrl`: Dedicated MP4 or live RTSP streaming proxy URL
+  - `incident_clip`: Incident video clip URL or stored clip endpoint
   - `bitrate`: Video bitrate (e.g. `"4096 kbps"`)
   - `fps`: Frame rate integer (e.g. `25`)
   - `resolution`: Camera resolution (e.g. `"1920x1080"`)
   - `eventDescription`: Detailed incident description
-  - `confidence`: AI model confidence score float or null
+  - `confidence`: AI model confidence score numeric or null
   - `vehicleNumber`: Detected vehicle plate registration number
   - `numberOfPerson`: Detected person/crowd headcount integer or null
-  - `colorOfDetection`: Threat classification color (`"red"` = weapon/fire, `"pink"` = smoke/crowd, `"blue"` = face recognition/suspect, `"green"` = ANPR/vehicle/patrol)
+  - `colorOfDetection`: Threat classification color (`"red"`, `"pink"`, `"blue"`, `"green"`)
+  - `detectedAt`: ISO/SQL detection timestamp (e.g. `"2026-11-24 18:13:19"`)
+  - `createdAt`: ISO/SQL creation timestamp
+  - `message`: Complete structured JSON detail string for compliance parsing
 - **Alert Lifecycle Webhooks**: Automatically dispatches on creation (`log.created`), officer acknowledgment (`alert.acknowledged`), and closure/resolution (`alert.closed` with officer name, closure timestamp, and action taken).
 - `GET /api/gov-sync/status` - Live status of government webhook synchronization, queue counts, and endpoint health
 - `GET /api/gov-sync/queue` - Paginated inspection of the offline outbox queue (`central_api_dispatch_queue`)

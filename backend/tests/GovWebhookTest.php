@@ -52,11 +52,12 @@ class GovWebhookTest extends TestCase
         $this->assertArrayHasKey('event', $payload);
         $this->assertEquals('log.created', $payload['event']);
         $this->assertArrayHasKey('eventType', $payload);
-        $this->assertEquals('weapon detection', $payload['eventType']);
+        $this->assertEquals('weapon', $payload['eventType']);
         $this->assertArrayHasKey('videoClipUrl', $payload);
         $this->assertStringContainsString('/api/ai-alerts/9999/video', $payload['videoClipUrl']);
 
         // Clean client fields at root (strictly camelCase, zero duplicates)
+        $this->assertEquals(9999, $payload['eventId']);
         $this->assertEquals('Van1', $payload['vanId']);
         $this->assertEquals(1, $payload['vanCameraId']);
         $this->assertArrayHasKey('imageUrl', $payload);
@@ -66,6 +67,15 @@ class GovWebhookTest extends TestCase
         $this->assertEquals('High-threat firearm detected', $payload['eventDescription']);
         $this->assertEquals('red', $payload['colorOfDetection']);
         $this->assertEquals(96.5, $payload['confidence']);
+        $this->assertArrayHasKey('incident_clip', $payload);
+        $this->assertArrayHasKey('incidentClip', $payload);
+        $this->assertArrayHasKey('eventLocation', $payload);
+        $this->assertArrayHasKey('eventLatitude', $payload);
+        $this->assertArrayHasKey('eventLongitude', $payload);
+        $this->assertArrayHasKey('eventTitle', $payload);
+        $this->assertArrayHasKey('vanNumber', $payload);
+        $this->assertArrayHasKey('detectedAt', $payload);
+        $this->assertArrayHasKey('createdAt', $payload);
 
         // Verify old duplicate aliases are completely removed
         $this->assertArrayNotHasKey('event_type', $payload);
@@ -82,7 +92,7 @@ class GovWebhookTest extends TestCase
 
         // Data level
         $this->assertArrayHasKey('data', $payload);
-        $this->assertEquals('weapon detection', $payload['data']['eventType']);
+        $this->assertEquals('weapon', $payload['data']['eventType']);
         $this->assertEquals('Van1', $payload['data']['vanId']);
         $this->assertEquals(1, $payload['data']['vanCameraId']);
         $this->assertEquals('red', $payload['data']['colorOfDetection']);
@@ -97,7 +107,7 @@ class GovWebhookTest extends TestCase
         $this->assertEquals('Van1', $inner['vanId']);
         $this->assertEquals(1, $inner['vanCameraId']);
         $this->assertEquals('GJ-01-AB-1234', $inner['plateNumber']);
-        $this->assertEquals('weapon detection', $inner['eventType']);
+        $this->assertEquals('weapon', $inner['eventType']);
         $this->assertEquals('red', $inner['colorOfDetection']);
         $this->assertEquals(96.5, $inner['confidence']);
         $this->assertEquals('4096 kbps', $inner['bitrate']);
@@ -107,50 +117,45 @@ class GovWebhookTest extends TestCase
 
     public function testDetectionColorMappings(): void
     {
-        $this->assertEquals('red', GovWebhookService::resolveDetectionColor('weapon detection'));
+        $this->assertEquals('red', GovWebhookService::resolveDetectionColor('weapon'));
         $this->assertEquals('red', GovWebhookService::resolveDetectionColor('fire'));
-        $this->assertEquals('red', GovWebhookService::resolveDetectionColor('BlackListPlate'));
+        $this->assertEquals('red', GovWebhookService::resolveDetectionColor('plate'));
+        $this->assertEquals('red', GovWebhookService::resolveDetectionColor('face'));
         $this->assertEquals('pink', GovWebhookService::resolveDetectionColor('smoke'));
-        $this->assertEquals('pink', GovWebhookService::resolveDetectionColor('crowd density'));
-        $this->assertEquals('blue', GovWebhookService::resolveDetectionColor('face recognition'));
-        $this->assertEquals('blue', GovWebhookService::resolveDetectionColor('BlackListFace'));
+        $this->assertEquals('pink', GovWebhookService::resolveDetectionColor('crowd'));
         $this->assertEquals('green', GovWebhookService::resolveDetectionColor('ANPR'));
         $this->assertEquals('green', GovWebhookService::resolveDetectionColor('vehicle classification'));
     }
 
     public function testNormalizeEventTypeAllCanonicalTypes(): void
     {
-        // 1. fire
+        // 1. fire & smoke
         $this->assertEquals('fire', GovWebhookService::normalizeEventType('FIRE_ALERT'));
         $this->assertEquals('fire', GovWebhookService::normalizeEventType('BLAZE_DETECTED'));
+        $this->assertEquals('fire', GovWebhookService::normalizeEventType('SMOKE_HAZARD'));
 
-        // 2. crowd density
-        $this->assertEquals('crowd density', GovWebhookService::normalizeEventType('CROWD_GATHERING'));
-        $this->assertEquals('crowd density', GovWebhookService::normalizeEventType('overcrowding'));
+        // 2. crowd
+        $this->assertEquals('crowd', GovWebhookService::normalizeEventType('CROWD_GATHERING'));
+        $this->assertEquals('crowd', GovWebhookService::normalizeEventType('overcrowding'));
 
-        // 3. ANPR & BlackListPlate
-        $this->assertEquals('ANPR', GovWebhookService::normalizeEventType('ANPR_HIT'));
-        $this->assertEquals('BlackListPlate', GovWebhookService::normalizeEventType('BlackListPlate'));
-        $this->assertEquals('BlackListPlate', GovWebhookService::normalizeEventType('STOLEN_VEHICLE', ['scanned_vehicle_numberplate' => 'GJ01AB1234']));
-        $this->assertEquals('BlackListPlate', GovWebhookService::normalizeEventType('Blacklist', ['scanned_vehicle_numberplate' => 'GJ01AB1234']));
+        // 3. plate (ANPR & BlackListPlate)
+        $this->assertEquals('plate', GovWebhookService::normalizeEventType('ANPR_HIT'));
+        $this->assertEquals('plate', GovWebhookService::normalizeEventType('STOLEN_VEHICLE', ['scanned_vehicle_numberplate' => 'GJ01AB1234']));
+        $this->assertEquals('plate', GovWebhookService::normalizeEventType('BlackListPlate'));
 
-        // 4. smoke
-        $this->assertEquals('smoke', GovWebhookService::normalizeEventType('SMOKE_HAZARD'));
+        // 4. face (government API requires "face")
+        $this->assertEquals('face', GovWebhookService::normalizeEventType('FRS_MATCH'));
+        $this->assertEquals('face', GovWebhookService::normalizeEventType('WANTED_SUSPECT'));
+        $this->assertEquals('face', GovWebhookService::normalizeEventType('BlacklistPerson'));
 
-        // 5. face recognition & BlackListFace
-        $this->assertEquals('face recognition', GovWebhookService::normalizeEventType('FRS_MATCH'));
-        $this->assertEquals('BlackListFace', GovWebhookService::normalizeEventType('BlackListFace'));
-        $this->assertEquals('BlackListFace', GovWebhookService::normalizeEventType('BlacklistPerson'));
-        $this->assertEquals('BlackListFace', GovWebhookService::normalizeEventType('WANTED_SUSPECT'));
-
-        // 6. vehicle classification
+        // 5. vehicle classification
         $this->assertEquals('vehicle classification', GovWebhookService::normalizeEventType('VEHICLE_CLASSIFICATION'));
         $this->assertEquals('vehicle classification', GovWebhookService::normalizeEventType('HEAVY_VEHICLE_ALERT'));
 
-        // 7. weapon detection
-        $this->assertEquals('weapon detection', GovWebhookService::normalizeEventType('GUN'));
-        $this->assertEquals('weapon detection', GovWebhookService::normalizeEventType('KNIFE'));
-        $this->assertEquals('weapon detection', GovWebhookService::normalizeEventType('TACTICAL_THREAT'));
+        // 6. weapon
+        $this->assertEquals('weapon', GovWebhookService::normalizeEventType('GUN'));
+        $this->assertEquals('weapon', GovWebhookService::normalizeEventType('KNIFE'));
+        $this->assertEquals('weapon', GovWebhookService::normalizeEventType('TACTICAL_THREAT'));
     }
 
     public function testEnqueueAlertInsertsIntoDispatchQueue(): void

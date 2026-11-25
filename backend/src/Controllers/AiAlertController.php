@@ -87,6 +87,7 @@ class AiAlertController
         $confCol = in_array('confidence', $cols, true) ? "a.`confidence`" : "NULL AS `confidence`";
         $vehNumCol = in_array('vehicle_number', $cols, true) ? "a.`vehicle_number`" : "NULL AS `vehicle_number`";
         $numPersonCol = in_array('number_of_person', $cols, true) ? "a.`number_of_person`" : "NULL AS `number_of_person`";
+        $incClipCol = in_array('incident_clip', $cols, true) ? "a.`incident_clip`" : "NULL AS `incident_clip`";
 
         // Fetch records
         $sql = "
@@ -113,6 +114,7 @@ class AiAlertController
                 {$confCol},
                 {$vehNumCol},
                 {$numPersonCol},
+                {$incClipCol},
                 CASE 
                     WHEN a.`status` = 'O' THEN 'Open'
                     WHEN a.`status` = 'A' THEN 'Acknowledged'
@@ -236,16 +238,8 @@ class AiAlertController
             $sendip = trim(explode(',', $sendip)[0]);
         }
 
-        // Alert Type (support camelCase and snake_case variants)
-        $alerttype = !empty($body['alerttype']) 
-            ? trim($body['alerttype']) 
-            : (!empty($body['alert_type']) 
-                ? trim($body['alert_type']) 
-                : (!empty($body['eventType']) 
-                    ? trim($body['eventType']) 
-                    : (!empty($body['event_type']) 
-                        ? trim($body['event_type']) 
-                        : 'AI_DETECTION')));
+        // Alert Type
+        $alerttype = !empty($body['alerttype']) ? trim($body['alerttype']) : 'AI_DETECTION';
 
         // Location & ATMCode
         $location = !empty($body['location']) ? trim($body['location']) : null;
@@ -278,12 +272,9 @@ class AiAlertController
                 $stolenDetails = $stolenMatch;
                 $hitNotice = "[CRITICAL HOTLIST HIT: Plate {$plate} matched Stolen FIR #{$stolenMatch['fir_number']} - {$stolenMatch['police_station']}]";
                 $comment = $comment ? "{$comment} | {$hitNotice}" : $hitNotice;
-                if (in_array($alerttype, ['AI_DETECTION', 'ANPR', 'STOLEN_VEHICLE_MATCH', 'BlacklistPerson', 'BlackListFace'])) {
-                    $alerttype = 'BlackListPlate';
+                if ($alerttype === 'AI_DETECTION' || $alerttype === 'ANPR') {
+                    $alerttype = 'STOLEN_VEHICLE_MATCH';
                 }
-            } elseif (in_array(strtoupper($alerttype), ['BLACKLIST', 'BLACKLISTPLATE', 'BLACKLIST_PLATE', 'BLACKLISTPERSON', 'BLACKLISTFACE'])) {
-                // If a plate is attached and the alert was flagged as Blacklist, ensure it is BlackListPlate (not BlackListFace)
-                $alerttype = 'BlackListPlate';
             }
         }
 
@@ -310,6 +301,15 @@ class AiAlertController
             $numberOfPerson = (int)$body['person_count'];
         }
 
+        // incident_clip (URL or relative path to incident video clip)
+        $incidentClip = !empty($body['incident_clip']) 
+            ? trim((string)$body['incident_clip']) 
+            : (!empty($body['incidentClip']) 
+                ? trim((string)$body['incidentClip']) 
+                : (!empty($body['video_clip_url']) 
+                    ? trim((string)$body['video_clip_url']) 
+                    : (!empty($body['video_clip']) ? trim((string)$body['video_clip']) : null)));
+
         // Optional: save base64 image copy to public/uploads/alerts/YYYY/MM/DD for direct browser display
         $savedFileUrl = self::saveAlertImage($fileLoc, $vehicleId, $createtime);
         $fileLocToSave = $savedFileUrl; // Store relative image path (/uploads/alerts/YYYY/MM/DD/...) instead of multi-megabyte base64!
@@ -321,6 +321,7 @@ class AiAlertController
         $hasConfidence = in_array('confidence', $cols, true);
         $hasVehicleNumber = in_array('vehicle_number', $cols, true);
         $hasNumberOfPerson = in_array('number_of_person', $cols, true);
+        $hasIncidentClip = in_array('incident_clip', $cols, true);
 
         // Build dynamic insert columns and parameters
         $insertCols = [
@@ -367,6 +368,10 @@ class AiAlertController
         if ($hasNumberOfPerson) {
             $insertCols[] = '`number_of_person`';
             $insertVals[] = $numberOfPerson;
+        }
+        if ($hasIncidentClip) {
+            $insertCols[] = '`incident_clip`';
+            $insertVals[] = $incidentClip;
         }
 
         $colList = implode(', ', $insertCols);

@@ -120,26 +120,11 @@ class DashboardController
                 $category = 'WEAPON';
                 $severity = 'CRITICAL_RED';
                 $title = 'Weapon Threat: ' . $rawType;
-            } elseif (
-                $upperType === 'BLACKLISTPLATE' ||
-                str_contains($upperType, 'BLACKLIST_PLATE') ||
-                str_contains($upperType, 'BLACKLIST PLATE') ||
-                str_contains($upperType, 'STOLEN') ||
-                str_contains($upperType, 'HOTLIST') ||
-                (str_contains($upperType, 'BLACKLIST') && (!empty($row['scanned_vehicle_numberplate']) || !empty($row['vehicle_number']) || str_contains($upperType, 'PLATE') || str_contains($upperType, 'VEHICLE')))
-            ) {
+            } elseif (str_contains($upperType, 'STOLEN') || str_contains($upperType, 'HOTLIST')) {
                 $category = 'ANPR';
                 $severity = 'CRITICAL';
-                $title = 'Blacklist Plate Match: ' . $rawType;
-            } elseif (
-                $upperType === 'BLACKLISTFACE' ||
-                str_contains($upperType, 'BLACKLIST_FACE') ||
-                str_contains($upperType, 'BLACKLIST FACE') ||
-                str_contains($upperType, 'BLACKLIST') || 
-                str_contains($upperType, 'WANTED') || 
-                str_contains($upperType, 'SUSPECT') ||
-                str_contains($upperType, 'FACE')
-            ) {
+                $title = 'Stolen Vehicle Match: ' . $rawType;
+            } elseif (str_contains($upperType, 'BLACKLIST') || str_contains($upperType, 'WANTED') || str_contains($upperType, 'SUSPECT')) {
                 $category = 'FRS';
                 $severity = 'HIGH';
                 $title = 'Watchlist Match: ' . $rawType;
@@ -219,7 +204,7 @@ class DashboardController
                 'vehicle_number'        => $plateNum,
                 'number_of_person'      => $row['number_of_person'] !== null ? (int)$row['number_of_person'] : null,
                 'status'                => $row['status'] ?: '0',
-                'is_stolen_match'       => str_contains($upperType, 'STOLEN') || str_contains($upperType, 'HOTLIST') || ($category === 'ANPR' && str_contains($upperType, 'BLACKLIST')),
+                'is_stolen_match'       => str_contains($upperType, 'STOLEN') || str_contains($upperType, 'HOTLIST'),
                 'fir_reference'         => "Alert #{$id} ({$rawType})"
             ];
         }
