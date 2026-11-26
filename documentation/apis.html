@@ -1,12 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Patrol360 | REST APIs & Webhook Specifications</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet">
   <style>
     :root {
       --background: #f8fafc;
@@ -25,47 +28,174 @@
       --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       --font-mono: 'JetBrains Mono', monospace;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background-color: var(--background); color: var(--foreground); font-family: var(--font-sans); line-height: 1.5; font-size: 13px; padding-bottom: 60px; }
-    
-    header.nav-header {
-      position: sticky; top: 0; z-index: 50; background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(8px); border-bottom: 1px solid var(--border); padding: 0.6rem 1.5rem;
-    }
-    .nav-inner { max-width: 1240px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
-    .brand { display: flex; align-items: center; gap: 8px; text-decoration: none; color: inherit; font-weight: 700; font-size: 14px; }
-    .nav-links { display: flex; align-items: center; gap: 6px; }
-    .nav-link {
-      padding: 6px 12px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 500;
-      color: var(--muted-foreground); text-decoration: none; transition: all 0.15s ease;
-    }
-    .nav-link:hover { color: var(--foreground); background: var(--secondary); }
-    .nav-link.active { background: #09090b; color: #fff; font-weight: 600; }
 
-    .container { max-width: 1240px; margin: 1.5rem auto 0; padding: 0 1.5rem; }
-    .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); padding: 1.25rem 1.5rem; margin-bottom: 1.25rem; }
-    .card-title { font-size: 15px; font-weight: 700; color: #09090b; margin-bottom: 0.5rem; display: flex; align-items: center; justify-content: space-between; }
-    
-    .badge { display: inline-flex; align-items: center; border-radius: var(--radius-full); padding: 2px 8px; font-size: 11px; font-weight: 600; border: 1px solid transparent; }
-    .badge-post { background: #ecfdf5; border-color: #a7f3d0; color: #047857; font-family: var(--font-mono); font-size: 11px; }
-    .badge-get { background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; font-family: var(--font-mono); font-size: 11px; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--background);
+      color: var(--foreground);
+      font-family: var(--font-sans);
+      line-height: 1.5;
+      font-size: 13px;
+      padding-bottom: 60px;
+    }
+
+    header.nav-header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+      padding: 0.6rem 1.5rem;
+    }
+
+    .nav-inner {
+      max-width: 1240px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+      color: inherit;
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .nav-link {
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--muted-foreground);
+      text-decoration: none;
+      transition: all 0.15s ease;
+    }
+
+    .nav-link:hover {
+      color: var(--foreground);
+      background: var(--secondary);
+    }
+
+    .nav-link.active {
+      background: #09090b;
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .container {
+      max-width: 1240px;
+      margin: 1.5rem auto 0;
+      padding: 0 1.5rem;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #09090b;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: var(--radius-full);
+      padding: 2px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      border: 1px solid transparent;
+    }
+
+    .badge-post {
+      background: #ecfdf5;
+      border-color: #a7f3d0;
+      color: #047857;
+      font-family: var(--font-mono);
+      font-size: 11px;
+    }
+
+    .badge-get {
+      background: #eff6ff;
+      border-color: #bfdbfe;
+      color: #1d4ed8;
+      font-family: var(--font-mono);
+      font-size: 11px;
+    }
 
     .code-container {
-      background: #09090b; color: #fafafa; border-radius: var(--radius-md); overflow: hidden; margin: 0.75rem 0; border: 1px solid #27272a;
+      background: #09090b;
+      color: #fafafa;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      margin: 0.75rem 0;
+      border: 1px solid #27272a;
     }
+
     .code-header {
-      background: #18181b; padding: 6px 12px; display: flex; justify-content: space-between; align-items: center;
-      font-size: 11px; font-family: var(--font-mono); color: #a1a1aa; border-bottom: 1px solid #27272a;
+      background: #18181b;
+      padding: 6px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      color: #a1a1aa;
+      border-bottom: 1px solid #27272a;
     }
-    .code-body { padding: 12px 14px; font-family: var(--font-mono); font-size: 12px; line-height: 1.6; overflow-x: auto; }
-    
+
+    .code-body {
+      padding: 12px 14px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      line-height: 1.6;
+      overflow-x: auto;
+    }
+
     .btn-sm {
-      background: #27272a; color: #fff; border: 1px solid #3f3f46; border-radius: 4px;
-      padding: 3px 8px; font-size: 11px; cursor: pointer; font-family: var(--font-sans);
+      background: #27272a;
+      color: #fff;
+      border: 1px solid #3f3f46;
+      border-radius: 4px;
+      padding: 3px 8px;
+      font-size: 11px;
+      cursor: pointer;
+      font-family: var(--font-sans);
     }
-    .btn-sm:hover { background: #3f3f46; }
+
+    .btn-sm:hover {
+      background: #3f3f46;
+    }
   </style>
 </head>
+
 <body>
 
   <!-- SHARED NAVIGATION BAR -->
@@ -73,16 +203,17 @@
     <div class="nav-inner">
       <a href="index.html" class="brand">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-          <path d="M12 8v4"/>
-          <path d="M12 16h.01"/>
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          <path d="M12 8v4" />
+          <path d="M12 16h.01" />
         </svg>
         Patrol360 Documentation
       </a>
       <nav class="nav-links">
         <a href="index.html" class="nav-link">🖥️ Live Dashboard</a>
         <a href="backend/fleet.html" class="nav-link" style="color: #2563eb; font-weight: 700;">🚘 Fleet & Cameras</a>
-        <a href="backend/api_documentation.html" class="nav-link" style="color: #059669; font-weight: 700;">⚡ Swagger Tester</a>
+        <a href="backend/api_documentation.html" class="nav-link" style="color: #059669; font-weight: 700;">⚡ Swagger
+          Tester</a>
         <a href="backend/db_sync.html" class="nav-link" style="color: #d97706; font-weight: 700;">🔄 DB Sync</a>
         <a href="analysis.html" class="nav-link">📊 System Analysis</a>
         <a href="apis.html" class="nav-link active">🔌 APIs & Webhooks</a>
@@ -95,22 +226,29 @@
 
   <main class="container">
     <div style="margin-bottom: 1.5rem;">
-      <span class="badge" style="background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; margin-bottom: 6px;">ICCC EVENT SPECIFICATION</span>
-      <h1 style="font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em;">Patrol360 REST APIs & Event Push Contracts</h1>
+      <span class="badge"
+        style="background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; margin-bottom: 6px;">ICCC EVENT
+        SPECIFICATION</span>
+      <h1 style="font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em;">Patrol360 REST APIs & Event Push
+        Contracts</h1>
       <p style="color: var(--muted-foreground); font-size: 13px;">
-        Standardized JSON payloads sent in real-time from the patrol car edge computer to the Police Command & Control Centre (ICCC).
+        Standardized JSON payloads sent in real-time from the patrol car edge computer to the Police Command & Control
+        Centre (ICCC).
       </p>
     </div>
 
     <!-- ROLE SWITCHER TABS (Officer vs Admin vs All) -->
     <div style="display: flex; gap: 10px; margin-bottom: 1.5rem; flex-wrap: wrap;">
-      <button class="btn-role-tab active" id="btnTabOfficer" onclick="switchRoleTab('officer')" style="padding: 10px 18px; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; border: 2px solid #059669; background: #ecfdf5; color: #065f46; display: flex; align-items: center; gap: 8px;">
+      <button class="btn-role-tab active" id="btnTabOfficer" onclick="switchRoleTab('officer')"
+        style="padding: 10px 18px; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; border: 2px solid #059669; background: #ecfdf5; color: #065f46; display: flex; align-items: center; gap: 8px;">
         👮 Officer & User APIs (Non-Admin Field Operations)
       </button>
-      <button class="btn-role-tab" id="btnTabAdmin" onclick="switchRoleTab('admin')" style="padding: 10px 18px; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; border: 2px solid #e2e8f0; background: #fff; color: #475569; display: flex; align-items: center; gap: 8px;">
+      <button class="btn-role-tab" id="btnTabAdmin" onclick="switchRoleTab('admin')"
+        style="padding: 10px 18px; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; border: 2px solid #e2e8f0; background: #fff; color: #475569; display: flex; align-items: center; gap: 8px;">
         👑 Admin-Only APIs (Supervision & Setup)
       </button>
-      <button class="btn-role-tab" id="btnTabAll" onclick="switchRoleTab('all')" style="padding: 10px 18px; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; border: 2px solid #e2e8f0; background: #fff; color: #475569; display: flex; align-items: center; gap: 8px;">
+      <button class="btn-role-tab" id="btnTabAll" onclick="switchRoleTab('all')"
+        style="padding: 10px 18px; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; border: 2px solid #e2e8f0; background: #fff; color: #475569; display: flex; align-items: center; gap: 8px;">
         🌟 All APIs
       </button>
     </div>
@@ -125,7 +263,8 @@
         <span style="font-size: 12px; color: var(--muted-foreground);">Number Plate & Stolen Car Alert</span>
       </div>
       <p style="color: #52525b; font-size: 12px; margin-bottom: 0.5rem;">
-        Triggered when a vehicle license plate is recognized. If the plate matches the stolen vehicle registry, <code>is_blacklisted</code> is set to <code>true</code>.
+        Triggered when a vehicle license plate is recognized. If the plate matches the stolen vehicle registry,
+        <code>is_blacklisted</code> is set to <code>true</code>.
       </p>
       <div class="code-container">
         <div class="code-header">
@@ -282,12 +421,18 @@
         <div style="display: flex; align-items: center; gap: 8px;">
           <span class="badge badge-get">GET</span>
           <span style="font-family: var(--font-mono); font-size: 14px;">/api/vehicles/:id</span>
-          <span style="background: #e0f2fe; color: #0369a1; font-size: 11px; padding: 2px 8px; border-radius: 9999px; font-weight: 600;">Fleet & Cameras</span>
+          <span
+            style="background: #e0f2fe; color: #0369a1; font-size: 11px; padding: 2px 8px; border-radius: 9999px; font-weight: 600;">Fleet
+            & Cameras</span>
         </div>
-        <span style="font-size: 12px; color: var(--muted-foreground);">Vehicle Profile, Telemetry & Multi-Camera Live Feeds</span>
+        <span style="font-size: 12px; color: var(--muted-foreground);">Vehicle Profile, Telemetry & Multi-Camera Live
+          Feeds</span>
       </div>
       <p style="color: #52525b; font-size: 12px; margin-bottom: 0.5rem;">
-        Query single patrol vehicle profile, current GPS telemetry, and joined <code>vehicle_cameras</code> array decorated with 7 DVR configuration columns (<code>username</code>, <code>password</code>, <code>dvrname</code>, <code>ip</code>, <code>dvr_port</code>, <code>rtsp_port</code>, <code>channel</code>) and the auto-generated live view streaming URL for Port 7000:<br>
+        Query single patrol vehicle profile, current GPS telemetry, and joined <code>vehicle_cameras</code> array
+        decorated with 7 DVR configuration columns (<code>username</code>, <code>password</code>, <code>dvrname</code>,
+        <code>ip</code>, <code>dvr_port</code>, <code>rtsp_port</code>, <code>channel</code>) and the auto-generated
+        live view streaming URL for Port 7000:<br>
         <code>http://223.182.122.63:7000/?name={user}-{pass}-{ip}-{port}-{dvrname}-{channel}</code>
       </p>
       <div class="code-container">
@@ -347,12 +492,20 @@
         <div style="display: flex; align-items: center; gap: 8px;">
           <span class="badge badge-get">GET</span>
           <span style="font-family: var(--font-mono); font-size: 14px;">/api/cameras/:id/stream</span>
-          <span style="background: #dcfce7; color: #15803d; font-size: 11px; padding: 2px 8px; border-radius: 9999px; font-weight: 600;">Public Live Stream</span>
+          <span
+            style="background: #dcfce7; color: #15803d; font-size: 11px; padding: 2px 8px; border-radius: 9999px; font-weight: 600;">Public
+            Live Stream</span>
         </div>
-        <span style="font-size: 12px; color: var(--muted-foreground);">Live MJPEG Video Stream Proxy (HTTPS Safe / No Auth for &lt;img&gt; tags)</span>
+        <span style="font-size: 12px; color: var(--muted-foreground);">Live MJPEG Video Stream Proxy (HTTPS Safe / No
+          Auth for &lt;img&gt; tags)</span>
       </div>
       <p style="color: #52525b; font-size: 12px; margin-bottom: 0.5rem;">
-        <strong>⚡ Live Stream HTTPS Proxy:</strong> Proxies real-time <code>multipart/x-mixed-replace; boundary=frame</code> MJPEG video streams from edge gateway <code>http://223.182.122.63:7000</code>. Resolves browser Mixed Content blocking and SSL protocol errors (<code>net::ERR_SSL_PROTOCOL_ERROR</code>) on production HTTPS domains (e.g. <code>patrol360.sarsspl.com</code>). Also available as <code>GET /api/cameras/stream?name={user}-{pass}-{ip}-{port}-{dvrname}-{channel}</code>.
+        <strong>⚡ Live Stream HTTPS Proxy:</strong> Proxies real-time
+        <code>multipart/x-mixed-replace; boundary=frame</code> MJPEG video streams from edge gateway
+        <code>http://223.182.122.63:7000</code>. Resolves browser Mixed Content blocking and SSL protocol errors
+        (<code>net::ERR_SSL_PROTOCOL_ERROR</code>) on production HTTPS domains (e.g.
+        <code>patrol360.sarsspl.com</code>). Also available as
+        <code>GET /api/cameras/stream?name={user}-{pass}-{ip}-{port}-{dvrname}-{channel}</code>.
       </p>
       <div class="code-container">
         <div class="code-header">
@@ -372,12 +525,20 @@
         <div style="display: flex; align-items: center; gap: 8px;">
           <span class="badge badge-post">POST</span>
           <span style="font-family: var(--font-mono); font-size: 14px;">/api/ai-alerts</span>
-          <span style="background: #e2e8f0; color: #334155; font-size: 11px; padding: 2px 8px; border-radius: 9999px; font-weight: 600;">Public / No Auth</span>
+          <span
+            style="background: #e2e8f0; color: #334155; font-size: 11px; padding: 2px 8px; border-radius: 9999px; font-weight: 600;">Public
+            / No Auth</span>
         </div>
-        <span style="font-size: 12px; color: var(--muted-foreground);">Real-Time Edge AI Alerts Table (Continuous Public Stream)</span>
+        <span style="font-size: 12px; color: var(--muted-foreground);">Real-Time Edge AI Alerts Table (Continuous Public
+          Stream)</span>
       </div>
       <p style="color: #52525b; font-size: 12px; margin-bottom: 0.5rem;">
-        <strong>⚡ Public Ingestion (No Bearer Token):</strong> Direct continuous ingestion into the <code>ai_alerts</code> relational table with automatic base64 surveillance frame conversion to date-partitioned physical image files in <code>/uploads/alerts/YYYY/MM/DD/</code> (with legacy single-folder files preserved), vehicle and camera binding, GPS coordinates, automatic stolen watchlist plate matching, and status management (<code>O</code> = Open, <code>C</code> = Closed). Dispatched webhooks send image URLs only (zero base64 payload bloat). AI cameras and edge units can stream alerts without holding a JWT token.
+        <strong>⚡ Public Ingestion (No Bearer Token):</strong> Direct continuous ingestion into the
+        <code>ai_alerts</code> relational table with automatic base64 surveillance frame conversion to date-partitioned
+        physical image files in <code>/uploads/alerts/YYYY/MM/DD/</code> (with legacy single-folder files preserved),
+        vehicle and camera binding, GPS coordinates, automatic stolen watchlist plate matching, and status management
+        (<code>O</code> = Open, <code>C</code> = Closed). Dispatched webhooks send image URLs only (zero base64 payload
+        bloat). AI cameras and edge units can stream alerts without holding a JWT token.
       </p>
       <div class="code-container">
         <div class="code-header">
@@ -393,7 +554,7 @@
   "alerttype": "ANPR_HOTLIST_MATCH",
   "confidence": 95.50,
   "scanned_vehicle_numberplate": "MH12DE1432",
-  "vehicle_number": "MH12DE1432",
+  "vehicle_number": "GJ01HW1517",
   "number_of_person": 1,
   "incident_clip": "https://sarsspl.com/patrol360/backend/public/api/ai-alerts/5248/video",
   "ATMCode": "ATM-SBI-001",
@@ -406,18 +567,23 @@
       </div>
     </div>
 
-        <!-- 5b. REAL-TIME AI ALERT MEDIA STREAMING -->
+    <!-- 5b. REAL-TIME AI ALERT MEDIA STREAMING -->
     <div class="card api-card" data-role="both">
       <div class="card-title">
         <div style="display: flex; align-items: center; gap: 8px;">
           <span class="badge badge-get">GET</span>
           <span style="font-family: var(--font-mono); font-size: 14px;">/api/ai-alerts/:id/video</span>
-          <span style="background: #e2e8f0; color: #334155; font-size: 11px; padding: 2px 8px; border-radius: 9999px; font-weight: 600;">Public Video Stream</span>
+          <span
+            style="background: #e2e8f0; color: #334155; font-size: 11px; padding: 2px 8px; border-radius: 9999px; font-weight: 600;">Public
+            Video Stream</span>
         </div>
-        <span style="font-size: 12px; color: var(--muted-foreground);">Alert Incident Video Clip or Live Vehicle Camera Stream</span>
+        <span style="font-size: 12px; color: var(--muted-foreground);">Alert Incident Video Clip or Live Vehicle Camera
+          Stream</span>
       </div>
       <p style="color: #52525b; font-size: 12px; margin-bottom: 0.5rem;">
-        Streams recorded MP4 video evidence of the alert or dynamically redirects with HTTP 302 to the detecting vehicle's mounted RTSP camera feed. Also companion endpoint <code>GET /api/ai-alerts/:id/image</code> streams the binary JPEG/PNG surveillance frame.
+        Streams recorded MP4 video evidence of the alert or dynamically redirects with HTTP 302 to the detecting
+        vehicle's mounted RTSP camera feed. Also companion endpoint <code>GET /api/ai-alerts/:id/image</code> streams
+        the binary JPEG/PNG surveillance frame.
       </p>
     </div>
     <!-- 5c. DEDICATED WANTED SUSPECTS (FRS) SECTION API -->
@@ -426,13 +592,25 @@
         <div style="display: flex; align-items: center; gap: 8px;">
           <span class="badge badge-get">GET</span>
           <span style="font-family: var(--font-mono); font-size: 14px;">/api/reports/wanted-suspects</span>
-          <span style="background: #fee2e2; color: #991b1b; font-size: 11px; padding: 2px 8px; border-radius: 9999px; font-weight: 600;">Wanted Suspects FRS</span>
+          <span
+            style="background: #fee2e2; color: #991b1b; font-size: 11px; padding: 2px 8px; border-radius: 9999px; font-weight: 600;">Wanted
+            Suspects FRS</span>
         </div>
-        <span style="font-size: 12px; color: var(--muted-foreground);">Complete Criminal Dossier &amp; Biometric Profile API</span>
+        <span style="font-size: 12px; color: var(--muted-foreground);">Complete Criminal Dossier &amp; Biometric Profile
+          API</span>
       </div>
       <p style="color: #52525b; font-size: 12px; margin-bottom: 0.5rem;">
-        <strong>🚨 Dedicated Wanted Suspects Section API:</strong> Backed dynamically by the <code>ai_alerts</code> table filtered by <code>alerttype</code> (<code>Person</code>, <code>Person1</code>, <code>Wanted Suspect</code>, <code>FRS Watchlist</code>). Query all registered wanted offenders with complete criminal dossiers, FIR numbers, court warrant dates, biometric match confidence, bounty rewards, associated vehicles, residential addresses, and status (<code>WANTED</code>, <code>APPREHENDED</code>). Also available as <code>/api/wanted-suspects</code> and single dossier <code>GET /api/reports/wanted-suspects/:id</code>.<br>
-        <strong>👤 Person Watchlist Registry &amp; Photo Upload:</strong> Manage blacklisted persons in <code>person_watchlist</code> via <code>GET/POST /api/watchlist/persons</code>, <code>PUT/DELETE /api/watchlist/persons/:id</code>, upload face images via <code>POST /api/watchlist/persons/:id/photo</code>, and serve images via public <code>GET /api/watchlist/persons/:id/photo</code>.
+        <strong>🚨 Dedicated Wanted Suspects Section API:</strong> Backed dynamically by the <code>ai_alerts</code>
+        table filtered by <code>alerttype</code> (<code>Person</code>, <code>Person1</code>,
+        <code>Wanted Suspect</code>, <code>FRS Watchlist</code>). Query all registered wanted offenders with complete
+        criminal dossiers, FIR numbers, court warrant dates, biometric match confidence, bounty rewards, associated
+        vehicles, residential addresses, and status (<code>WANTED</code>, <code>APPREHENDED</code>). Also available as
+        <code>/api/wanted-suspects</code> and single dossier <code>GET /api/reports/wanted-suspects/:id</code>.<br>
+        <strong>👤 Person Watchlist Registry &amp; Photo Upload:</strong> Manage blacklisted persons in
+        <code>person_watchlist</code> via <code>GET/POST /api/watchlist/persons</code>,
+        <code>PUT/DELETE /api/watchlist/persons/:id</code>, upload face images via
+        <code>POST /api/watchlist/persons/:id/photo</code>, and serve images via public
+        <code>GET /api/watchlist/persons/:id/photo</code>.
       </p>
       <div class="code-container">
         <div class="code-header">
@@ -476,12 +654,21 @@
         <div style="display: flex; align-items: center; gap: 8px;">
           <span class="badge badge-get">GET</span>
           <span style="font-family: var(--font-mono); font-size: 14px;">/api/reports/weapons-threats</span>
-          <span style="background: #ffedd5; color: #9a3412; font-size: 11px; padding: 2px 8px; border-radius: 9999px; font-weight: 600;">Weapons Detection</span>
+          <span
+            style="background: #ffedd5; color: #9a3412; font-size: 11px; padding: 2px 8px; border-radius: 9999px; font-weight: 600;">Weapons
+            Detection</span>
         </div>
-        <span style="font-size: 12px; color: var(--muted-foreground);">Real-Time Tactical Weapon Threats &amp; Dispatch Status API</span>
+        <span style="font-size: 12px; color: var(--muted-foreground);">Real-Time Tactical Weapon Threats &amp; Dispatch
+          Status API</span>
       </div>
       <p style="color: #52525b; font-size: 12px; margin-bottom: 0.5rem;">
-        <strong>🎯 Dedicated Weapons Threats Section API:</strong> Backed dynamically by the <code>ai_alerts</code> table filtered by <code>alerttype</code> (<code>Handgun</code>, <code>Tactical Firearm</code>, <code>Combat Machete</code>, <code>Knife</code>, <code>Blade</code>). Query real-time weapon detection events with YOLOv8 confidence scores, patrol vehicle number plates, camera channel, GPS coordinates, police station, and incident status (<code>DISPATCHED</code>, <code>INVESTIGATING</code>, <code>NEUTRALIZED</code>). Also accessible via aliases <code>/api/reports/weapons-detection</code>, <code>/api/weapons-threats</code>, with status updating via <code>PUT /api/reports/weapons-threats/:id/status</code>.
+        <strong>🎯 Dedicated Weapons Threats Section API:</strong> Backed dynamically by the <code>ai_alerts</code>
+        table filtered by <code>alerttype</code> (<code>Handgun</code>, <code>Tactical Firearm</code>,
+        <code>Combat Machete</code>, <code>Knife</code>, <code>Blade</code>). Query real-time weapon detection events
+        with YOLOv8 confidence scores, patrol vehicle number plates, camera channel, GPS coordinates, police station,
+        and incident status (<code>DISPATCHED</code>, <code>INVESTIGATING</code>, <code>NEUTRALIZED</code>). Also
+        accessible via aliases <code>/api/reports/weapons-detection</code>, <code>/api/weapons-threats</code>, with
+        status updating via <code>PUT /api/reports/weapons-threats/:id/status</code>.
       </p>
       <div class="code-container">
         <div class="code-header">
@@ -524,18 +711,25 @@
         <div style="display: flex; align-items: center; gap: 8px;">
           <span class="badge" style="background: #10b981; color: #fff;">OFFICER</span>
           <span style="font-family: var(--font-mono); font-size: 14px;">/api/officer/*</span>
-          <span style="background: #d1fae5; color: #065f46; font-size: 11px; padding: 2px 8px; border-radius: 9999px; font-weight: 600;">Officer / Field User</span>
+          <span
+            style="background: #d1fae5; color: #065f46; font-size: 11px; padding: 2px 8px; border-radius: 9999px; font-weight: 600;">Officer
+            / Field User</span>
         </div>
-        <span style="font-size: 12px; color: var(--muted-foreground);">Officer Operations, AI Alerts Monitoring, Plate Dossier & HITL Actions</span>
+        <span style="font-size: 12px; color: var(--muted-foreground);">Officer Operations, AI Alerts Monitoring, Plate
+          Dossier & HITL Actions</span>
       </div>
       <p style="color: #52525b; font-size: 12px; margin-bottom: 0.5rem;">
-        Dedicated tactical API suite for patrol officers, duty officers, and field operators centered around <code>ai_alerts</code>. Enables non-admin officers to monitor live vehicle alerts, stream camera frames, acknowledge threats, record field actions, and perform real-time hotlist lookups.
+        Dedicated tactical API suite for patrol officers, duty officers, and field operators centered around
+        <code>ai_alerts</code>. Enables non-admin officers to monitor live vehicle alerts, stream camera frames,
+        acknowledge threats, record field actions, and perform real-time hotlist lookups.
       </p>
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px; margin-bottom: 12px; font-size: 12px;">
+      <div
+        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px; margin-bottom: 12px; font-size: 12px;">
         <div style="background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0;">
           <strong>📊 Command Dashboard Stats</strong><br>
           <code>GET /api/dashboard/stats</code><br>
-          <span style="color: #64748b;">Real-time metrics: Fleet, cameras, live AI alerts, FRS, ANPR, raw alert types, and edge threat feed.</span>
+          <span style="color: #64748b;">Real-time metrics: Fleet, cameras, live AI alerts, FRS, ANPR, raw alert types,
+            and edge threat feed.</span>
         </div>
         <div style="background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0;">
           <strong>📊 Officer Dashboard & Metrics</strong><br>
@@ -545,17 +739,20 @@
         <div style="background: #f0fdf4; padding: 10px; border-radius: 6px; border: 1px solid #86efac;">
           <strong>👤 My Activity Only (Edge Cockpit)</strong><br>
           <code>GET /api/officer/my-activity</code><br>
-          <span style="color: #166534;">In-Vehicle Edge payload: Officer identity, assigned vehicle, 4 RTSP cameras, live GPS telemetry, duty stats & personal alerts.</span>
+          <span style="color: #166534;">In-Vehicle Edge payload: Officer identity, assigned vehicle, 4 RTSP cameras,
+            live GPS telemetry, duty stats & personal alerts.</span>
         </div>
         <div style="background: #eff6ff; padding: 10px; border-radius: 6px; border: 1px solid #93c5fd;">
           <strong>🌐 City Fleet Grid Activity</strong><br>
           <code>GET /api/officer/fleet-activity</code><br>
-          <span style="color: #1e40af;">Situational awareness: Status & GPS for all 6 patrol vans, active cameras & citywide alert metrics.</span>
+          <span style="color: #1e40af;">Situational awareness: Status & GPS for all 6 patrol vans, active cameras &
+            citywide alert metrics.</span>
         </div>
         <div style="background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0;">
           <strong>🚨 Scoped Alerts Feed</strong><br>
           <code>GET /api/officer/alerts?scope=my|all</code><br>
-          <span style="color: #64748b;">Filter by scope (my unit vs all fleet), status, vehicle, plate, type. Lightweight payload.</span>
+          <span style="color: #64748b;">Filter by scope (my unit vs all fleet), status, vehicle, plate, type.
+            Lightweight payload.</span>
         </div>
         <div style="background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0;">
           <strong>⚡ Live Stream Polling</strong><br>
@@ -607,23 +804,32 @@
         <div style="display: flex; align-items: center; gap: 8px;">
           <span class="badge" style="background: #7c3aed; color: #fff;">BIOMETRICS</span>
           <span style="font-family: var(--font-mono); font-size: 14px;">/api/users/:id/face-encoding & /api/users</span>
-          <span style="background: #f5f3ff; color: #6d28d9; font-size: 11px; padding: 2px 8px; border-radius: 9999px; font-weight: 600;">Python Face AI Integration</span>
+          <span
+            style="background: #f5f3ff; color: #6d28d9; font-size: 11px; padding: 2px 8px; border-radius: 9999px; font-weight: 600;">Python
+            Face AI Integration</span>
         </div>
-        <span style="font-size: 12px; color: var(--muted-foreground);">2-Step Officer Onboarding & 512-D Neural Facial Encoding</span>
+        <span style="font-size: 12px; color: var(--muted-foreground);">2-Step Officer Onboarding & 512-D Neural Facial
+          Encoding</span>
       </div>
       <p style="color: #52525b; font-size: 12px; margin-bottom: 0.5rem;">
-        End-to-end 2-step officer provisioning workflow. Step 1 saves the officer record into MySQL <code>users</code> table, generating their <code>userId</code>. Step 2 uploads a frontal face photo to the Python AI service (<code>http://195.35.7.83:5051/generatefaceencoding_file</code>), which generates the 512-D neural biometric face encoding and saves it directly into the <code>users.faceEncoding</code> BLOB column.
+        End-to-end 2-step officer provisioning workflow. Step 1 saves the officer record into MySQL <code>users</code>
+        table, generating their <code>userId</code>. Step 2 uploads a frontal face photo to the Python AI service
+        (<code>http://195.35.7.83:5051/generatefaceencoding_file</code>), which generates the 512-D neural biometric
+        face encoding and saves it directly into the <code>users.faceEncoding</code> BLOB column.
       </p>
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px; margin-bottom: 12px; font-size: 12px;">
+      <div
+        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px; margin-bottom: 12px; font-size: 12px;">
         <div style="background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0;">
           <strong>📝 Step 1: Officer Record Creation</strong><br>
           <code>POST /api/users</code><br>
-          <span style="color: #64748b;">Registers officer name, email, badge, station, role, returns <code>userId</code>.</span>
+          <span style="color: #64748b;">Registers officer name, email, badge, station, role, returns
+            <code>userId</code>.</span>
         </div>
         <div style="background: #f5f3ff; padding: 10px; border-radius: 6px; border: 1px solid #c4b5fd;">
           <strong>📸 Step 2: Face Biometric Enrollment</strong><br>
           <code>POST /api/users/:id/face-encoding</code><br>
-          <span style="color: #6d28d9;">Uploads officer photo, calls Python AI (195.35.7.83:5051) with <code>emp_id</code> and <code>image</code>, stores 512-D embedding in DB.</span>
+          <span style="color: #6d28d9;">Uploads officer photo, calls Python AI (195.35.7.83:5051) with
+            <code>emp_id</code> and <code>image</code>, stores 512-D embedding in DB.</span>
         </div>
         <div style="background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0;">
           <strong>🖼️ Officer Photo Serving</strong><br>
@@ -661,14 +867,21 @@
         <div style="display: flex; align-items: center; gap: 8px;">
           <span class="badge" style="background: #6366f1; color: #fff;">GOV-SYNC</span>
           <span style="font-family: var(--font-mono); font-size: 14px;">/api/gov-sync/* & /api/webhooks/receiver</span>
-          <span style="background: #ede9fe; color: #5b21b6; font-size: 11px; padding: 2px 8px; border-radius: 9999px; font-weight: 600;">Government Cloud Webhook</span>
+          <span
+            style="background: #ede9fe; color: #5b21b6; font-size: 11px; padding: 2px 8px; border-radius: 9999px; font-weight: 600;">Government
+            Cloud Webhook</span>
         </div>
-        <span style="font-size: 12px; color: var(--muted-foreground);">External State Police Ingestion (api-patrol.urosgeotechlab.com)</span>
+        <span style="font-size: 12px; color: var(--muted-foreground);">External State Police Ingestion
+          (api-patrol.urosgeotechlab.com)</span>
       </div>
       <p style="color: #52525b; font-size: 12px; margin-bottom: 0.5rem;">
-        Implements integration with Central Government Ingestion Endpoint per <code>Patrol360_Webhook_API_Integration_Guide.docx</code>. Provides guaranteed delivery via local <code>central_api_dispatch_queue</code>, automated payload formatting, x-api-key / x-api-secret header authentication, and government record ID indexing.
+        Implements integration with Central Government Ingestion Endpoint per
+        <code>Patrol360_Webhook_API_Integration_Guide.docx</code>. Provides guaranteed delivery via local
+        <code>central_api_dispatch_queue</code>, automated payload formatting, x-api-key / x-api-secret header
+        authentication, and government record ID indexing.
       </p>
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px; margin-bottom: 12px; font-size: 12px;">
+      <div
+        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px; margin-bottom: 12px; font-size: 12px;">
         <div style="background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0;">
           <strong>📊 Sync Status & Metrics</strong><br>
           <code>GET /api/gov-sync/status</code><br>
@@ -677,32 +890,38 @@
         <div style="background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0;">
           <strong>📋 Outbox Queue Inspection</strong><br>
           <code>GET /api/gov-sync/queue?page=1&limit=20</code><br>
-          <span style="color: #64748b;">Paginated list of dispatched, queued, and failed records with external item IDs.</span>
+          <span style="color: #64748b;">Paginated list of dispatched, queued, and failed records with external item
+            IDs.</span>
         </div>
         <div style="background: #eff6ff; padding: 10px; border-radius: 6px; border: 1px solid #bfdbfe;">
           <strong>📊 Gov Synced Dataset</strong><br>
           <code>GET /api/gov-sync/synced</code><br>
-          <span style="color: #1e40af;">Full JSON array of all alerts & events successfully synchronized with government portal.</span>
+          <span style="color: #1e40af;">Full JSON array of all alerts & events successfully synchronized with government
+            portal.</span>
         </div>
         <div style="background: #eff6ff; padding: 10px; border-radius: 6px; border: 1px solid #bfdbfe;">
           <strong>📑 Download Gov Synced Excel Report</strong><br>
           <code>GET /api/gov-sync/export/excel</code><br>
-          <span style="color: #1e40af;">Instant streaming Excel audit dossier (CSV with UTF-8 BOM / optional ?format=xlsx) with receipt IDs, plate, GPS & status. (Alias: <code>/api/export/excel/gov-sync</code>)</span>
+          <span style="color: #1e40af;">Instant streaming Excel audit dossier (CSV with UTF-8 BOM / optional
+            ?format=xlsx) with receipt IDs, plate, GPS & status. (Alias: <code>/api/export/excel/gov-sync</code>)</span>
         </div>
         <div style="background: #f5f3ff; padding: 10px; border-radius: 6px; border: 1px solid #c4b5fd;">
           <strong>🚀 Immediate Alert Dispatch</strong><br>
           <code>POST /api/gov-sync/dispatch/:id</code><br>
-          <span style="color: #5b21b6;">Immediately pushes a specific alert to the government webhook receiver over HTTPS.</span>
+          <span style="color: #5b21b6;">Immediately pushes a specific alert to the government webhook receiver over
+            HTTPS.</span>
         </div>
         <div style="background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0;">
           <strong>⚡ Batch Retry & Flush</strong><br>
           <code>POST /api/gov-sync/dispatch-batch</code><br>
-          <span style="color: #64748b;">Processes and uploads queued offline items in batch when connectivity is restored.</span>
+          <span style="color: #64748b;">Processes and uploads queued offline items in batch when connectivity is
+            restored.</span>
         </div>
         <div style="background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px solid #e2e8f0;">
           <strong>🩺 Credential Ping Test</strong><br>
           <code>POST /api/gov-sync/test-connection</code><br>
-          <span style="color: #64748b;">Sends test heartbeat with x-api-key & x-api-secret to verify authentication.</span>
+          <span style="color: #64748b;">Sends test heartbeat with x-api-key & x-api-secret to verify
+            authentication.</span>
         </div>
         <div style="background: #f0fdf4; padding: 10px; border-radius: 6px; border: 1px solid #86efac;">
           <strong>📥 Ingestion Webhook Receiver</strong><br>
@@ -723,7 +942,7 @@
     "event": "log.created",
     "eventType": "weapon",
     "eventId": 180,
-    "eventTitle": "Gun/knife/Explosive/etc... Alert",
+    "eventTitle": "Weapon",
     "eventLocation": "Ahmedabad Sector (23.0258, 72.5873)",
     "eventLatitude": 23.0258,
     "eventLongitude": 72.5873,
@@ -741,14 +960,13 @@
     "confidence": 95.5,
     "numberOfPerson": null,
     "comment": "Weapon recognition Threat Incident identified at Ahmedabad Sector (23.0258, 72.5873) by Van1 (Camera 1)",
-    "colorOfDetection": "red",
     "detectedAt": "2026-11-25 15:15:15",
     "actionTaken": "",
     "acknowledgedBy": null,
     "acknowledgedAt": null,
     "closedBy": null,
     "closedTime": null,
-    "message": "{\"system\":\"Patrol360 Mobile Police Intelligence\",\"alertId\":180,\"vehicleId\":\"PATROL_VAN_01\",\"vanId\":\"Van1\",\"cameraId\":\"1\",\"vanCameraId\":1,\"eventType\":\"weapon\",\"rawAlertType\":\"Weapon\",\"status\":\"OPEN\",\"statusCode\":\"O\",\"plateNumber\":null,\"vehicleNumber\":\"GJ01HW1517\",\"numberOfPerson\":null,\"location\":\"Ahmedabad Sector (23.0258, 72.5873)\",\"latitude\":\"23.0258\",\"longitude\":\"72.5873\",\"imageUrl\":\"https://sarsspl.com/patrol360/backend/public/api/ai-alerts/180/image\",\"videoClipUrl\":\"https://sarsspl.com/patrol360/backend/public/api/ai-alerts/180/video\",\"bitrate\":\"4096 kbps\",\"fps\":25,\"resolution\":\"1920x1080\",\"eventDescription\":\"Weapon recognition Threat Incident identified at Ahmedabad Sector (23.0258, 72.5873) by Van1 (Camera 1)\",\"confidence\":95.5,\"colorOfDetection\":\"red\",\"detectedAt\":\"2026-11-25 15:15:15\",\"comment\":\"Weapon recognition Threat Incident identified at Ahmedabad Sector (23.0258, 72.5873) by Van1 (Camera 1)\",\"actionTaken\":\"\",\"acknowledgedBy\":null,\"acknowledgedAt\":null,\"closedBy\":null,\"closedTime\":null}",
+    "message": "{\"system\":\"Patrol360 Mobile Police Intelligence\",\"alertId\":180,\"vehicleId\":\"PATROL_VAN_01\",\"vanId\":\"Van1\",\"cameraId\":\"1\",\"vanCameraId\":1,\"eventType\":\"weapon\",\"rawAlertType\":\"Weapon\",\"status\":\"OPEN\",\"statusCode\":\"O\",\"plateNumber\":null,\"vehicleNumber\":\"GJ01HW1517\",\"numberOfPerson\":null,\"location\":\"Ahmedabad Sector (23.0258, 72.5873)\",\"latitude\":\"23.0258\",\"longitude\":\"72.5873\",\"imageUrl\":\"https://sarsspl.com/patrol360/backend/public/api/ai-alerts/180/image\",\"videoClipUrl\":\"https://sarsspl.com/patrol360/backend/public/api/ai-alerts/180/video\",\"bitrate\":\"4096 kbps\",\"fps\":25,\"resolution\":\"1920x1080\",\"eventDescription\":\"Weapon recognition Threat Incident identified at Ahmedabad Sector (23.0258, 72.5873) by Van1 (Camera 1)\",\"confidence\":95.5,\"detectedAt\":\"2026-11-25 15:15:15\",\"comment\":\"Weapon recognition Threat Incident identified at Ahmedabad Sector (23.0258, 72.5873) by Van1 (Camera 1)\",\"actionTaken\":\"\",\"acknowledgedBy\":null,\"acknowledgedAt\":null,\"closedBy\":null,\"closedTime\":null}",
     "createdAt": "2026-11-25 15:15:15"
   }'</pre>
       </div>
@@ -759,8 +977,10 @@
       <h3 style="font-size: 14px; color: #1e3a8a; margin-bottom: 4px;">📡 Store-and-Forward Offline Queue Policy</h3>
       <p style="color: #52525b; font-size: 12px; line-height: 1.6;">
         1. <strong>When Online:</strong> Events push directly via HTTP POST with a 2000ms timeout.<br>
-        2. <strong>When Offline:</strong> If 4G/5G disconnects or HTTP returns non-200, the payload is inserted into SQLite <code>central_api_dispatch_queue</code>.<br>
-        3. <strong>Automatic Recovery:</strong> A background daemon retries pending events using exponential backoff (1s, 2s, 5s, 15s, 60s) once cellular connectivity resumes.
+        2. <strong>When Offline:</strong> If 4G/5G disconnects or HTTP returns non-200, the payload is inserted into
+        SQLite <code>central_api_dispatch_queue</code>.<br>
+        3. <strong>Automatic Recovery:</strong> A background daemon retries pending events using exponential backoff
+        (1s, 2s, 5s, 15s, 60s) once cellular connectivity resumes.
       </p>
     </div>
   </main>
@@ -816,4 +1036,5 @@
     });
   </script>
 </body>
+
 </html>

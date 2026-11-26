@@ -359,7 +359,7 @@ CREATE TABLE IF NOT EXISTS ai_alerts (
     File_loc MEDIUMTEXT DEFAULT NULL, -- Relative file path (/uploads/alerts/...) or Base64 frame
     scanned_vehicle_numberplate VARCHAR(50) DEFAULT NULL,
     confidence DECIMAL(5, 2) DEFAULT NULL, -- AI detection model confidence score (e.g. 95.50)
-    vehicle_number VARCHAR(64) DEFAULT NULL, -- Scanned or detected vehicle registration plate
+    vehicle_number VARCHAR(64) DEFAULT NULL, -- Patrol van registration number (separate from scanned_vehicle_numberplate)
     number_of_person INT DEFAULT NULL, -- Detected person or crowd headcount
     incident_clip TEXT DEFAULT NULL, -- URL or relative path to incident video clip
     acknowledged_by VARCHAR(100) DEFAULT NULL,

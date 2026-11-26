@@ -2607,7 +2607,7 @@
                   <tr><td class="param-name">createtime</td><td class="param-type">datetime</td><td class="param-req">NO</td><td>Edge detection time (defaults to <code>NOW()</code>)</td></tr>
                   <tr><td class="param-name">alerttype</td><td class="param-type">string</td><td class="param-req">NO</td><td>Classification (e.g. <code>ANPR</code>, <code>weapon</code>, <code>fire</code>, <code>crowd</code>; accepts <code>event_type</code>, <code>eventType</code>, <code>alert_type</code>)</td></tr>
                   <tr><td class="param-name">scanned_vehicle_numberplate</td><td class="param-type">string</td><td class="param-req">NO</td><td>Recognized license plate (Auto-matches stolen database!)</td></tr>
-                  <tr><td class="param-name">vehicle_number</td><td class="param-type">string</td><td class="param-req">NO</td><td>Detected vehicle registration plate (e.g. <code>GJ-01-HW-1517</code>)</td></tr>
+                  <tr><td class="param-name">vehicle_number</td><td class="param-type">string</td><td class="param-req">NO</td><td>Patrol van registration number (e.g. <code>GJ01HW1517</code>; separate from <code>scanned_vehicle_numberplate</code>)</td></tr>
                   <tr><td class="param-name">number_of_person</td><td class="param-type">integer</td><td class="param-req">NO</td><td>Detected persons/crowd headcount (e.g. <code>3</code>)</td></tr>
                   <tr><td class="param-name">incident_clip</td><td class="param-type">string / file</td><td class="param-req">NO</td><td>Video clip: supports Base64 video string, multipart upload file, or direct URL. Auto-stored into designated <code>/uploads/videos/YYYY/MM/DD/</code> folder and stored URL address saved in <code>ai_alerts.incident_clip</code>.</td></tr>
                   <tr><td class="param-name">confidence</td><td class="param-type">decimal</td><td class="param-req">NO</td><td>AI model confidence score (e.g. <code>95.50</code>, synced to Gov API)</td></tr>
@@ -2634,7 +2634,7 @@
   "alerttype": "ANPR_HOTLIST_MATCH",
   "confidence": 95.50,
   "scanned_vehicle_numberplate": "MH12DE1432",
-  "vehicle_number": "MH12DE1432",
+  "vehicle_number": "GJ01HW1517",
   "number_of_person": 1,
   "ATMCode": "ATM-SBI-001",
   "location": "Navrangpura Circle",
@@ -3114,7 +3114,7 @@
   "event": "log.created",
   "eventType": "weapon",
   "eventId": 180,
-  "eventTitle": "Gun/knife/Explosive/etc... Alert",
+  "eventTitle": "Weapon",
   "eventLocation": "Ahmedabad Sector (23.0258, 72.5873)",
   "eventLatitude": 23.0258,
   "eventLongitude": 72.5873,
@@ -3132,14 +3132,13 @@
   "confidence": 95.5,
   "numberOfPerson": null,
   "comment": "Weapon recognition Threat Incident identified at Ahmedabad Sector (23.0258, 72.5873) by Van1 (Camera 1)",
-  "colorOfDetection": "red",
   "detectedAt": "2026-11-25 15:15:15",
   "actionTaken": "",
   "acknowledgedBy": null,
   "acknowledgedAt": null,
   "closedBy": null,
   "closedTime": null,
-  "message": "{\"system\":\"Patrol360 Mobile Police Intelligence\",\"alertId\":180,\"vehicleId\":\"PATROL_VAN_01\",\"vanId\":\"Van1\",\"cameraId\":\"1\",\"vanCameraId\":1,\"eventType\":\"weapon\",\"rawAlertType\":\"Weapon\",\"status\":\"OPEN\",\"statusCode\":\"O\",\"plateNumber\":null,\"vehicleNumber\":\"GJ01HW1517\",\"numberOfPerson\":null,\"location\":\"Ahmedabad Sector (23.0258, 72.5873)\",\"latitude\":\"23.0258\",\"longitude\":\"72.5873\",\"imageUrl\":\"https://sarsspl.com/patrol360/backend/public/api/ai-alerts/180/image\",\"videoClipUrl\":\"https://sarsspl.com/patrol360/backend/public/api/ai-alerts/180/video\",\"bitrate\":\"4096 kbps\",\"fps\":25,\"resolution\":\"1920x1080\",\"eventDescription\":\"Weapon recognition Threat Incident identified at Ahmedabad Sector (23.0258, 72.5873) by Van1 (Camera 1)\",\"confidence\":95.5,\"colorOfDetection\":\"red\",\"detectedAt\":\"2026-11-25 15:15:15\",\"comment\":\"Weapon recognition Threat Incident identified at Ahmedabad Sector (23.0258, 72.5873) by Van1 (Camera 1)\",\"actionTaken\":\"\",\"acknowledgedBy\":null,\"acknowledgedAt\":null,\"closedBy\":null,\"closedTime\":null}",
+  "message": "{\"system\":\"Patrol360 Mobile Police Intelligence\",\"alertId\":180,\"vehicleId\":\"PATROL_VAN_01\",\"vanId\":\"Van1\",\"cameraId\":\"1\",\"vanCameraId\":1,\"eventType\":\"weapon\",\"rawAlertType\":\"Weapon\",\"status\":\"OPEN\",\"statusCode\":\"O\",\"plateNumber\":null,\"vehicleNumber\":\"GJ01HW1517\",\"numberOfPerson\":null,\"location\":\"Ahmedabad Sector (23.0258, 72.5873)\",\"latitude\":\"23.0258\",\"longitude\":\"72.5873\",\"imageUrl\":\"https://sarsspl.com/patrol360/backend/public/api/ai-alerts/180/image\",\"videoClipUrl\":\"https://sarsspl.com/patrol360/backend/public/api/ai-alerts/180/video\",\"bitrate\":\"4096 kbps\",\"fps\":25,\"resolution\":\"1920x1080\",\"eventDescription\":\"Weapon recognition Threat Incident identified at Ahmedabad Sector (23.0258, 72.5873) by Van1 (Camera 1)\",\"confidence\":95.5,\"detectedAt\":\"2026-11-25 15:15:15\",\"comment\":\"Weapon recognition Threat Incident identified at Ahmedabad Sector (23.0258, 72.5873) by Van1 (Camera 1)\",\"actionTaken\":\"\",\"acknowledgedBy\":null,\"acknowledgedAt\":null,\"closedBy\":null,\"closedTime\":null}",
   "createdAt": "2026-11-25 15:15:15"
 }</textarea>
                 <div class="response-container">

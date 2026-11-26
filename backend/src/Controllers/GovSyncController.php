@@ -475,6 +475,7 @@ class GovSyncController
     private function getSyncedRecords(): array
     {
         // 1. Fetch all successfully sent records from central_api_dispatch_queue
+        // Skip fetching multi-MB legacy base64 payload_json bodies into PHP memory; use a 512-byte prefix fallback for huge rows
         $stmt1 = $this->db->query("
             SELECT 
                 id as queue_id,
@@ -485,7 +486,8 @@ class GovSyncController
                 external_item_id,
                 external_received_at,
                 http_code,
-                payload_json,
+                CASE WHEN OCTET_LENGTH(payload_json) <= 32768 THEN payload_json ELSE NULL END as payload_json,
+                LEFT(payload_json, 512) as payload_prefix,
                 created_at as queue_created_at,
                 last_retry_at
             FROM `central_api_dispatch_queue`
@@ -546,6 +548,7 @@ class GovSyncController
                 DATE_FORMAT(a.gov_synced_at, '%Y-%m-%dT%H:%i:%sZ') as external_received_at,
                 201 as http_code,
                 NULL as payload_json,
+                NULL as payload_prefix,
                 a.gov_synced_at as queue_created_at,
                 a.gov_synced_at as last_retry_at,
                 a.id as alert_id,
@@ -598,15 +601,25 @@ class GovSyncController
             $vanId = !empty($alert['vehicle_id']) ? $alert['vehicle_id'] : ($innerMsg['vehicleId'] ?? ($innerMsg['vehicle_id'] ?? ($payload['vanId'] ?? ($eventDetail['VanID'] ?? ($eventDetail['van_id'] ?? 'PATROL-VAN-01')))));
             $cameraId = !empty($alert['camera_id']) ? $alert['camera_id'] : ($innerMsg['cameraId'] ?? ($innerMsg['camera_id'] ?? ($payload['vanCameraId'] ?? ($eventDetail['VanCameraID'] ?? ($eventDetail['van_camera_id'] ?? 'CAM-01')))));
             $rawType = !empty($alert['alerttype']) ? $alert['alerttype'] : ($innerMsg['rawAlertType'] ?? ($innerMsg['alert_type'] ?? ($payload['eventType'] ?? ($r['event_type'] ?? 'AI Detection'))));
-            $plate = !empty($alert['scanned_vehicle_numberplate']) ? $alert['scanned_vehicle_numberplate'] : ($payload['vehiclePlateNumber'] ?? ($innerMsg['plateNumber'] ?? ($innerMsg['plate_number'] ?? ($eventDetail['plate_number'] ?? '-'))));
+            $plateRaw = !empty($alert['scanned_vehicle_numberplate'])
+                ? $alert['scanned_vehicle_numberplate']
+                : ($payload['vehiclePlateNumber'] ?? ($innerMsg['plateNumber'] ?? ($innerMsg['plate_number'] ?? ($eventDetail['plate_number'] ?? GovWebhookService::extractPlateFromAlertType((string) $rawType)))));
+            $plate = !empty($plateRaw) ? (string) $plateRaw : '-';
             $comment = !empty($alert['comment']) 
                 ? $alert['comment'] 
                 : ($payload['comment'] ?? ($payload['eventDescription'] ?? ($innerMsg['eventDescription'] ?? ($innerMsg['event_description'] ?? ($innerMsg['description'] ?? ($innerMsg['comment'] ?? ($eventDetail['remarks'] ?? 'Transmitted to Central Gov API')))))));
 
-            $canonicalType = GovWebhookService::normalizeEventType($rawType, [
-                'scanned_vehicle_numberplate' => $plate,
-                'comment' => $comment
-            ]);
+            // Prefer the actual eventType recorded in the dispatched webhook payload; only recompute if missing
+            $sentEventType = $payload['eventType'] ?? ($payload['data']['eventType'] ?? null);
+            if (empty($sentEventType) && !empty($r['payload_prefix']) && preg_match('/"eventType"\s*:\s*"([^"]+)"/', (string) $r['payload_prefix'], $etm)) {
+                $sentEventType = $etm[1];
+            }
+            $canonicalType = !empty($sentEventType)
+                ? (string) $sentEventType
+                : GovWebhookService::normalizeEventType($rawType, [
+                    'scanned_vehicle_numberplate' => ($plate !== '-' ? $plate : null),
+                    'comment' => $comment
+                ]);
 
             $location = !empty($alert['location']) ? $alert['location'] : ($payload['eventLocation'] ?? ($innerMsg['location'] ?? ($eventDetail['location'] ?? 'Patrol Surveillance Grid')));
             $lat = !empty($alert['lat']) ? $alert['lat'] : ($payload['eventLatitude'] ?? ($innerMsg['latitude'] ?? ($eventDetail['latitude'] ?? '23.0225')));

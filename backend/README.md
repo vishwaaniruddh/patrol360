@@ -231,7 +231,7 @@ Base URL (Production): `https://sarsspl.com/patrol360/backend/public`
   - `DELETE /api/events/crowd/:id` - Delete event *(Admin)*
 
 ### F2. Real-Time AI Edge Alerts (`ai_alerts` Table) - Public & Field Pipelines
-- `POST /api/ai-alerts` or `POST /api/alerts/ai` - **(Public / No Token Required)** Ingest edge AI alert with `vehicle_id`, `camera_id`, `lat`, `lon`, `createtime`, `alerttype`, `scanned_vehicle_numberplate`, `vehicle_number` (detected vehicle license plate), `number_of_person` (detected person/crowd headcount), `confidence` (AI model confidence score e.g. 95.5), `File_loc` (Base64 JPEG/PNG image automatically converted to date-partitioned physical file in `/uploads/alerts/YYYY/MM/DD/` and stored as relative path, or direct URL), `ATMCode`, `location`, `comment`, `status` (default `'O'` Open), `sendip`. Continuous ingestion from edge cameras without Bearer auth. Automatically checks plate against stolen vehicles hotlist and syncs to central Gov Webhook! *(Public / Edge)*
+- `POST /api/ai-alerts` or `POST /api/alerts/ai` - **(Public / No Token Required)** Ingest edge AI alert with `vehicle_id`, `camera_id`, `lat`, `lon`, `createtime`, `alerttype`, `scanned_vehicle_numberplate` (detected vehicle license plate), `vehicle_number` (patrol van registration number, e.g. `GJ01HW1517`), `number_of_person` (detected person/crowd headcount), `confidence` (AI model confidence score e.g. 95.5), `File_loc` (Base64 JPEG/PNG image automatically converted to date-partitioned physical file in `/uploads/alerts/YYYY/MM/DD/` and stored as relative path, or direct URL), `ATMCode`, `location`, `comment`, `status` (default `'O'` Open), `sendip`. Continuous ingestion from edge cameras without Bearer auth. Automatically checks plate against stolen vehicles hotlist and syncs to central Gov Webhook! *(Public / Edge)*
 - `GET /api/ai-alerts` or `GET /api/alerts/ai` - **(Public / No Token Required)** Query alerts filtered by `status=O`, `alerttype`, `vehicle_id`, `plate`, with pagination *(Public)*
 - `GET /api/ai-alerts/:id` - **(Public / No Token Required)** Single alert details with full base64 frame and decoded public image URL *(Public)*
 - `GET /api/ai-alerts/:id/image` - **(Public / Direct Stream)** Serves decoded binary image (JPEG/PNG) with 24-hour cache headers for direct `<img src="...">` rendering in browsers *(Public)*
@@ -284,7 +284,7 @@ Implements integration with Central Government Ingestion Endpoint (`https://api-
   - `event`: Event lifecycle state (`"log.created"`, `"alert.acknowledged"`, `"alert.closed"`)
   - `eventType`: Canonical event type (`"face"`, `"plate"`, `"weapon"`, `"fire"`, `"crowd"`)
   - `eventId`: Unique integer alert ID (e.g. `5248`)
-  - `eventTitle`: Incident title (e.g. `"Blacklist Person Alert"`, `"Gun/knife/Explosive/etc... Alert"`)
+  - `eventTitle`: Raw alert type (`alerttype` without extra added text, e.g. `"Start"`, `"BlacklistPerson"`, `"Weapon"`)
   - `eventLocation`: Human-readable location with coordinates (e.g. `"PoliceStation1 (23.0258, 72.5873)"`)
   - `eventLatitude`: Float latitude (e.g. `23.0258`)
   - `eventLongitude`: Float longitude (e.g. `72.5873`)
@@ -301,8 +301,7 @@ Implements integration with Central Government Ingestion Endpoint (`https://api-
   - `eventDescription`: Detailed incident description
   - `confidence`: AI model confidence score numeric or null
   - `numberOfPerson`: Detected person/crowd headcount integer or null
-  - `comment`: Incident remarks / description
-  - `colorOfDetection`: Threat classification color (`"red"` at root for all 5 canonical event types)
+  - `comment`: Alert comment / officer remarks from `ai_alerts` (empty string `""` if none)
   - `detectedAt`: ISO/SQL detection timestamp (e.g. `"2026-11-24 18:13:19"`)
   - `actionTaken`: Action taken remarks string
   - `acknowledgedBy`: Officer name or null

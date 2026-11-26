@@ -29,11 +29,11 @@ class GovWebhookService
         }
         $appConfig = require __DIR__ . '/../../config/app.php';
         $this->config = $appConfig['gov_webhook'] ?? [
-            'enabled'       => true,
-            'endpoint'      => 'https://api-patrol.urosgeotechlab.com/api/webhooks/receiver',
-            'api_key'       => 'YOUR_API_KEY',
-            'api_secret'    => 'YOUR_API_SECRET',
-            'timeout'       => 10,
+            'enabled' => true,
+            'endpoint' => 'https://api-patrol.urosgeotechlab.com/api/webhooks/receiver',
+            'api_key' => 'YOUR_API_KEY',
+            'api_secret' => 'YOUR_API_SECRET',
+            'timeout' => 10,
             'auto_dispatch' => false
         ];
     }
@@ -62,14 +62,14 @@ class GovWebhookService
         $cfg = $this->config;
         if ($maskSecret && !empty($cfg['api_secret'])) {
             $len = strlen($cfg['api_secret']);
-            $cfg['api_secret'] = $len > 6 
+            $cfg['api_secret'] = $len > 6
                 ? substr($cfg['api_secret'], 0, 3) . str_repeat('*', $len - 6) . substr($cfg['api_secret'], -3)
                 : '******';
         }
         return $cfg;
     }
 
-        /**
+    /**
      * Standardize an incoming alert type or detection event into strictly one of
      * the 7 canonical government event types requested by the receiving API:
      * - fire
@@ -82,16 +82,16 @@ class GovWebhookService
      */
     public static function normalizeEventType(?string $rawType, array $context = []): string
     {
-        $rawStr = trim((string)$rawType);
+        $rawStr = trim((string) $rawType);
         if ($rawStr === '') {
             return 'vehicle classification';
         }
 
         $upper = strtoupper(str_replace(['_', '-', '.', '/', ':'], ' ', $rawStr));
 
-        // Check for attached vehicle license plate context
-        $plate = trim((string)($context['scanned_vehicle_numberplate'] ?? ($context['vehicle_number'] ?? ($context['plate_number'] ?? ''))));
-        $hasPlate = !empty($plate);
+        // Check for attached scanned vehicle license plate context (never treat patrol van's vehicle_number as a scanned plate)
+        $plate = trim((string) ($context['scanned_vehicle_numberplate'] ?? ($context['plate_number'] ?? '')));
+        $hasPlate = (!empty($plate) && strtoupper($plate) !== 'UNKNOWN' && strtoupper($plate) !== 'NONE');
 
         // 1. Weapon Detection
         if (
@@ -119,7 +119,7 @@ class GovWebhookService
             return 'crowd';
         }
 
-        // 4. Plate / BlackListPlate / ANPR / Stolen Watchlist / Vehicle detections with Plate
+        // 4. Plate / BlackListPlate / ANPR / Stolen Watchlist (never override Start/Stop or normal vehicle types like Car/Vehicle/Truck)
         if (
             $upper === 'PLATE' ||
             str_contains($upper, 'PLATE') ||
@@ -127,7 +127,7 @@ class GovWebhookService
             str_contains($upper, 'HOTLIST') ||
             str_contains($upper, 'ANPR') ||
             (!empty($context['scanned_vehicle_numberplate']) && str_contains($upper, 'BLACKLIST')) ||
-            ($hasPlate && in_array($upper, ['START', 'STOP', 'TRUCK', 'CAR', 'BUS', 'MOTORCYCLE', 'VEHICLE', 'AI DETECTION', 'AI_DETECTION']))
+            ($hasPlate && in_array($upper, ['AI DETECTION', 'AI_DETECTION'], true))
         ) {
             return 'plate';
         }
@@ -145,7 +145,7 @@ class GovWebhookService
         }
 
         // 6. Explicit vehicle classification
-        if ($upper === 'VEHICLE CLASSIFICATION' || $upper === 'HEAVY VEHICLE ALERT' || in_array($upper, ['TRUCK', 'BUS', 'CAR', 'MOTORCYCLE', 'VEHICLE'])) {
+        if ($upper === 'VEHICLE CLASSIFICATION' || $upper === 'HEAVY VEHICLE ALERT') {
             return 'vehicle classification';
         }
 
@@ -155,58 +155,33 @@ class GovWebhookService
     }
 
     /**
-     * Resolve descriptive title for events
+     * Resolve event title directly from raw alerttype without adding extra words
      */
     public static function resolveEventTitle(string $normalizedEventType, string $rawType, ?string $plate = null): string
     {
-        $typeUpper = strtoupper($normalizedEventType);
-        $rawUpper = strtoupper($rawType);
-
-        if ($typeUpper === 'FACE' || str_contains($rawUpper, 'BLACKLISTPERSON') || str_contains($rawUpper, 'FACE') || str_contains($rawUpper, 'PERSON')) {
-            return 'Blacklist Person Alert';
-        }
-        if ($typeUpper === 'PLATE' || str_contains($rawUpper, 'PLATE') || str_contains($rawUpper, 'STOLEN') || str_contains($rawUpper, 'HOTLIST') || str_contains($rawUpper, 'ANPR')) {
-            return $plate ? "BlacklistPlate {$plate} Alert" : 'BlacklistPlate Alert';
-        }
-        if ($typeUpper === 'WEAPON' || str_contains($typeUpper, 'WEAPON')) {
-            return 'Gun/knife/Explosive/etc... Alert';
-        }
-        if ($typeUpper === 'FIRE' || str_contains($typeUpper, 'FIRE') || str_contains($typeUpper, 'SMOKE')) {
-            return 'Fire/Smoke Alert';
-        }
-        if ($typeUpper === 'CROWD' || str_contains($typeUpper, 'CROWD')) {
-            return 'Crowd Alert';
-        }
-        if ($typeUpper === 'START' || str_starts_with($typeUpper, 'START')) {
-            return 'Patrol Unit Started';
-        }
-        if ($typeUpper === 'STOP' || str_starts_with($typeUpper, 'STOP')) {
-            return 'Patrol Unit Stopped';
-        }
-
-        return ucfirst($normalizedEventType) . ' Alert';
+        $trimmed = trim($rawType);
+        return $trimmed !== '' ? $trimmed : $normalizedEventType;
     }
 
     /**
-     * Map event type to detection indicator color:
-     * - red: weapon, fire, face, plate, crowd, blacklistperson
-     * - pink: smoke, crowd density
-     * - blue: face recognition
-     * - green: ANPR, vehicle classification, Vehicle
+     * Extract embedded license plate from hyphen/colon-suffixed alerttype
+     * (e.g. "BlacklistPlate-GJ27BS8306", "Car-657EF8007", "Bus-GJQV5783", "Vehicle-888U0093481").
      */
-    public static function resolveDetectionColor(string $canonicalEventType): string
+    public static function extractPlateFromAlertType(?string $rawType): ?string
     {
-        $type = strtolower(trim($canonicalEventType));
-        if ($type === 'weapon' || $type === 'weapon detection' || $type === 'fire' || $type === 'plate' || $type === 'blacklistplate' || str_contains($type, 'stolen') || $type === 'face' || $type === 'crowd' || $type === 'blacklistperson') {
-            return 'red';
+        $rawStr = trim((string) $rawType);
+        if ($rawStr === '') {
+            return null;
         }
-        if ($type === 'smoke' || $type === 'crowd density') {
-            return 'pink';
+
+        if (preg_match('/^(?:blacklist[-_\s]*plate|anpr|car|vehicle|truck|bus|motorcycle|bike|auto)\s*[-:]\s*([A-Za-z0-9\s-]{3,50})$/i', $rawStr, $m)) {
+            $candidate = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $m[1]));
+            if ($candidate !== '' && !in_array($candidate, ['UNKNOWN', 'NONE', 'ALERT', 'DETECTION', 'CLASSIFICATION', 'VEHICLE', 'PLATE'], true)) {
+                return substr($candidate, 0, 50);
+            }
         }
-        if ($type === 'face recognition' || $type === 'frs') {
-            return 'blue';
-        }
-        return 'green';
+
+        return null;
     }
 
     /**
@@ -214,13 +189,14 @@ class GovWebhookService
      */
     public static function formatVanId(?string $vehicleId): string
     {
-        $raw = trim((string)$vehicleId);
-        if (empty($raw)) return 'Van1';
+        $raw = trim((string) $vehicleId);
+        if (empty($raw))
+            return 'Van1';
         if (preg_match('/(?:van|unit|patrol)[-_]?0*(\d+)/i', $raw, $m)) {
-            return 'Van' . (int)$m[1];
+            return 'Van' . (int) $m[1];
         }
         if (preg_match('/(\d+)/', $raw, $m)) {
-            return 'Van' . (int)$m[1];
+            return 'Van' . (int) $m[1];
         }
         return $raw;
     }
@@ -230,13 +206,13 @@ class GovWebhookService
      */
     public static function resolveVanCameraId($camera): int
     {
-        $raw = trim((string)$camera);
+        $raw = trim((string) $camera);
         if (preg_match('/(?:cam|channel)[-_]?0*(\d+)/i', $raw, $m)) {
-            $num = (int)$m[1];
+            $num = (int) $m[1];
             return max(1, min(4, $num));
         }
         if (is_numeric($raw)) {
-            $num = (int)$raw;
+            $num = (int) $raw;
             return max(1, min(4, $num));
         }
         return 1;
@@ -255,7 +231,10 @@ class GovWebhookService
         $camera = $alert['camera_id'] ?? 'CAM_01';
         $rawType = $alert['alerttype'] ?? 'weapon detection';
         $normalizedEventType = self::normalizeEventType($rawType, $alert);
-        $plate = $alert['scanned_vehicle_numberplate'] ?? null;
+        $rawPlate = trim((string) ($alert['scanned_vehicle_numberplate'] ?? ($alert['plate_number'] ?? '')));
+        $plate = ($rawPlate !== '' && strtoupper($rawPlate) !== 'UNKNOWN' && strtoupper($rawPlate) !== 'NONE')
+            ? $rawPlate
+            : self::extractPlateFromAlertType($rawType);
         $lat = $alert['lat'] ?? '0.0000';
         $lon = $alert['lon'] ?? '0.0000';
         $location = $alert['location'] ?? 'Patrol Sector Coordinates';
@@ -300,27 +279,24 @@ class GovWebhookService
         // Additional Client Specification Fields
         $vanId = self::formatVanId($vehicleId);
         $vanCameraId = self::resolveVanCameraId($camera);
-        $detectionColor = self::resolveDetectionColor($normalizedEventType);
 
         // Resolve detection confidence score
         $confidence = null;
         if (isset($alert['confidence']) && $alert['confidence'] !== null && $alert['confidence'] !== '') {
-            $confidence = is_numeric($alert['confidence']) ? (float)$alert['confidence'] : (float)preg_replace('/[^0-9.]/', '', (string)$alert['confidence']);
+            $confidence = is_numeric($alert['confidence']) ? (float) $alert['confidence'] : (float) preg_replace('/[^0-9.]/', '', (string) $alert['confidence']);
         } elseif (isset($alert['confidence_score']) && $alert['confidence_score'] !== null && $alert['confidence_score'] !== '') {
-            $confidence = is_numeric($alert['confidence_score']) ? (float)$alert['confidence_score'] : (float)preg_replace('/[^0-9.]/', '', (string)$alert['confidence_score']);
+            $confidence = is_numeric($alert['confidence_score']) ? (float) $alert['confidence_score'] : (float) preg_replace('/[^0-9.]/', '', (string) $alert['confidence_score']);
         }
 
-        // Resolve vehicle_number and number_of_person
-        $vehicleNumber = !empty($alert['vehicle_number']) 
-            ? (string)$alert['vehicle_number'] 
-            : (!empty($alert['scanned_vehicle_numberplate']) ? (string)$alert['scanned_vehicle_numberplate'] : $plate);
+        // Resolve vehicle_number (patrol van reg) and number_of_person
+        $vehicleNumber = !empty($alert['vehicle_number']) ? (string) $alert['vehicle_number'] : null;
         $numberOfPerson = (isset($alert['number_of_person']) && $alert['number_of_person'] !== null && $alert['number_of_person'] !== '')
-            ? (int)$alert['number_of_person'] 
+            ? (int) $alert['number_of_person']
             : null;
 
         // Resolve raw description from any available field
         $rawDescription = trim(
-            (string)(
+            (string) (
                 $alert['event_description'] ??
                 $alert['eventDescription'] ??
                 $alert['EventDescription'] ??
@@ -354,11 +330,9 @@ class GovWebhookService
             } elseif ($plate && $normalizedEventType === 'ANPR') {
                 $eventDescription = "ANPR Plate Scan: License plate [{$plate}] detected{$locStr}{$coordStr} by {$vanId} (Camera {$vanCameraId})";
             } elseif ($plate) {
-                $eventDescription = "{$typeLabel} Incident: Vehicle [{$plate}]{$locStr}{$coordStr} identified by {$vanId} (Camera {$vanCameraId})";
-            } elseif (in_array($typeUpper, ['TRUCK', 'BUS', 'CAR', 'MOTORCYCLE', 'VEHICLE', 'VEHICLE CLASSIFICATION'])) {
-                $eventDescription = "{$typeLabel} Classification identified{$locStr}{$coordStr} by {$vanId} (Camera {$vanCameraId})";
+                $eventDescription = "{$typeLabel} detected: Vehicle [{$plate}]{$locStr}{$coordStr} by {$vanId} (Camera {$vanCameraId})";
             } else {
-                $eventDescription = "{$typeLabel} recognition Threat Incident identified{$locStr}{$coordStr} by {$vanId} (Camera {$vanCameraId})";
+                $eventDescription = "{$typeLabel} detected{$locStr}{$coordStr} by {$vanId} (Camera {$vanCameraId})";
             }
         }
 
@@ -372,10 +346,13 @@ class GovWebhookService
                 $camStmt->execute([$vehicleId, $vanCameraId, $camera, $camera, $camera]);
                 $camRow = $camStmt->fetch(PDO::FETCH_ASSOC);
                 if ($camRow) {
-                    if (!empty($camRow['fps'])) $fps = (int)$camRow['fps'];
-                    if (!empty($camRow['resolution'])) $resolution = $camRow['resolution'];
+                    if (!empty($camRow['fps']))
+                        $fps = (int) $camRow['fps'];
+                    if (!empty($camRow['resolution']))
+                        $resolution = $camRow['resolution'];
                 }
-            } catch (\Throwable $t) {}
+            } catch (\Throwable $t) {
+            }
         }
 
         // Resolve eventLocation, eventLatitude, eventLongitude, eventTitle, vanNumber
@@ -391,18 +368,18 @@ class GovWebhookService
             $eventLocation = "Patrol Sector ({$lat}, {$lon})";
         }
 
-        $eventLatitude = is_numeric($lat) ? (float)$lat : 0.0;
-        $eventLongitude = is_numeric($lon) ? (float)$lon : 0.0;
+        $eventLatitude = is_numeric($lat) ? (float) $lat : 0.0;
+        $eventLongitude = is_numeric($lon) ? (float) $lon : 0.0;
         $eventTitle = !empty($alert['event_title']) ? $alert['event_title'] : self::resolveEventTitle($normalizedEventType, $rawType, $plate);
 
         $vanNumber = !empty($alert['van_number'])
-            ? (string)$alert['van_number']
+            ? (string) $alert['van_number']
             : (!empty($alert['vehicle_number'])
-                ? (string)$alert['vehicle_number']
+                ? (string) $alert['vehicle_number']
                 : (!empty($alert['registration_number'])
-                    ? str_replace('-', '', (string)$alert['registration_number'])
+                    ? str_replace('-', '', (string) $alert['registration_number'])
                     : (!empty($alert['vehicle_registration'])
-                        ? str_replace('-', '', (string)$alert['vehicle_registration'])
+                        ? str_replace('-', '', (string) $alert['vehicle_registration'])
                         : $vehicleId)));
 
         // Resolve incident_clip
@@ -425,50 +402,49 @@ class GovWebhookService
 
         // Inner structured event detail object for message JSON string
         $eventDetail = [
-            'system'           => 'Patrol360 Mobile Police Intelligence',
-            'alertId'          => (int)$alertId,
-            'vehicleId'        => $vehicleId,
-            'vanId'            => $vanId,
-            'cameraId'         => (string)$camera,
-            'vanCameraId'      => $vanCameraId,
-            'eventType'        => $normalizedEventType,
-            'rawAlertType'     => $rawType,
-            'status'           => $statusLabel,
-            'statusCode'       => $statusCode,
-            'plateNumber'      => $plate,
-            'vehicleNumber'    => $vehicleNumber ?: $vanNumber,
-            'numberOfPerson'   => $numberOfPerson,
-            'location'         => $eventLocation,
-            'latitude'         => (string)$lat,
-            'longitude'        => (string)$lon,
-            'imageUrl'         => $imageUrl,
-            'videoClipUrl'     => $videoClipUrl,
-            'bitrate'          => $bitrate,
-            'fps'              => $fps,
-            'resolution'       => $resolution,
+            'system' => 'Patrol360 Mobile Police Intelligence',
+            'alertId' => (int) $alertId,
+            'vehicleId' => $vehicleId,
+            'vanId' => $vanId,
+            'cameraId' => (string) $camera,
+            'vanCameraId' => $vanCameraId,
+            'eventType' => $normalizedEventType,
+            'rawAlertType' => $rawType,
+            'status' => $statusLabel,
+            'statusCode' => $statusCode,
+            'plateNumber' => $plate,
+            'vehicleNumber' => $vehicleNumber ?: $vanNumber,
+            'numberOfPerson' => $numberOfPerson,
+            'location' => $eventLocation,
+            'latitude' => (string) $lat,
+            'longitude' => (string) $lon,
+            'imageUrl' => $imageUrl,
+            'videoClipUrl' => $videoClipUrl,
+            'bitrate' => $bitrate,
+            'fps' => $fps,
+            'resolution' => $resolution,
             'eventDescription' => $eventDescription,
-            'confidence'       => $confidence,
-            'colorOfDetection' => ($normalizedEventType === 'face' || str_contains(strtolower($rawType), 'face')) ? 'blue' : $detectionColor,
-            'detectedAt'       => $createtime,
-            'comment'          => $comment ?: $eventDescription,
-            'actionTaken'      => $actionTaken,
-            'acknowledgedBy'   => $ackBy,
-            'acknowledgedAt'   => $ackAt,
-            'closedBy'         => $closedBy,
-            'closedTime'       => $closedTime
+            'confidence' => $confidence,
+            'detectedAt' => $createtime,
+            'comment' => (string) $comment,
+            'actionTaken' => $actionTaken,
+            'acknowledgedBy' => $ackBy,
+            'acknowledgedAt' => $ackAt,
+            'closedBy' => $closedBy,
+            'closedTime' => $closedTime
         ];
 
         $messageJson = json_encode($eventDetail, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
         $eventName = ($statusCode === 'C') ? 'alert.closed' : (($statusCode === 'A') ? 'alert.acknowledged' : 'log.created');
 
         $payload = [
-            'event'            => $eventName,
-            'eventType'        => $normalizedEventType,
-            'eventId'          => (int)$alertId,
-            'eventTitle'       => $eventTitle,
-            'eventLocation'    => $eventLocation,
-            'eventLatitude'    => $eventLatitude,
-            'eventLongitude'   => $eventLongitude,
+            'event' => $eventName,
+            'eventType' => $normalizedEventType,
+            'eventId' => (int) $alertId,
+            'eventTitle' => $eventTitle,
+            'eventLocation' => $eventLocation,
+            'eventLatitude' => $eventLatitude,
+            'eventLongitude' => $eventLongitude,
         ];
 
         // Include vehiclePlateNumber on fire, plate, weapon (or whenever a scanned plate is present)
@@ -476,28 +452,27 @@ class GovWebhookService
             $payload['vehiclePlateNumber'] = !empty($plate) ? $plate : null;
         }
 
-        $payload['videoClipUrl']     = $videoClipUrl;
-        $payload['incident_clip']    = $incidentClip;
-        $payload['vanId']            = $vanId;
-        $payload['vanCameraId']      = $vanCameraId;
-        $payload['vanNumber']        = $vanNumber;
-        $payload['imageUrl']         = $imageUrl;
-        $payload['bitrate']          = $bitrate;
-        $payload['fps']              = $fps;
-        $payload['resolution']       = $resolution;
+        $payload['videoClipUrl'] = $videoClipUrl;
+        $payload['incident_clip'] = $incidentClip;
+        $payload['vanId'] = $vanId;
+        $payload['vanCameraId'] = $vanCameraId;
+        $payload['vanNumber'] = $vanNumber;
+        $payload['imageUrl'] = $imageUrl;
+        $payload['bitrate'] = $bitrate;
+        $payload['fps'] = $fps;
+        $payload['resolution'] = $resolution;
         $payload['eventDescription'] = $eventDescription;
-        $payload['confidence']       = $confidence;
-        $payload['numberOfPerson']   = $numberOfPerson;
-        $payload['comment']          = $comment ?: $eventDescription;
-        $payload['colorOfDetection'] = $detectionColor;
-        $payload['detectedAt']       = $createtime;
-        $payload['actionTaken']      = $actionTaken;
-        $payload['acknowledgedBy']   = $ackBy;
-        $payload['acknowledgedAt']   = $ackAt;
-        $payload['closedBy']         = $closedBy;
-        $payload['closedTime']       = $closedTime;
-        $payload['message']          = $messageJson;
-        $payload['createdAt']        = $createtime;
+        $payload['confidence'] = $confidence;
+        $payload['numberOfPerson'] = $numberOfPerson;
+        $payload['comment'] = (string) $comment;
+        $payload['detectedAt'] = $createtime;
+        $payload['actionTaken'] = $actionTaken;
+        $payload['acknowledgedBy'] = $ackBy;
+        $payload['acknowledgedAt'] = $ackAt;
+        $payload['closedBy'] = $closedBy;
+        $payload['closedTime'] = $closedTime;
+        $payload['message'] = $messageJson;
+        $payload['createdAt'] = $createtime;
 
         return $payload;
     }
@@ -507,18 +482,18 @@ class GovWebhookService
      */
     public function sendRaw(array $payload, ?string $customEndpoint = null, ?string $customKey = null, ?string $customSecret = null): array
     {
-        $endpoint  = $customEndpoint ?: ($this->config['endpoint'] ?? '');
-        $apiKey    = $customKey ?: ($this->config['api_key'] ?? '');
+        $endpoint = $customEndpoint ?: ($this->config['endpoint'] ?? '');
+        $apiKey = $customKey ?: ($this->config['api_key'] ?? '');
         $apiSecret = $customSecret ?: ($this->config['api_secret'] ?? '');
-        $timeout   = (int)($this->config['timeout'] ?? 10);
+        $timeout = (int) ($this->config['timeout'] ?? 10);
 
         if (empty($endpoint)) {
             return [
-                'success'   => false,
+                'success' => false,
                 'http_code' => 0,
-                'error'     => 'Webhook endpoint URL is not configured.',
-                'response'  => null,
-                'item'      => null
+                'error' => 'Webhook endpoint URL is not configured.',
+                'response' => null,
+                'item' => null
             ];
         }
 
@@ -545,17 +520,17 @@ class GovWebhookService
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
 
         $rawResponse = curl_exec($ch);
-        $httpCode    = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $curlError   = curl_error($ch);
+        $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
         curl_close($ch);
 
         if ($rawResponse === false || !empty($curlError)) {
             return [
-                'success'      => false,
-                'http_code'    => $httpCode,
-                'error'        => 'Network / cURL error: ' . $curlError,
+                'success' => false,
+                'http_code' => $httpCode,
+                'error' => 'Network / cURL error: ' . $curlError,
                 'raw_response' => null,
-                'item'         => null
+                'item' => null
             ];
         }
 
@@ -563,12 +538,12 @@ class GovWebhookService
         $isSuccess = ($httpCode >= 200 && $httpCode < 300) && (!empty($decoded['success']) || isset($decoded['item']));
 
         return [
-            'success'      => $isSuccess,
-            'http_code'    => $httpCode,
-            'error'        => $isSuccess ? null : ($decoded['msg'] ?? 'HTTP ' . $httpCode),
+            'success' => $isSuccess,
+            'http_code' => $httpCode,
+            'error' => $isSuccess ? null : ($decoded['msg'] ?? 'HTTP ' . $httpCode),
             'raw_response' => $rawResponse,
-            'decoded'      => $decoded,
-            'item'         => $decoded['item'] ?? null
+            'decoded' => $decoded,
+            'item' => $decoded['item'] ?? null
         ];
     }
 
@@ -592,10 +567,10 @@ class GovWebhookService
 
         $statusCode = $alert['status'] ?? 'O';
         $statusSuffix = ($statusCode === 'C') ? 'CLOSED' : (($statusCode === 'A') ? 'ACK' : 'CREATED');
-        $timeToken = ($statusCode === 'C') 
-            ? ($alert['closedtime'] ?? date('YmdHis')) 
+        $timeToken = ($statusCode === 'C')
+            ? ($alert['closedtime'] ?? date('YmdHis'))
             : (($statusCode === 'A') ? ($alert['acknowledged_at'] ?? date('YmdHis')) : ($alert['createtime'] ?? date('YmdHis')));
-        $eventId = 'ALERT-' . $alertId . '-' . $statusSuffix . '-' . substr(md5((string)$alertId . (string)$timeToken), 0, 6);
+        $eventId = 'ALERT-' . $alertId . '-' . $statusSuffix . '-' . substr(md5((string) $alertId . (string) $timeToken), 0, 6);
         $eventType = ($statusCode === 'C') ? 'AI_ALERT_CLOSED' : (($statusCode === 'A') ? 'AI_ALERT_ACK' : 'AI_ALERT');
 
         $payload = $this->formatAlertPayload($alert);
@@ -608,7 +583,7 @@ class GovWebhookService
         $existing = $checkStmt->fetch(PDO::FETCH_ASSOC);
 
         if ($existing) {
-            $queueId = (int)$existing['id'];
+            $queueId = (int) $existing['id'];
             // Re-update payload if refreshed
             $this->db->prepare("UPDATE `central_api_dispatch_queue` SET `payload_json` = ?, `delivery_status` = 'QUEUED' WHERE `id` = ?")
                 ->execute([$payloadJson, $queueId]);
@@ -620,7 +595,7 @@ class GovWebhookService
                     (?, ?, ?, ?, 'QUEUED', NOW())
             ");
             $insStmt->execute([$eventId, $eventType, $destination, $payloadJson]);
-            $queueId = (int)$this->db->lastInsertId();
+            $queueId = (int) $this->db->lastInsertId();
         }
 
         // Update ai_alerts table state to QUEUED
@@ -630,7 +605,7 @@ class GovWebhookService
         return [
             'queue_id' => $queueId,
             'event_id' => $eventId,
-            'payload'  => $payload
+            'payload' => $payload
         ];
     }
 
@@ -679,10 +654,10 @@ class GovWebhookService
 
             // File log & Police compliance audit_logs
             $this->logToFile('SUCCESS', "Alert #{$alertId} dispatched to government portal", [
-                'event_id'      => $eventId,
+                'event_id' => $eventId,
                 'government_id' => $externalId,
-                'http_code'     => $httpCode,
-                'received_at'   => $receivedAt
+                'http_code' => $httpCode,
+                'received_at' => $receivedAt
             ]);
             try {
                 $this->db->prepare("
@@ -691,25 +666,26 @@ class GovWebhookService
                     VALUES 
                         ('GOV_WEBHOOK_DISPATCH_SUCCESS', 'ai_alerts', ?, ?, ?, NOW())
                 ")->execute([
-                    (string)$alertId,
-                    json_encode([
-                        'govt_id'     => $externalId,
-                        'http_code'   => $httpCode,
-                        'received_at' => $receivedAt
-                    ]),
-                    $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1'
-                ]);
-            } catch (\Throwable $t) {}
+                            (string) $alertId,
+                            json_encode([
+                                'govt_id' => $externalId,
+                                'http_code' => $httpCode,
+                                'received_at' => $receivedAt
+                            ]),
+                            $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1'
+                        ]);
+            } catch (\Throwable $t) {
+            }
 
             return [
-                'success'          => true,
-                'status'           => 'SYNCED',
-                'alert_id'         => $alertId,
-                'queue_id'         => $queueId,
-                'government_id'    => $externalId,
-                'received_at'      => $receivedAt,
-                'http_code'        => $httpCode,
-                'msg'              => $result['decoded']['msg'] ?? 'Data has been received.'
+                'success' => true,
+                'status' => 'SYNCED',
+                'alert_id' => $alertId,
+                'queue_id' => $queueId,
+                'government_id' => $externalId,
+                'received_at' => $receivedAt,
+                'http_code' => $httpCode,
+                'msg' => $result['decoded']['msg'] ?? 'Data has been received.'
             ];
         } else {
             // Record failure in queue and ai_alerts
@@ -729,9 +705,9 @@ class GovWebhookService
 
             // File log & Police compliance audit_logs
             $this->logToFile('ERROR', "Alert #{$alertId} failed to upload to government portal", [
-                'event_id'  => $eventId,
+                'event_id' => $eventId,
                 'http_code' => $httpCode,
-                'error'     => $result['error'] ?? 'Failure'
+                'error' => $result['error'] ?? 'Failure'
             ]);
             try {
                 $this->db->prepare("
@@ -740,23 +716,24 @@ class GovWebhookService
                     VALUES 
                         ('GOV_WEBHOOK_DISPATCH_FAILED', 'ai_alerts', ?, ?, ?, NOW())
                 ")->execute([
-                    (string)$alertId,
-                    json_encode([
-                        'http_code' => $httpCode,
-                        'error'     => $result['error'] ?? 'Unknown'
-                    ]),
-                    $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1'
-                ]);
-            } catch (\Throwable $t) {}
+                            (string) $alertId,
+                            json_encode([
+                                'http_code' => $httpCode,
+                                'error' => $result['error'] ?? 'Unknown'
+                            ]),
+                            $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1'
+                        ]);
+            } catch (\Throwable $t) {
+            }
 
             return [
-                'success'       => false,
-                'status'        => 'FAILED',
-                'alert_id'      => $alertId,
-                'queue_id'      => $queueId,
-                'http_code'     => $httpCode,
-                'error'         => $result['error'] ?? 'Failed to upload to government server.',
-                'raw_response'  => $rawResponse
+                'success' => false,
+                'status' => 'FAILED',
+                'alert_id' => $alertId,
+                'queue_id' => $queueId,
+                'http_code' => $httpCode,
+                'error' => $result['error'] ?? 'Failed to upload to government server.',
+                'raw_response' => $rawResponse
             ];
         }
     }
@@ -780,13 +757,13 @@ class GovWebhookService
 
         $results = [
             'total_processed' => count($items),
-            'succeeded'       => 0,
-            'failed'          => 0,
-            'details'         => []
+            'succeeded' => 0,
+            'failed' => 0,
+            'details' => []
         ];
 
         foreach ($items as $item) {
-            $queueId = (int)$item['id'];
+            $queueId = (int) $item['id'];
             $payload = json_decode($item['payload_json'], true);
 
             if (!$payload) {
@@ -803,7 +780,7 @@ class GovWebhookService
                 strlen($item['payload_json']) > 20000
             ) {
                 if (preg_match('/^ALERT-(\d+)-/', $item['event_id'], $m)) {
-                    $linkedAlertId = (int)$m[1];
+                    $linkedAlertId = (int) $m[1];
                     try {
                         $stmtAlert = $this->db->prepare("SELECT * FROM `ai_alerts` WHERE `id` = ? LIMIT 1");
                         $stmtAlert->execute([$linkedAlertId]);
@@ -812,9 +789,10 @@ class GovWebhookService
                             $payload = $this->formatAlertPayload($alertRow);
                             $cleanJson = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
                             $this->db->prepare("UPDATE `central_api_dispatch_queue` SET `payload_json` = ? WHERE `id` = ?")
-                                     ->execute([$cleanJson, $queueId]);
+                                ->execute([$cleanJson, $queueId]);
                         }
-                    } catch (\Throwable $t) {}
+                    } catch (\Throwable $t) {
+                    }
                 }
             }
 
@@ -840,7 +818,7 @@ class GovWebhookService
 
                 // Sync linked alert if applicable
                 if (preg_match('/^ALERT-(\d+)-/', $item['event_id'], $m)) {
-                    $linkedAlertId = (int)$m[1];
+                    $linkedAlertId = (int) $m[1];
                     $this->db->prepare("
                         UPDATE `ai_alerts`
                         SET `gov_sync_status` = 'SYNCED',
@@ -852,9 +830,9 @@ class GovWebhookService
 
                 $results['succeeded']++;
                 $results['details'][] = [
-                    'queue_id'      => $queueId,
-                    'event_id'      => $item['event_id'],
-                    'status'        => 'SENT_200',
+                    'queue_id' => $queueId,
+                    'event_id' => $item['event_id'],
+                    'status' => 'SENT_200',
                     'government_id' => $externalId
                 ];
             } else {
@@ -872,8 +850,8 @@ class GovWebhookService
                 $results['details'][] = [
                     'queue_id' => $queueId,
                     'event_id' => $item['event_id'],
-                    'status'   => 'FAILED',
-                    'error'    => $res['error']
+                    'status' => 'FAILED',
+                    'error' => $res['error']
                 ];
             }
         }
@@ -888,12 +866,12 @@ class GovWebhookService
     {
         $payload = [
             'event' => 'log.created',
-            'data'  => [
+            'data' => [
                 'message' => json_encode([
-                    'system'    => 'Patrol360 Police Edge System',
+                    'system' => 'Patrol360 Police Edge System',
                     'test_ping' => true,
                     'timestamp' => date('c'),
-                    'message'   => 'API connectivity and credential test heartbeat.'
+                    'message' => 'API connectivity and credential test heartbeat.'
                 ])
             ]
         ];
@@ -903,14 +881,14 @@ class GovWebhookService
         $elapsedMs = round((microtime(true) - $start) * 1000, 2);
 
         return [
-            'reachable'    => $res['http_code'] > 0,
-            'http_code'    => $res['http_code'],
-            'latency_ms'   => $elapsedMs,
-            'is_valid'     => $res['success'],
-            'message'      => $res['success'] 
+            'reachable' => $res['http_code'] > 0,
+            'http_code' => $res['http_code'],
+            'latency_ms' => $elapsedMs,
+            'is_valid' => $res['success'],
+            'message' => $res['success']
                 ? 'Government Webhook API connection verified successfully.'
                 : ($res['error'] ?? 'Authentication or connectivity error.'),
-            'item'         => $res['item'],
+            'item' => $res['item'],
             'raw_response' => $res['raw_response'] ?? null
         ];
     }

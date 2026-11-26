@@ -30,8 +30,8 @@ class DashboardController
         $totalCameras = (int)$this->db->query("SELECT COUNT(*) FROM `vehicle_cameras`")->fetchColumn();
         $onlineCameras = (int)$this->db->query("SELECT COUNT(*) FROM `vehicle_cameras` WHERE is_streaming = 1")->fetchColumn();
 
-        // 3. ANPR metrics - aggregated dynamically across ai_alerts and detection events
-        $anprFromAi = (int)$this->db->query("SELECT COUNT(*) FROM `ai_alerts` WHERE `alerttype` LIKE '%vehicle%' OR `alerttype` LIKE '%anpr%' OR `alerttype` LIKE '%truck%' OR `alerttype` LIKE '%car%' OR `alerttype` LIKE '%bus%' OR `alerttype` LIKE '%motorcycle%' OR (`scanned_vehicle_numberplate` IS NOT NULL AND `scanned_vehicle_numberplate` != '') OR (`vehicle_number` IS NOT NULL AND `vehicle_number` != '')")->fetchColumn();
+        // 3. ANPR metrics - aggregated dynamically across ai_alerts and detection events (exclude patrol van vehicle_number)
+        $anprFromAi = (int)$this->db->query("SELECT COUNT(*) FROM `ai_alerts` WHERE `alerttype` LIKE '%vehicle%' OR `alerttype` LIKE '%anpr%' OR `alerttype` LIKE '%plate%' OR `alerttype` LIKE '%truck%' OR `alerttype` LIKE '%car%' OR `alerttype` LIKE '%bus%' OR `alerttype` LIKE '%motorcycle%' OR (`scanned_vehicle_numberplate` IS NOT NULL AND `scanned_vehicle_numberplate` != '')")->fetchColumn();
         $totalPlatesScanned = max((int)$this->db->query("SELECT COUNT(*) FROM `anpr_detection_events`")->fetchColumn(), $anprFromAi);
         $stolenFromAi = (int)$this->db->query("SELECT COUNT(*) FROM `ai_alerts` WHERE `alerttype` LIKE '%stolen%' OR `alerttype` LIKE '%hotlist%'")->fetchColumn();
         $stolenMatches = max((int)$this->db->query("SELECT COUNT(*) FROM `anpr_detection_events` WHERE is_stolen_match = 1")->fetchColumn(), $stolenFromAi);
@@ -152,8 +152,7 @@ class DashboardController
                 in_array($upperType, ['TRUCK', 'BUS', 'CAR', 'MOTORCYCLE', 'AUTO', 'RICKSHAW', 'VAN', 'BICYCLE']) ||
                 str_contains($upperType, 'VEHICLE') ||
                 str_contains($upperType, 'ANPR') ||
-                !empty($row['scanned_vehicle_numberplate']) ||
-                !empty($row['vehicle_number'])
+                !empty($row['scanned_vehicle_numberplate'])
             ) {
                 $category = 'VEHICLE';
                 $severity = 'STANDARD';
@@ -167,9 +166,12 @@ class DashboardController
             // Image URL resolution: direct binary stream endpoint
             $imageUrl = "{$baseUrl}/api/ai-alerts/{$id}/image";
 
-            $plateNum = !empty($row['vehicle_number']) 
-                ? (string)$row['vehicle_number'] 
-                : (!empty($row['scanned_vehicle_numberplate']) ? (string)$row['scanned_vehicle_numberplate'] : '');
+            $plateNum = !empty($row['scanned_vehicle_numberplate'])
+                ? (string)$row['scanned_vehicle_numberplate']
+                : (\App\Services\GovWebhookService::extractPlateFromAlertType($rawType) ?? '');
+            $vanRegNum = !empty($row['vehicle_number'])
+                ? (string)$row['vehicle_number']
+                : (!empty($row['vehicle_registration']) ? (string)$row['vehicle_registration'] : '');
 
             $confidenceVal = !empty($row['confidence']) 
                 ? (float)$row['confidence'] 
@@ -201,7 +203,7 @@ class DashboardController
                 'confidence'            => $confidenceVal,
                 'ocr_confidence'        => $confidenceVal,
                 'detected_plate_number' => $plateNum,
-                'vehicle_number'        => $plateNum,
+                'vehicle_number'        => $vanRegNum,
                 'number_of_person'      => $row['number_of_person'] !== null ? (int)$row['number_of_person'] : null,
                 'status'                => $row['status'] ?: '0',
                 'is_stolen_match'       => str_contains($upperType, 'STOLEN') || str_contains($upperType, 'HOTLIST'),

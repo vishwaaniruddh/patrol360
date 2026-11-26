@@ -33,18 +33,18 @@ class GovWebhookTest extends TestCase
     public function testFormatAlertPayloadMatchesGuideSpec(): void
     {
         $mockAlert = [
-            'id'                          => 9999,
-            'vehicle_id'                  => 'PATROL-UNIT-01',
-            'camera_id'                   => 'CAM_FRONT_01',
-            'alerttype'                   => 'FIREARM_DETECTED',
+            'id' => 9999,
+            'vehicle_id' => 'PATROL-UNIT-01',
+            'camera_id' => 'CAM_FRONT_01',
+            'alerttype' => 'FIREARM_DETECTED',
             'scanned_vehicle_numberplate' => 'GJ-01-AB-1234',
-            'lat'                         => '23.0225',
-            'lon'                         => '72.5714',
-            'location'                    => 'Sector 5 Patrol Beat',
-            'createtime'                  => '2026-10-31 12:00:00',
-            'confidence'                  => 96.5,
-            'comment'                     => 'High-threat firearm detected',
-            'action_taken'                => 'Unit Dispatched'
+            'lat' => '23.0225',
+            'lon' => '72.5714',
+            'location' => 'Sector 5 Patrol Beat',
+            'createtime' => '2026-10-31 12:00:00',
+            'confidence' => 96.5,
+            'comment' => 'High-threat firearm detected',
+            'action_taken' => 'Unit Dispatched'
         ];
 
         $payload = $this->service->formatAlertPayload($mockAlert);
@@ -65,7 +65,7 @@ class GovWebhookTest extends TestCase
         $this->assertEquals(25, $payload['fps']);
         $this->assertEquals('1920x1080', $payload['resolution']);
         $this->assertEquals('High-threat firearm detected', $payload['eventDescription']);
-        $this->assertEquals('red', $payload['colorOfDetection']);
+        $this->assertArrayNotHasKey('colorOfDetection', $payload);
         $this->assertEquals(96.5, $payload['confidence']);
         $this->assertArrayHasKey('incident_clip', $payload);
         $this->assertArrayHasKey('eventLocation', $payload);
@@ -102,23 +102,26 @@ class GovWebhookTest extends TestCase
         $this->assertEquals(1, $inner['vanCameraId']);
         $this->assertEquals('GJ-01-AB-1234', $inner['plateNumber']);
         $this->assertEquals('weapon', $inner['eventType']);
-        $this->assertEquals('red', $inner['colorOfDetection']);
+        $this->assertArrayNotHasKey('colorOfDetection', $inner);
         $this->assertEquals(96.5, $inner['confidence']);
         $this->assertEquals('4096 kbps', $inner['bitrate']);
         $this->assertEquals(25, $inner['fps']);
         $this->assertEquals('1920x1080', $inner['resolution']);
     }
 
-    public function testDetectionColorMappings(): void
+    public function testColorOfDetectionIsOmitted(): void
     {
-        $this->assertEquals('red', GovWebhookService::resolveDetectionColor('weapon'));
-        $this->assertEquals('red', GovWebhookService::resolveDetectionColor('fire'));
-        $this->assertEquals('red', GovWebhookService::resolveDetectionColor('plate'));
-        $this->assertEquals('red', GovWebhookService::resolveDetectionColor('face'));
-        $this->assertEquals('red', GovWebhookService::resolveDetectionColor('crowd'));
-        $this->assertEquals('pink', GovWebhookService::resolveDetectionColor('smoke'));
-        $this->assertEquals('green', GovWebhookService::resolveDetectionColor('ANPR'));
-        $this->assertEquals('green', GovWebhookService::resolveDetectionColor('vehicle classification'));
+        foreach (['weapon', 'Fire', 'BlackListPlate', 'BlacklistPerson', 'Crowd', 'Start', 'Stop'] as $rawType) {
+            $payload = $this->service->formatAlertPayload([
+                'id'         => 1001,
+                'vehicle_id' => 'PATROLVAN01',
+                'camera_id'  => '1',
+                'alerttype'  => $rawType,
+            ]);
+            $this->assertArrayNotHasKey('colorOfDetection', $payload);
+            $inner = json_decode($payload['message'], true);
+            $this->assertArrayNotHasKey('colorOfDetection', $inner);
+        }
     }
 
     public function testNormalizeEventTypeAllCanonicalTypes(): void
@@ -150,6 +153,24 @@ class GovWebhookTest extends TestCase
         $this->assertEquals('weapon', GovWebhookService::normalizeEventType('GUN'));
         $this->assertEquals('weapon', GovWebhookService::normalizeEventType('KNIFE'));
         $this->assertEquals('weapon', GovWebhookService::normalizeEventType('TACTICAL_THREAT'));
+
+        // 7. Patrol van registration (vehicle_number) must NOT be treated as a scanned plate,
+        // and Start/Stop/Car/Vehicle/Truck/Animal must preserve raw alerttype
+        $vanContext = ['vehicle_number' => 'GJ01HW1517', 'scanned_vehicle_numberplate' => null];
+        $this->assertEquals('Start', GovWebhookService::normalizeEventType('Start', $vanContext));
+        $this->assertEquals('Stop', GovWebhookService::normalizeEventType('Stop', $vanContext));
+        $this->assertEquals('Animal', GovWebhookService::normalizeEventType('Animal', $vanContext));
+        $this->assertEquals('Car', GovWebhookService::normalizeEventType('Car', $vanContext));
+        $this->assertEquals('Vehicle', GovWebhookService::normalizeEventType('Vehicle', $vanContext));
+        $this->assertEquals('Truck', GovWebhookService::normalizeEventType('Truck', $vanContext));
+        $this->assertEquals('Bus', GovWebhookService::normalizeEventType('Bus', $vanContext));
+        $this->assertEquals('Motorcycle', GovWebhookService::normalizeEventType('Motorcycle', $vanContext));
+
+        // Routine Car/Vehicle with scanned plate must NOT be misclassified as BlacklistPlate ('plate')
+        $carWithPlate = ['vehicle_number' => 'GJ01HW1517', 'scanned_vehicle_numberplate' => 'ITF2A2OWJJ4LU'];
+        $this->assertEquals('Car', GovWebhookService::normalizeEventType('Car', $carWithPlate));
+        $this->assertEquals('Vehicle', GovWebhookService::normalizeEventType('Vehicle', $carWithPlate));
+        $this->assertEquals('plate', GovWebhookService::normalizeEventType('BlacklistPlate-GJ27BS8306', $vanContext));
     }
 
     public function testEnqueueAlertInsertsIntoDispatchQueue(): void
@@ -170,7 +191,7 @@ class GovWebhookTest extends TestCase
                 ('TEST-VAN', 'CAM-01', '23.00', '72.00', NOW(), 'TEST_ALERT', 'Test Loc')
         ");
         $stmt->execute();
-        $testAlertId = (int)$db->lastInsertId();
+        $testAlertId = (int) $db->lastInsertId();
 
         $enqueued = $this->service->enqueueAlert($testAlertId);
         $this->assertArrayHasKey('queue_id', $enqueued);
@@ -240,15 +261,15 @@ class GovWebhookTest extends TestCase
             5,
             88.50
         ]);
-        $alertId = (int)$db->lastInsertId();
+        $alertId = (int) $db->lastInsertId();
 
         $this->assertGreaterThan(0, $alertId);
 
         // Fetch back and verify
         $fetch = $db->query("SELECT * FROM `ai_alerts` WHERE `id` = {$alertId}")->fetch(\PDO::FETCH_ASSOC);
         $this->assertEquals('GJ-01-HW-1517', $fetch['vehicle_number']);
-        $this->assertEquals(5, (int)$fetch['number_of_person']);
-        $this->assertEquals(88.50, (float)$fetch['confidence']);
+        $this->assertEquals(5, (int) $fetch['number_of_person']);
+        $this->assertEquals(88.50, (float) $fetch['confidence']);
 
         // Verify GovWebhookService builds payload including vanNumber, numberOfPerson, and confidence without bloat
         $govService = new \App\Services\GovWebhookService($db);
@@ -312,7 +333,7 @@ class GovWebhookTest extends TestCase
             'weapon',
             $clipUrl
         ]);
-        $alertId = (int)$db->lastInsertId();
+        $alertId = (int) $db->lastInsertId();
         $this->assertGreaterThan(0, $alertId);
 
         $fetch = $db->query("SELECT * FROM `ai_alerts` WHERE `id` = {$alertId}")->fetch(\PDO::FETCH_ASSOC);
@@ -333,30 +354,30 @@ class GovWebhookTest extends TestCase
     {
         $rootDir = dirname(__DIR__, 2);
         $baseAlert = [
-            'id'               => 5248,
-            'vehicle_id'       => 'PATROLVAN01',
-            'camera_id'        => '3',
-            'lat'              => '23.0258',
-            'lon'              => '72.5873',
-            'location'         => 'PoliceStation1',
-            'createtime'       => '2026-11-24 18:13:19',
-            'confidence'       => 62,
-            'vehicle_number'   => 'GJ01HW1517',
-            'incident_clip'    => 'https://sarsspl.com/patrol360/backend/public/uploads/videos/2026/11/25/incident_5248.mp4',
-            'status'           => 'O',
+            'id' => 5248,
+            'vehicle_id' => 'PATROLVAN01',
+            'camera_id' => '3',
+            'lat' => '23.0258',
+            'lon' => '72.5873',
+            'location' => 'PoliceStation1',
+            'createtime' => '2026-11-24 18:13:19',
+            'confidence' => 62,
+            'vehicle_number' => 'GJ01HW1517',
+            'incident_clip' => 'https://sarsspl.com/patrol360/backend/public/uploads/videos/2026/11/25/incident_5248.mp4',
+            'status' => 'O',
         ];
 
         $cases = [
-            'crowd'  => ['file' => 'crowd.json',  'raw' => 'Crowd',           'extra' => ['number_of_person' => 4]],
-            'face'   => ['file' => 'face.json',   'raw' => 'BlacklistPerson', 'extra' => []],
-            'fire'   => ['file' => 'fire.json',   'raw' => 'Fire',            'extra' => []],
-            'plate'  => ['file' => 'plate.json',  'raw' => 'BlackListPlate',  'extra' => ['scanned_vehicle_numberplate' => 'HW01W1235']],
-            'weapon' => ['file' => 'weapon.json', 'raw' => 'weapon',          'extra' => []],
+            'crowd' => ['file' => 'crowd.json', 'raw' => 'Crowd', 'extra' => ['number_of_person' => 4]],
+            'face' => ['file' => 'face.json', 'raw' => 'BlacklistPerson', 'extra' => []],
+            'fire' => ['file' => 'fire.json', 'raw' => 'Fire', 'extra' => []],
+            'plate' => ['file' => 'plate.json', 'raw' => 'BlackListPlate', 'extra' => ['scanned_vehicle_numberplate' => 'HW01W1235']],
+            'weapon' => ['file' => 'weapon.json', 'raw' => 'weapon', 'extra' => []],
         ];
 
         foreach ($cases as $expectedType => $cfg) {
             $template = json_decode(file_get_contents($rootDir . '/' . $cfg['file']), true);
-            $expectedKeys = array_keys($template);
+            $expectedKeys = array_values(array_diff(array_keys($template), ['colorOfDetection']));
             $expectedKeys[] = 'incident_clip';
             sort($expectedKeys);
 
@@ -367,10 +388,56 @@ class GovWebhookTest extends TestCase
 
             $this->assertEquals($expectedKeys, $actualKeys, "Key mismatch for {$cfg['file']}");
             $this->assertEquals($template['eventType'], $actual['eventType']);
-            $this->assertEquals($template['eventTitle'], $actual['eventTitle']);
+            $this->assertEquals($cfg['raw'], $actual['eventTitle']);
             $this->assertEquals($template['eventDescription'], $actual['eventDescription']);
-            $this->assertEquals($template['colorOfDetection'], $actual['colorOfDetection']);
+            $this->assertArrayNotHasKey('colorOfDetection', $actual);
             $this->assertArrayNotHasKey('data', $actual);
         }
+
+        // Verify raw alerttype is preserved verbatim as eventTitle without extra words
+        foreach (['Start', 'Stop', 'Car', 'Animal', 'BlacklistPlate-GJ27BS8306'] as $rawAlertType) {
+            $payload = $this->service->formatAlertPayload(array_merge($baseAlert, ['alerttype' => $rawAlertType]));
+            $this->assertEquals($rawAlertType, $payload['eventTitle']);
+        }
+
+        // Verify non-threat types do not fabricate Threat Incident descriptions or overwrite empty comment
+        $animalPayload = $this->service->formatAlertPayload(array_merge($baseAlert, ['alerttype' => 'Animal', 'comment' => '']));
+        $this->assertStringNotContainsString('Threat Incident', $animalPayload['eventDescription']);
+        $this->assertSame('', $animalPayload['comment']);
+
+        $carPayload = $this->service->formatAlertPayload(array_merge($baseAlert, [
+            'alerttype' => 'Car',
+            'scanned_vehicle_numberplate' => 'ITF2A2OWJJ4LU',
+            'comment' => '',
+        ]));
+        $this->assertEquals('Car detected: Vehicle [ITF2A2OWJJ4LU] at PoliceStation1 (23.0258, 72.5873) by Van1 (Camera 3)', $carPayload['eventDescription']);
+        $this->assertSame('', $carPayload['comment']);
+
+        // Verify embedded plates are extracted from alerttype when scanned_vehicle_numberplate is empty
+        $this->assertEquals('GJ27BS8306', GovWebhookService::extractPlateFromAlertType('BlacklistPlate-GJ27BS8306'));
+        $this->assertEquals('657EF8007', GovWebhookService::extractPlateFromAlertType('Car-657EF8007'));
+        $this->assertEquals('GJQV5783', GovWebhookService::extractPlateFromAlertType('Bus-GJQV5783'));
+        $this->assertEquals('888U0093481', GovWebhookService::extractPlateFromAlertType('Vehicle-888U0093481'));
+        $this->assertNull(GovWebhookService::extractPlateFromAlertType('Vehicle-Classification'));
+        $this->assertNull(GovWebhookService::extractPlateFromAlertType('Start'));
+
+        $blPayload = $this->service->formatAlertPayload(array_merge($baseAlert, [
+            'alerttype' => 'BlacklistPlate-GJ27BS8306',
+            'scanned_vehicle_numberplate' => null,
+            'comment' => '',
+        ]));
+        $this->assertEquals('plate', $blPayload['eventType']);
+        $this->assertEquals('BlacklistPlate-GJ27BS8306', $blPayload['eventTitle']);
+        $this->assertEquals('GJ27BS8306', $blPayload['vehiclePlateNumber']);
+        $blInner = json_decode($blPayload['message'], true);
+        $this->assertEquals('GJ27BS8306', $blInner['plateNumber']);
+
+        $carEmbeddedPayload = $this->service->formatAlertPayload(array_merge($baseAlert, [
+            'alerttype' => 'Car-657EF8007',
+            'scanned_vehicle_numberplate' => null,
+            'comment' => '',
+        ]));
+        $this->assertEquals('Car-657EF8007', $carEmbeddedPayload['eventType']);
+        $this->assertEquals('657EF8007', $carEmbeddedPayload['vehiclePlateNumber']);
     }
 }

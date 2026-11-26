@@ -293,10 +293,12 @@ class AiAlertController
             $confidence = is_numeric($body['confidence_score']) ? (float)$body['confidence_score'] : (float)preg_replace('/[^0-9.]/', '', (string)$body['confidence_score']);
         }
 
-        // vehicle_number (scanned or detected vehicle registration/number plate)
-        $vehicleNumber = !empty($body['vehicle_number']) 
-            ? trim((string)$body['vehicle_number']) 
-            : (!empty($body['vehicle_reg']) ? trim((string)$body['vehicle_reg']) : ($plate ?? null));
+        // vehicle_number (patrol van registration number, e.g. GJ01HW1517; separate from scanned_vehicle_numberplate)
+        $vehicleNumber = !empty($body['vehicle_number'])
+            ? trim((string)$body['vehicle_number'])
+            : (!empty($body['van_number'])
+                ? trim((string)$body['van_number'])
+                : (!empty($body['vehicle_reg']) ? trim((string)$body['vehicle_reg']) : null));
 
         // number_of_person (detected person/crowd headcount)
         $numberOfPerson = null;
