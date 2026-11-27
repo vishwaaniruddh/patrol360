@@ -7,7 +7,7 @@
 // Enable mysqli error reporting to throw exceptions on failure
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
-$isAjaxRequest = ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action']));
+$isAjaxRequest = (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['ajax_action']));
 
 /**
  * Send JSON response and terminate execution cleanly for AJAX requests.
@@ -284,6 +284,77 @@ function getTableSyncMeta(
 }
 
 /**
+ * Compute incremental sync plan without truncating target or transferring large row payloads.
+ * For single-column PK tables (int/str), compares only PK values so both gaps and newest rows are found.
+ * For offset tables without a single-column PK, starts from target row count.
+ */
+function getIncrementalSyncPlan(mysqli $sourceConn, mysqli $targetConn, string $table, array $meta): array
+{
+    $cursorMode = $meta['cursor_mode'];
+    $pkCol = $meta['pk_col'];
+
+    if (($cursorMode === 'int' || $cursorMode === 'str') && $pkCol !== null) {
+        $targetSet = [];
+        $targetCount = 0;
+        $tRes = $targetConn->query("SELECT `$pkCol` FROM `$table`", MYSQLI_USE_RESULT);
+        if (!$tRes) {
+            throw new RuntimeException("Failed reading target keys from `$table`: " . $targetConn->error);
+        }
+        try {
+            while ($r = $tRes->fetch_row()) {
+                $targetSet[(string)$r[0]] = true;
+                $targetCount++;
+            }
+        } finally {
+            $tRes->free();
+        }
+
+        $missingIds = [];
+        $sourceCount = 0;
+        $sRes = $sourceConn->query("SELECT `$pkCol` FROM `$table` ORDER BY `$pkCol` ASC", MYSQLI_USE_RESULT);
+        if (!$sRes) {
+            throw new RuntimeException("Failed reading source keys from `$table`: " . $sourceConn->error);
+        }
+        try {
+            while ($r = $sRes->fetch_row()) {
+                $key = (string)$r[0];
+                $sourceCount++;
+                if (!isset($targetSet[$key])) {
+                    if ($cursorMode === 'int' && preg_match('/^-?\d+$/', $key)) {
+                        $intVal = (int)$key;
+                        $missingIds[] = ((string)$intVal === $key) ? $intVal : $key;
+                    } else {
+                        $missingIds[] = $key;
+                    }
+                }
+            }
+        } finally {
+            $sRes->free();
+        }
+        unset($targetSet);
+
+        return [
+            'missing_ids' => $missingIds,
+            'total_missing' => count($missingIds),
+            'start_offset' => 0,
+            'source_rows' => $sourceCount,
+            'target_rows' => $targetCount,
+        ];
+    }
+
+    $sourceCount = getRowCount($sourceConn, $table);
+    $targetCount = getRowCount($targetConn, $table);
+
+    return [
+        'missing_ids' => null,
+        'total_missing' => max(0, $sourceCount - $targetCount),
+        'start_offset' => $targetCount,
+        'source_rows' => $sourceCount,
+        'target_rows' => $targetCount,
+    ];
+}
+
+/**
  * Truncate target table before batch ingestion starts.
  */
 function prepareTargetTableForSync(mysqli $targetConn, string $table): void
@@ -301,6 +372,9 @@ function prepareTargetTableForSync(mysqli $targetConn, string $table): void
 /**
  * Stream a single batch from source to target using MYSQLI_USE_RESULT and
  * byte-capped INSERT flushes so PHP memory stays minimal even on multi-MB rows.
+ *
+ * When $batchIds is provided (incremental PK mode), fetches only those exact PKs via IN (...).
+ * When $insertIgnore is true, uses INSERT IGNORE INTO so existing target rows remain untouched.
  */
 function syncTableSingleBatch(
     mysqli $sourceConn,
@@ -311,7 +385,9 @@ function syncTableSingleBatch(
     int $offset = 0,
     $lastPk = null,
     bool $hasCursor = false,
-    int $maxBatchRowsCap = 200
+    int $maxBatchRowsCap = 200,
+    ?array $batchIds = null,
+    bool $insertIgnore = false
 ): array {
     @set_time_limit(300);
 
@@ -321,7 +397,40 @@ function syncTableSingleBatch(
     $pkCol = $meta['pk_col'];
     $pkCols = $meta['pk_cols'];
 
-    if ($cursorMode === 'int' && $hasCursor) {
+    if ($batchIds !== null) {
+        if (empty($batchIds)) {
+            return [
+                'rows_fetched' => 0,
+                'rows_inserted' => 0,
+                'raw_bytes' => 0,
+                'last_pk' => $lastPk,
+                'has_cursor' => $hasCursor,
+                'next_offset' => $offset,
+                'has_more' => false,
+                'recommended_next_batch_size' => min($maxBatchRowsCap, $limit),
+                'memory_peak_mb' => round(memory_get_peak_usage(true) / 1048576, 2),
+            ];
+        }
+        if (($cursorMode !== 'int' && $cursorMode !== 'str') || $pkCol === null) {
+            throw new InvalidArgumentException("ID-list batching requires a single-column int/str primary key for `$table`.");
+        }
+        $batchIds = array_slice($batchIds, 0, 1000);
+        $inTokens = [];
+        if ($cursorMode === 'int') {
+            foreach ($batchIds as $rawId) {
+                $idStr = (string)$rawId;
+                if (!preg_match('/^-?\d+$/', $idStr)) {
+                    throw new InvalidArgumentException("Invalid numeric ID value for `$table`.`$pkCol`.");
+                }
+                $inTokens[] = $idStr;
+            }
+        } else {
+            foreach ($batchIds as $rawId) {
+                $inTokens[] = "'" . $sourceConn->real_escape_string((string)$rawId) . "'";
+            }
+        }
+        $selectSql = "SELECT * FROM `$table` WHERE `$pkCol` IN (" . implode(', ', $inTokens) . ") ORDER BY `$pkCol` ASC";
+    } elseif ($cursorMode === 'int' && $hasCursor) {
         $lastPkStr = (string)$lastPk;
         if (!preg_match('/^-?\d+$/', $lastPkStr)) {
             throw new InvalidArgumentException("Invalid numeric cursor value for `$table`.`$pkCol`.");
@@ -396,7 +505,8 @@ function syncTableSingleBatch(
             ];
         }
 
-        $insertPrefix = "INSERT INTO `$table` (" . implode(', ', $fields) . ") VALUES ";
+        $insertVerb = $insertIgnore ? 'INSERT IGNORE INTO' : 'INSERT INTO';
+        $insertPrefix = "$insertVerb `$table` (" . implode(', ', $fields) . ") VALUES ";
         $insertPrefixLen = strlen($insertPrefix);
 
         $rowTupleBuffer = [];
@@ -412,6 +522,7 @@ function syncTableSingleBatch(
             &$bufferBytes,
             &$rowsInserted,
             $insertPrefix,
+            $insertIgnore,
             $targetConn
         ): void {
             if (empty($rowTupleBuffer)) {
@@ -427,7 +538,7 @@ function syncTableSingleBatch(
             if (!$ok) {
                 throw new RuntimeException("Insert error: " . $targetConn->error);
             }
-            $rowsInserted += $count;
+            $rowsInserted += $insertIgnore ? max(0, (int)$targetConn->affected_rows) : $count;
         };
 
         while ($row = $res->fetch_assoc()) {
@@ -490,7 +601,8 @@ function syncTableSingleBatch(
 
         $avgBatchRowBytes = ($rowsFetched > 0) ? (int)ceil($rawBytesProcessed / $rowsFetched) : 256;
         $computedNext = computeSafeBatchSize($avgBatchRowBytes, $maxBatchRowsCap);
-        $recommendedNext = min($maxBatchRowsCap, max(1, $limit * 2), $computedNext);
+        $effectiveCurrent = ($batchIds !== null) ? max(1, count($batchIds)) : $limit;
+        $recommendedNext = min($maxBatchRowsCap, max(1, $effectiveCurrent * 2), $computedNext);
 
         return [
             'rows_fetched' => $rowsFetched,
@@ -499,7 +611,7 @@ function syncTableSingleBatch(
             'last_pk' => $newLastPk,
             'has_cursor' => $newHasCursor,
             'next_offset' => $offset + $rowsFetched,
-            'has_more' => ($rowsFetched >= $limit),
+            'has_more' => ($batchIds === null) && ($rowsFetched >= $limit),
             'recommended_next_batch_size' => $recommendedNext,
             'memory_peak_mb' => round(memory_get_peak_usage(true) / 1048576, 2),
         ];
@@ -564,6 +676,74 @@ function syncTableData($table, $localConn, $serverConn)
     return syncTableFullBatched($table, $serverConn, $localConn);
 }
 
+/**
+ * Incremental batch-wise sync helper (only fetches missing/new rows without truncating target).
+ * Returns inserted row count on success or error message string on failure.
+ */
+function syncTableIncrementalBatched(string $table, mysqli $sourceConn, mysqli $targetConn, int $maxBatchSize = 200)
+{
+    try {
+        $meta = getTableSyncMeta($sourceConn, $targetConn, $table, true, $maxBatchSize);
+        $plan = getIncrementalSyncPlan($sourceConn, $targetConn, $table, $meta);
+
+        if ($plan['total_missing'] === 0) {
+            return 0;
+        }
+
+        $limit = $meta['recommended_batch_size'];
+        $totalInserted = 0;
+
+        if ($plan['missing_ids'] !== null) {
+            $missingIds = $plan['missing_ids'];
+            $totalMissing = count($missingIds);
+            $idx = 0;
+            while ($idx < $totalMissing) {
+                $slice = array_slice($missingIds, $idx, $limit);
+                $batch = syncTableSingleBatch(
+                    $sourceConn,
+                    $targetConn,
+                    $table,
+                    $meta,
+                    count($slice),
+                    0,
+                    null,
+                    false,
+                    $maxBatchSize,
+                    $slice,
+                    true
+                );
+                $idx += count($slice);
+                $totalInserted += $batch['rows_inserted'];
+                $limit = $batch['recommended_next_batch_size'];
+            }
+        } else {
+            $offset = $plan['start_offset'];
+            do {
+                $batch = syncTableSingleBatch(
+                    $sourceConn,
+                    $targetConn,
+                    $table,
+                    $meta,
+                    $limit,
+                    $offset,
+                    null,
+                    false,
+                    $maxBatchSize,
+                    null,
+                    true
+                );
+                $totalInserted += $batch['rows_inserted'];
+                $offset = $batch['next_offset'];
+                $limit = $batch['recommended_next_batch_size'];
+            } while ($batch['has_more']);
+        }
+
+        return $totalInserted;
+    } catch (Throwable $e) {
+        return $e->getMessage();
+    }
+}
+
 function syncLocalToServerData($table, $localConn, $serverConn)
 {
     return syncTableFullBatched($table, $localConn, $serverConn);
@@ -592,9 +772,13 @@ if ($isAjaxRequest) {
     $action = (string)($_POST['ajax_action'] ?? '');
     $table = (string)($_POST['table'] ?? '');
     $direction = (string)($_POST['direction'] ?? '');
+    $mode = (string)($_POST['mode'] ?? 'full');
     $requestedMaxRows = max(1, min(1000, (int)($_POST['batch_size'] ?? 200)));
 
     try {
+        if (!in_array($mode, ['full', 'incremental'], true)) {
+            sendJsonResponse(['ok' => false, 'error' => "Invalid sync mode: $mode"], 400);
+        }
         if (!in_array($table, $matchingTables, true)) {
             sendJsonResponse(['ok' => false, 'error' => "Table `$table` does not exist in both databases."], 400);
         }
@@ -604,24 +788,62 @@ if ($isAjaxRequest) {
         if ($action === 'sync_init') {
             @set_time_limit(300);
             $meta = getTableSyncMeta($sourceConn, $targetConn, $table, true, $requestedMaxRows);
-            prepareTargetTableForSync($targetConn, $table);
 
-            sendJsonResponse([
-                'ok' => true,
-                'table' => $table,
-                'direction' => $direction,
-                'total_rows' => $meta['total_rows'],
-                'avg_row_bytes' => $meta['avg_row_bytes'],
-                'effective_batch_size' => $meta['recommended_batch_size'],
-                'cursor_mode' => $meta['cursor_mode'],
-                'done' => ($meta['total_rows'] === 0),
-                'memory_peak_mb' => round(memory_get_peak_usage(true) / 1048576, 2),
-            ]);
+            if ($mode === 'incremental') {
+                $plan = getIncrementalSyncPlan($sourceConn, $targetConn, $table, $meta);
+
+                sendJsonResponse([
+                    'ok' => true,
+                    'mode' => 'incremental',
+                    'table' => $table,
+                    'direction' => $direction,
+                    'total_rows' => $plan['total_missing'],
+                    'source_rows' => $plan['source_rows'],
+                    'target_rows' => $plan['target_rows'],
+                    'avg_row_bytes' => $meta['avg_row_bytes'],
+                    'effective_batch_size' => $meta['recommended_batch_size'],
+                    'cursor_mode' => $meta['cursor_mode'],
+                    'missing_ids' => $plan['missing_ids'],
+                    'start_offset' => $plan['start_offset'],
+                    'done' => ($plan['total_missing'] === 0),
+                    'memory_peak_mb' => round(memory_get_peak_usage(true) / 1048576, 2),
+                ]);
+            } else {
+                prepareTargetTableForSync($targetConn, $table);
+
+                sendJsonResponse([
+                    'ok' => true,
+                    'mode' => 'full',
+                    'table' => $table,
+                    'direction' => $direction,
+                    'total_rows' => $meta['total_rows'],
+                    'avg_row_bytes' => $meta['avg_row_bytes'],
+                    'effective_batch_size' => $meta['recommended_batch_size'],
+                    'cursor_mode' => $meta['cursor_mode'],
+                    'missing_ids' => null,
+                    'start_offset' => 0,
+                    'done' => ($meta['total_rows'] === 0),
+                    'memory_peak_mb' => round(memory_get_peak_usage(true) / 1048576, 2),
+                ]);
+            }
         } elseif ($action === 'sync_batch') {
             $limit = max(1, min(1000, (int)($_POST['limit'] ?? $requestedMaxRows)));
             $offset = max(0, (int)($_POST['offset'] ?? 0));
             $hasCursor = (($_POST['has_cursor'] ?? '0') === '1');
             $lastPk = $hasCursor ? ($_POST['last_pk'] ?? null) : null;
+            $insertIgnore = ($mode === 'incremental');
+
+            $batchIds = null;
+            if ($mode === 'incremental' && isset($_POST['batch_ids']) && $_POST['batch_ids'] !== '') {
+                $decoded = json_decode((string)$_POST['batch_ids'], true);
+                if (!is_array($decoded)) {
+                    sendJsonResponse(['ok' => false, 'error' => 'Invalid batch_ids JSON payload.'], 400);
+                }
+                if (count($decoded) > 1000) {
+                    sendJsonResponse(['ok' => false, 'error' => 'batch_ids cannot exceed 1000 items per request.'], 400);
+                }
+                $batchIds = $decoded;
+            }
 
             $meta = getTableSyncMeta($sourceConn, $targetConn, $table, false, $requestedMaxRows);
             $batch = syncTableSingleBatch(
@@ -633,11 +855,14 @@ if ($isAjaxRequest) {
                 $offset,
                 $lastPk,
                 $hasCursor,
-                $requestedMaxRows
+                $requestedMaxRows,
+                $batchIds,
+                $insertIgnore
             );
 
             sendJsonResponse([
                 'ok' => true,
+                'mode' => $mode,
                 'table' => $table,
                 'rows_fetched' => $batch['rows_fetched'],
                 'rows_inserted' => $batch['rows_inserted'],
@@ -891,6 +1116,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $errMsg = addslashes(implode("\n", $errors));
             echo "<script>alert('Synced data to server for $successCount tables. Errors:\\n$errMsg'); window.location.href='sync_db.php';</script>";
+        }
+        exit;
+    }
+
+    // Fallback: Incremental Production -> Local (missing/new rows only)
+    if (isset($_POST['fetch_latest_table'])) {
+        $table = $_POST['fetch_latest_table'];
+        if (!in_array($table, $matchingTables, true)) {
+            echo "<script>alert('Invalid table specified.'); window.location.href='sync_db.php';</script>";
+            exit;
+        }
+        $res = syncTableIncrementalBatched($table, $serverConn, $localConn);
+        if (is_int($res)) {
+            echo "<script>alert('Fetched $res missing/new row(s) for table `$table` from Production to Local.'); window.location.href='sync_db.php';</script>";
+        } else {
+            echo "<script>alert('Error fetching latest rows for `$table`: " . addslashes((string)$res) . "'); window.location.href='sync_db.php';</script>";
+        }
+        exit;
+    }
+
+    if (isset($_POST['fetch_latest_all'])) {
+        $errors = [];
+        $totalFetched = 0;
+        $successCount = 0;
+        foreach ($matchingTables as $table) {
+            $res = syncTableIncrementalBatched($table, $serverConn, $localConn);
+            if (is_int($res)) {
+                $successCount++;
+                $totalFetched += $res;
+            } else {
+                $errors[] = "$table: $res";
+            }
+        }
+        if (empty($errors)) {
+            echo "<script>alert('Fetched $totalFetched missing/new row(s) across all $successCount tables from Production to Local.'); window.location.href='sync_db.php';</script>";
+        } else {
+            $errMsg = addslashes(implode("\n", $errors));
+            echo "<script>alert('Fetched $totalFetched rows across $successCount tables. Errors:\\n$errMsg'); window.location.href='sync_db.php';</script>";
         }
         exit;
     }
@@ -1460,7 +1723,7 @@ $page_title = "Database Sync";
         style="background:#1e293b; display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; border-radius: 8px 8px 0 0; flex-wrap: wrap; gap: 10px;">
         <div>
             <span style="font-size: 15px; font-weight: bold; color: #fff;">
-                Full Data Synchronization (Batch-Wise)
+                Data Synchronization (Batch-Wise)
             </span>
             <span style="font-size: 11px; color: #94a3b8; margin-left: 8px;">
                 Unbuffered streaming + auto byte-capped batches (<= 8 MB/batch)
@@ -1475,9 +1738,21 @@ $page_title = "Database Sync";
                 <option value="500">500 rows (Auto-safe)</option>
             </select>
 
+            <!-- Fetch Latest / Missing Rows (Server -> Local, non-destructive) -->
+            <form method="POST"
+                onsubmit="return handleBatchSyncSubmit(event, 'server_to_local', null, 'Fetch ONLY missing or new rows from Production Server into your LOCAL database across all matching tables? Existing local rows will NOT be deleted.', 'incremental');"
+                style="margin: 0;">
+                <input type="hidden" name="fetch_latest_all" value="1">
+                <button type="submit" class="btn-sync btn-emerald"
+                    style="font-size: 12px; font-weight: bold; padding: 6px 14px;"
+                    title="Fetch only missing/new rows from Production without truncating local tables">
+                    Fetch Latest (All &rarr; Local)
+                </button>
+            </form>
+
             <!-- Sync All to Production (Local -> Server) -->
             <form method="POST"
-                onsubmit="return handleBatchSyncSubmit(event, 'local_to_server', null, 'WARNING: This will OVERWRITE ALL matching table data on the PRODUCTION SERVER with your LOCAL database data batch-by-batch. Are you sure you want to push local data to production?');"
+                onsubmit="return handleBatchSyncSubmit(event, 'local_to_server', null, 'WARNING: This will OVERWRITE ALL matching table data on the PRODUCTION SERVER with your LOCAL database data batch-by-batch. Are you sure you want to push local data to production?', 'full');"
                 style="margin: 0;">
                 <input type="hidden" name="sync_all_data_to_server" value="1">
                 <button type="submit" class="btn-sync btn-orange"
@@ -1488,7 +1763,7 @@ $page_title = "Database Sync";
 
             <!-- Sync All to Local (Server -> Local) -->
             <form method="POST"
-                onsubmit="return handleBatchSyncSubmit(event, 'server_to_local', null, 'WARNING: This will overwrite ALL local data for matching tables with production server data batch-by-batch. Proceed?');"
+                onsubmit="return handleBatchSyncSubmit(event, 'server_to_local', null, 'WARNING: This will overwrite ALL local data for matching tables with production server data batch-by-batch. Proceed?', 'full');"
                 style="margin: 0;">
                 <input type="hidden" name="sync_all_data" value="1">
                 <button type="submit" class="btn-sync btn-blue" style="font-size: 12px; padding: 6px 14px;">
@@ -1502,23 +1777,37 @@ $page_title = "Database Sync";
             <th>Table Name</th>
             <th style="width: 150px; text-align: right;">Production Rows</th>
             <th style="width: 150px; text-align: right;">Local Rows</th>
-            <th style="width: 320px; text-align: right;">Actions</th>
+            <th style="width: 440px; text-align: right;">Actions</th>
         </tr>
         <?php foreach ($matchingTables as $table): ?>
             <?php
             $prodRows = getRowCount($serverConn, $table);
             $localRows = getRowCount($localConn, $table);
             $isDifferent = ($prodRows !== $localRows);
+            $newRowsDelta = max(0, $prodRows - $localRows);
+            $fetchLabel = ($newRowsDelta > 0) ? ('Fetch Latest (+' . number_format($newRowsDelta) . ')') : 'Fetch Latest';
             ?>
             <tr <?php if ($isDifferent) echo 'class="highlight"'; ?>>
                 <td><strong><?php echo htmlspecialchars($table); ?></strong></td>
                 <td style="text-align: right; font-weight: bold; color: #111;"><?php echo number_format($prodRows); ?></td>
                 <td style="text-align: right; font-weight: bold; color: #555;"><?php echo number_format($localRows); ?></td>
                 <td style="text-align: right;">
-                    <div style="display: flex; gap: 6px; justify-content: flex-end;">
+                    <div style="display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap;">
+                        <!-- Fetch Latest / Missing Rows Production -> Local -->
+                        <form method="POST"
+                            onsubmit="return handleBatchSyncSubmit(event, 'server_to_local', '<?php echo htmlspecialchars($table, ENT_QUOTES); ?>', 'Fetch ONLY missing or new rows for `<?php echo htmlspecialchars($table, ENT_QUOTES); ?>` from Production to Local? Existing local rows will NOT be deleted.', 'incremental');"
+                            style="margin: 0;">
+                            <input type="hidden" name="fetch_latest_table" value="<?php echo htmlspecialchars($table); ?>">
+                            <button type="submit" class="btn-sync btn-emerald"
+                                style="font-size: 11px; padding: 4px 10px; <?php echo ($newRowsDelta > 0) ? 'font-weight: bold;' : ''; ?>"
+                                title="Fetch only missing or new rows from Production into Local without truncating">
+                                <?php echo htmlspecialchars($fetchLabel); ?>
+                            </button>
+                        </form>
+
                         <!-- Sync single table Local -> Production -->
                         <form method="POST"
-                            onsubmit="return handleBatchSyncSubmit(event, 'local_to_server', '<?php echo htmlspecialchars($table, ENT_QUOTES); ?>', 'Overwrite PRODUCTION server data for `<?php echo htmlspecialchars($table, ENT_QUOTES); ?>` with your LOCAL data batch-by-batch?');"
+                            onsubmit="return handleBatchSyncSubmit(event, 'local_to_server', '<?php echo htmlspecialchars($table, ENT_QUOTES); ?>', 'Overwrite PRODUCTION server data for `<?php echo htmlspecialchars($table, ENT_QUOTES); ?>` with your LOCAL data batch-by-batch?', 'full');"
                             style="margin: 0;">
                             <input type="hidden" name="sync_data_to_server_table" value="<?php echo htmlspecialchars($table); ?>">
                             <button type="submit" class="btn-sync btn-orange"
@@ -1529,7 +1818,7 @@ $page_title = "Database Sync";
 
                         <!-- Sync single table Production -> Local -->
                         <form method="POST"
-                            onsubmit="return handleBatchSyncSubmit(event, 'server_to_local', '<?php echo htmlspecialchars($table, ENT_QUOTES); ?>', 'Are you sure you want to overwrite local data for table `<?php echo htmlspecialchars($table, ENT_QUOTES); ?>` with production server data batch-by-batch?');"
+                            onsubmit="return handleBatchSyncSubmit(event, 'server_to_local', '<?php echo htmlspecialchars($table, ENT_QUOTES); ?>', 'Are you sure you want to overwrite local data for table `<?php echo htmlspecialchars($table, ENT_QUOTES); ?>` with production server data batch-by-batch?', 'full');"
                             style="margin: 0;">
                             <input type="hidden" name="sync_data_table" value="<?php echo htmlspecialchars($table); ?>">
                             <button type="submit" class="btn-sync btn-blue" style="font-size: 11px; padding: 4px 10px;">
@@ -1728,7 +2017,11 @@ $page_title = "Database Sync";
             try {
                 // Step 1: Init current table if not yet initialized
                 if (!st.tableMeta) {
-                    tableLabel.textContent = currentTable + ' — Inspecting & truncating target...';
+                    tableLabel.textContent = currentTable + (
+                        st.mode === 'incremental'
+                            ? ' — Comparing keys & checking missing/new rows...'
+                            : ' — Inspecting & truncating target...'
+                    );
                     tablePct.textContent = '0%';
                     tableBar.style.width = '0%';
 
@@ -1737,35 +2030,55 @@ $page_title = "Database Sync";
                         ajax_action: 'sync_init',
                         table: currentTable,
                         direction: st.direction,
+                        mode: st.mode,
                         batch_size: st.requestedBatchSize
                     }, st.abortController.signal);
 
                     st.tableMeta = {
                         totalRows: initRes.total_rows,
+                        rowsProcessed: 0,
                         rowsSynced: 0,
                         batchNum: 0,
                         initialLimit: initRes.effective_batch_size,
                         limit: initRes.effective_batch_size,
-                        offset: 0,
+                        offset: initRes.start_offset || 0,
                         lastPk: null,
-                        hasCursor: false
+                        hasCursor: false,
+                        missingIds: Array.isArray(initRes.missing_ids) ? initRes.missing_ids : null,
+                        missingIndex: 0
                     };
 
                     statRam.textContent = initRes.memory_peak_mb + ' MB';
                     statBatchSize.textContent = initRes.effective_batch_size + ' rows';
 
                     const avgKb = (initRes.avg_row_bytes / 1024).toFixed(1);
-                    appendLog(
-                        'Started `' + currentTable + '` (' + initRes.total_rows.toLocaleString() +
-                        ' rows, avg ~' + avgKb + ' KB/row, initial batch=' + initRes.effective_batch_size +
-                        ', mode=' + initRes.cursor_mode + ')'
-                    );
+                    if (st.mode === 'incremental') {
+                        appendLog(
+                            'Checked `' + currentTable + '` (' + initRes.total_rows.toLocaleString() +
+                            ' missing/new rows; server=' + (initRes.source_rows ?? '?') +
+                            ', local=' + (initRes.target_rows ?? '?') +
+                            ', avg ~' + avgKb + ' KB/row, initial batch=' + initRes.effective_batch_size + ')'
+                        );
+                    } else {
+                        appendLog(
+                            'Started `' + currentTable + '` (' + initRes.total_rows.toLocaleString() +
+                            ' rows, avg ~' + avgKb + ' KB/row, initial batch=' + initRes.effective_batch_size +
+                            ', mode=' + initRes.cursor_mode + ')'
+                        );
+                    }
 
                     if (initRes.done || initRes.total_rows === 0) {
-                        tableLabel.textContent = currentTable + ' — 0 / 0 rows (Done)';
+                        const doneText = (st.mode === 'incremental')
+                            ? 'Up to date (0 missing/new rows)'
+                            : '0 / 0 rows (Done)';
+                        tableLabel.textContent = currentTable + ' — ' + doneText;
                         tablePct.textContent = '100%';
                         tableBar.style.width = '100%';
-                        appendLog('Completed `' + currentTable + '` (empty table).');
+                        appendLog(
+                            st.mode === 'incremental'
+                                ? '`' + currentTable + '` is already up to date (0 missing/new rows).'
+                                : 'Completed `' + currentTable + '` (empty table).'
+                        );
                         st.tableMeta = null;
                         st.tableIndex++;
                         continue;
@@ -1784,49 +2097,73 @@ $page_title = "Database Sync";
                         return;
                     }
 
+                    if (st.mode === 'incremental' && tm.missingIds !== null && tm.missingIndex >= tm.missingIds.length) {
+                        hasMore = false;
+                        break;
+                    }
+
                     tm.batchNum++;
-                    statBatchSize.textContent = tm.limit + ' rows';
-                    tableLabel.textContent = currentTable + ' — Batch #' + tm.batchNum + ' (' + tm.rowsSynced.toLocaleString() + ' / ' + tm.totalRows.toLocaleString() + ' rows)';
+                    const isIdListBatch = (st.mode === 'incremental' && tm.missingIds !== null);
+                    const batchSlice = isIdListBatch
+                        ? tm.missingIds.slice(tm.missingIndex, tm.missingIndex + tm.limit)
+                        : null;
+                    const effectiveBatchCount = isIdListBatch ? batchSlice.length : tm.limit;
+
+                    statBatchSize.textContent = effectiveBatchCount + ' rows';
+                    tableLabel.textContent = currentTable + ' — Batch #' + tm.batchNum + ' (' + tm.rowsProcessed.toLocaleString() + ' / ' + tm.totalRows.toLocaleString() + ' rows)';
 
                     st.abortController = new AbortController();
                     const prevLimit = tm.limit;
-                    const batchRes = await postAjax({
+                    const payload = {
                         ajax_action: 'sync_batch',
                         table: currentTable,
                         direction: st.direction,
+                        mode: st.mode,
                         batch_size: st.requestedBatchSize,
-                        limit: tm.limit,
+                        limit: effectiveBatchCount,
                         offset: tm.offset,
                         last_pk: tm.lastPk,
                         has_cursor: tm.hasCursor ? '1' : '0'
-                    }, st.abortController.signal);
+                    };
+                    if (isIdListBatch) {
+                        payload.batch_ids = JSON.stringify(batchSlice);
+                    }
 
+                    const batchRes = await postAjax(payload, st.abortController.signal);
+
+                    if (isIdListBatch) {
+                        tm.missingIndex += batchSlice.length;
+                        hasMore = (tm.missingIndex < tm.missingIds.length);
+                    } else {
+                        tm.offset = batchRes.next_offset;
+                        tm.lastPk = batchRes.last_pk;
+                        tm.hasCursor = !!batchRes.has_cursor;
+                        hasMore = !!batchRes.has_more;
+                    }
+
+                    tm.rowsProcessed += batchRes.rows_fetched;
                     tm.rowsSynced += batchRes.rows_inserted;
-                    tm.offset = batchRes.next_offset;
-                    tm.lastPk = batchRes.last_pk;
-                    tm.hasCursor = !!batchRes.has_cursor;
-                    tm.limit = Math.min(st.requestedBatchSize, Math.max(1, tm.initialLimit * 2), batchRes.recommended_next_batch_size);
-                    hasMore = !!batchRes.has_more;
+                    tm.limit = Math.min(st.requestedBatchSize, Math.max(1, batchRes.recommended_next_batch_size));
 
                     st.totalBytes += (batchRes.raw_bytes || 0);
                     statTransferred.textContent = (st.totalBytes / 1048576).toFixed(2) + ' MB';
                     statRam.textContent = batchRes.memory_peak_mb + ' MB';
 
                     const pct = tm.totalRows > 0
-                        ? Math.min(100, Math.round((tm.rowsSynced / tm.totalRows) * 100))
+                        ? Math.min(100, Math.round((tm.rowsProcessed / tm.totalRows) * 100))
                         : 100;
-                    tableLabel.textContent = currentTable + ' — ' + tm.rowsSynced.toLocaleString() + ' / ' + tm.totalRows.toLocaleString() + ' rows (Batch #' + tm.batchNum + ')';
+                    tableLabel.textContent = currentTable + ' — ' + tm.rowsProcessed.toLocaleString() + ' / ' + tm.totalRows.toLocaleString() + ' rows (Batch #' + tm.batchNum + ')';
                     tablePct.textContent = pct + '%';
                     tableBar.style.width = pct + '%';
 
-                    if (tm.limit !== prevLimit) {
+                    if (tm.limit !== prevLimit && hasMore) {
                         appendLog('`' + currentTable + '` batch #' + tm.batchNum + ': synced ' + batchRes.rows_inserted + ' rows; auto-adjusted next batch to ' + tm.limit + ' rows.');
                     } else if (tm.batchNum % 10 === 0 || !hasMore) {
-                        appendLog('`' + currentTable + '` batch #' + tm.batchNum + ': ' + tm.rowsSynced.toLocaleString() + '/' + tm.totalRows.toLocaleString() + ' rows (' + (st.totalBytes / 1048576).toFixed(2) + ' MB total).');
+                        appendLog('`' + currentTable + '` batch #' + tm.batchNum + ': ' + tm.rowsSynced.toLocaleString() + ' inserted (' + tm.rowsProcessed.toLocaleString() + '/' + tm.totalRows.toLocaleString() + ' checked, ' + (st.totalBytes / 1048576).toFixed(2) + ' MB total).');
                     }
                 }
 
-                appendLog('Completed `' + currentTable + '` (' + tm.rowsSynced.toLocaleString() + ' rows).');
+                appendLog('Completed `' + currentTable + '` (' + tm.rowsSynced.toLocaleString() + ' rows inserted).');
                 st.tableMeta = null;
                 st.tableIndex++;
             } catch (err) {
@@ -1887,7 +2224,7 @@ $page_title = "Database Sync";
         window.location.href = 'sync_db.php';
     });
 
-    window.handleBatchSyncSubmit = function (event, direction, singleTable, confirmMessage) {
+    window.handleBatchSyncSubmit = function (event, direction, singleTable, confirmMessage, syncMode) {
         if (event) {
             event.preventDefault();
         }
@@ -1901,11 +2238,13 @@ $page_title = "Database Sync";
             return false;
         }
 
+        const mode = (syncMode === 'incremental') ? 'incremental' : 'full';
         const batchInput = document.getElementById('batchSizeSelect');
         const requestedBatchSize = batchInput ? parseInt(batchInput.value, 10) || 200 : 200;
 
         syncState = {
             direction: direction,
+            mode: mode,
             tables: tables,
             tableIndex: 0,
             tableMeta: null,
@@ -1917,7 +2256,8 @@ $page_title = "Database Sync";
         };
 
         const dirText = direction === 'server_to_local' ? 'Production -> Local' : 'Local -> Production';
-        modalTitle.textContent = 'Batch-Wise Sync (' + dirText + ')';
+        const modeTitle = (mode === 'incremental') ? 'Fetch Latest / Missing Rows' : 'Batch-Wise Full Sync';
+        modalTitle.textContent = modeTitle + ' (' + dirText + ')';
         overallBlock.style.display = tables.length > 1 ? 'block' : 'none';
         overallBar.style.width = '0%';
         tableBar.style.width = '0%';
@@ -1932,7 +2272,10 @@ $page_title = "Database Sync";
         clearInterval(elapsedTimer);
         elapsedTimer = setInterval(updateElapsed, 200);
 
-        appendLog('Initialized batch sync (' + dirText + ') across ' + tables.length + ' table(s), max batch=' + requestedBatchSize + ' rows.');
+        appendLog(
+            'Initialized ' + (mode === 'incremental' ? 'incremental fetch (no truncate)' : 'full batch sync') +
+            ' (' + dirText + ') across ' + tables.length + ' table(s), max batch=' + requestedBatchSize + ' rows.'
+        );
         runLoop();
         return false;
     };

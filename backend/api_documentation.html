@@ -2605,7 +2605,7 @@
                   <tr><td class="param-name">lat</td><td class="param-type">string</td><td class="param-req">YES</td><td>GPS Latitude (e.g. <code>23.022512</code>)</td></tr>
                   <tr><td class="param-name">lon</td><td class="param-type">string</td><td class="param-req">YES</td><td>GPS Longitude (e.g. <code>72.571432</code>)</td></tr>
                   <tr><td class="param-name">createtime</td><td class="param-type">datetime</td><td class="param-req">NO</td><td>Edge detection time (defaults to <code>NOW()</code>)</td></tr>
-                  <tr><td class="param-name">alerttype</td><td class="param-type">string</td><td class="param-req">NO</td><td>Classification (e.g. <code>ANPR</code>, <code>weapon</code>, <code>fire</code>, <code>crowd</code>; accepts <code>event_type</code>, <code>eventType</code>, <code>alert_type</code>)</td></tr>
+                  <tr><td class="param-name">alerttype</td><td class="param-type">string</td><td class="param-req">NO</td><td>Classification (e.g. <code>ANPR</code>, <code>Weapon - Gun</code>, <code>fire</code>, <code>crowd</code>; supports <code>&lt;eventType&gt; - &lt;eventTitle&gt;</code>; accepts <code>event_type</code>, <code>eventType</code>, <code>alert_type</code>)</td></tr>
                   <tr><td class="param-name">scanned_vehicle_numberplate</td><td class="param-type">string</td><td class="param-req">NO</td><td>Recognized license plate (Auto-matches stolen database!)</td></tr>
                   <tr><td class="param-name">vehicle_number</td><td class="param-type">string</td><td class="param-req">NO</td><td>Patrol van registration number (e.g. <code>GJ01HW1517</code>; separate from <code>scanned_vehicle_numberplate</code>)</td></tr>
                   <tr><td class="param-name">number_of_person</td><td class="param-type">integer</td><td class="param-req">NO</td><td>Detected persons/crowd headcount (e.g. <code>3</code>)</td></tr>
@@ -3114,7 +3114,7 @@
   "event": "log.created",
   "eventType": "weapon",
   "eventId": 180,
-  "eventTitle": "Weapon",
+  "eventTitle": "Gun",
   "eventLocation": "Ahmedabad Sector (23.0258, 72.5873)",
   "eventLatitude": 23.0258,
   "eventLongitude": 72.5873,
@@ -3138,7 +3138,7 @@
   "acknowledgedAt": null,
   "closedBy": null,
   "closedTime": null,
-  "message": "{\"system\":\"Patrol360 Mobile Police Intelligence\",\"alertId\":180,\"vehicleId\":\"PATROL_VAN_01\",\"vanId\":\"Van1\",\"cameraId\":\"1\",\"vanCameraId\":1,\"eventType\":\"weapon\",\"rawAlertType\":\"Weapon\",\"status\":\"OPEN\",\"statusCode\":\"O\",\"plateNumber\":null,\"vehicleNumber\":\"GJ01HW1517\",\"numberOfPerson\":null,\"location\":\"Ahmedabad Sector (23.0258, 72.5873)\",\"latitude\":\"23.0258\",\"longitude\":\"72.5873\",\"imageUrl\":\"https://sarsspl.com/patrol360/backend/public/api/ai-alerts/180/image\",\"videoClipUrl\":\"https://sarsspl.com/patrol360/backend/public/api/ai-alerts/180/video\",\"bitrate\":\"4096 kbps\",\"fps\":25,\"resolution\":\"1920x1080\",\"eventDescription\":\"Weapon recognition Threat Incident identified at Ahmedabad Sector (23.0258, 72.5873) by Van1 (Camera 1)\",\"confidence\":95.5,\"detectedAt\":\"2026-11-25 15:15:15\",\"comment\":\"Weapon recognition Threat Incident identified at Ahmedabad Sector (23.0258, 72.5873) by Van1 (Camera 1)\",\"actionTaken\":\"\",\"acknowledgedBy\":null,\"acknowledgedAt\":null,\"closedBy\":null,\"closedTime\":null}",
+  "message": "{\"system\":\"Patrol360 Mobile Police Intelligence\",\"alertId\":180,\"vehicleId\":\"PATROL_VAN_01\",\"vanId\":\"Van1\",\"cameraId\":\"1\",\"vanCameraId\":1,\"eventType\":\"weapon\",\"rawAlertType\":\"Weapon - Gun\",\"status\":\"OPEN\",\"statusCode\":\"O\",\"plateNumber\":null,\"vehicleNumber\":\"GJ01HW1517\",\"numberOfPerson\":null,\"location\":\"Ahmedabad Sector (23.0258, 72.5873)\",\"latitude\":\"23.0258\",\"longitude\":\"72.5873\",\"imageUrl\":\"https://sarsspl.com/patrol360/backend/public/api/ai-alerts/180/image\",\"videoClipUrl\":\"https://sarsspl.com/patrol360/backend/public/api/ai-alerts/180/video\",\"bitrate\":\"4096 kbps\",\"fps\":25,\"resolution\":\"1920x1080\",\"eventDescription\":\"Weapon recognition Threat Incident identified at Ahmedabad Sector (23.0258, 72.5873) by Van1 (Camera 1)\",\"confidence\":95.5,\"detectedAt\":\"2026-11-25 15:15:15\",\"comment\":\"Weapon recognition Threat Incident identified at Ahmedabad Sector (23.0258, 72.5873) by Van1 (Camera 1)\",\"actionTaken\":\"\",\"acknowledgedBy\":null,\"acknowledgedAt\":null,\"closedBy\":null,\"closedTime\":null}",
   "createdAt": "2026-11-25 15:15:15"
 }</textarea>
                 <div class="response-container">

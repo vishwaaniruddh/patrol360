@@ -439,5 +439,25 @@ class GovWebhookTest extends TestCase
         ]));
         $this->assertEquals('Car-657EF8007', $carEmbeddedPayload['eventType']);
         $this->assertEquals('657EF8007', $carEmbeddedPayload['vehiclePlateNumber']);
+
+        // Verify "<eventType> - <eventTitle>" format (e.g. Weapon - Gun -> eventType: weapon, eventTitle: Gun)
+        $weaponTitleCases = [
+            'Weapon - Gun' => ['eventType' => 'weapon', 'eventTitle' => 'Gun'],
+            'Weapon-Gun' => ['eventType' => 'weapon', 'eventTitle' => 'Gun'],
+            'Weapon - Knife' => ['eventType' => 'weapon', 'eventTitle' => 'Knife'],
+            'Weapon - Explosive' => ['eventType' => 'weapon', 'eventTitle' => 'Explosive'],
+            'Weapon: Pistol' => ['eventType' => 'weapon', 'eventTitle' => 'Pistol'],
+            'Weapon' => ['eventType' => 'weapon', 'eventTitle' => 'Weapon'],
+            'Fire - Smoke' => ['eventType' => 'fire', 'eventTitle' => 'Smoke'],
+        ];
+        foreach ($weaponTitleCases as $rawAlert => $expected) {
+            $wpPayload = $this->service->formatAlertPayload(array_merge($baseAlert, [
+                'alerttype' => $rawAlert,
+                'scanned_vehicle_numberplate' => null,
+                'comment' => '',
+            ]));
+            $this->assertEquals($expected['eventType'], $wpPayload['eventType'], "eventType mismatch for {$rawAlert}");
+            $this->assertEquals($expected['eventTitle'], $wpPayload['eventTitle'], "eventTitle mismatch for {$rawAlert}");
+        }
     }
 }

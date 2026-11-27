@@ -284,7 +284,7 @@ Implements integration with Central Government Ingestion Endpoint (`https://api-
   - `event`: Event lifecycle state (`"log.created"`, `"alert.acknowledged"`, `"alert.closed"`)
   - `eventType`: Canonical event type (`"face"`, `"plate"`, `"weapon"`, `"fire"`, `"crowd"`)
   - `eventId`: Unique integer alert ID (e.g. `5248`)
-  - `eventTitle`: Raw alert type (`alerttype` without extra added text, e.g. `"Start"`, `"BlacklistPerson"`, `"Weapon"`)
+  - `eventTitle`: Alert title resolved from `alerttype` (extracts sub-title from `<eventType> - <eventTitle>`, e.g. `"Weapon - Gun"` → `"Gun"`, `"Weapon - Knife"` → `"Knife"`; otherwise preserves raw `alerttype` such as `"Start"`, `"BlacklistPerson"`, `"BlacklistPlate-GJ27BS8306"`)
   - `eventLocation`: Human-readable location with coordinates (e.g. `"PoliceStation1 (23.0258, 72.5873)"`)
   - `eventLatitude`: Float latitude (e.g. `23.0258`)
   - `eventLongitude`: Float longitude (e.g. `72.5873`)

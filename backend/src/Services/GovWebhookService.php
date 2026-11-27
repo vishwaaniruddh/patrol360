@@ -155,12 +155,26 @@ class GovWebhookService
     }
 
     /**
-     * Resolve event title directly from raw alerttype without adding extra words
+     * Resolve event title from raw alerttype without adding extra words.
+     * Supports "<eventType> - <eventTitle>" format (e.g. "Weapon - Gun" -> "Gun",
+     * "Weapon - Knife" -> "Knife", "Fire - Smoke" -> "Smoke") while keeping
+     * plate-suffixed alerttypes like "BlacklistPlate-GJ27BS8306" intact.
      */
     public static function resolveEventTitle(string $normalizedEventType, string $rawType, ?string $plate = null): string
     {
         $trimmed = trim($rawType);
-        return $trimmed !== '' ? $trimmed : $normalizedEventType;
+        if ($trimmed === '') {
+            return $normalizedEventType;
+        }
+
+        if (preg_match('/^(?:weapon(?:\s*detection)?|fire(?:\s*hazard)?|smoke|crowd(?:\s*density)?|face(?:\s*recognition)?)\s*[-:]\s*(.+)$/i', $trimmed, $m)) {
+            $subTitle = trim($m[1]);
+            if ($subTitle !== '') {
+                return $subTitle;
+            }
+        }
+
+        return $trimmed;
     }
 
     /**
